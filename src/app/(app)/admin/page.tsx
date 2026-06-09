@@ -4,6 +4,13 @@ import { MatchResultForm } from "@/features/admin-results/ui/MatchResultForm";
 import { createClient } from "@/shared/lib/supabase/server";
 import { isAdmin } from "@/shared/lib/auth";
 import { formatKickoff } from "@/shared/lib/formatDate";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/matches");
@@ -39,26 +46,39 @@ export default async function AdminPage() {
   );
 
   return (
-    <div>
-      <h1 className="mb-2 text-2xl font-bold">Admin</h1>
-      <p className="mb-6 text-sm text-zinc-500">
-        Enter match results and manage players. Import schedule via{" "}
-        <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-          npm run import:schedule
-        </code>
-      </p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-xl font-bold">Admin</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Enter match results and manage players. Import schedule via{" "}
+          <code className="rounded-md bg-muted px-1.5 py-0.5 text-xs">
+            npm run import:schedule
+          </code>
+        </p>
+      </div>
 
-      <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold">Add player</h2>
-        <AddPlayerForm teams={teams ?? []} />
-      </section>
+      <Card className="glass corner-squircle border-0 bg-transparent shadow-none ring-0">
+        <CardHeader>
+          <CardTitle>Add player</CardTitle>
+          <CardDescription>
+            Add a player to a team for goalscorer predictions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AddPlayerForm teams={teams ?? []} />
+        </CardContent>
+      </Card>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Match results</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Match results</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {upcomingOrRecent.slice(0, 20).map((match) => (
-            <div key={match.id}>
-              <p className="mb-1 text-xs text-zinc-500">
+            <Card
+              key={match.id}
+              className="glass corner-squircle border-0 bg-transparent shadow-none ring-0"
+            >
+              <CardContent className="pt-5">
+              <p className="mb-2 text-xs text-muted-foreground">
                 {formatKickoff(match.kickoff_at)}
               </p>
               <MatchResultForm
@@ -68,8 +88,10 @@ export default async function AdminPage() {
                 initialHome={match.home_score}
                 initialAway={match.away_score}
                 initialScorers={(scorersByMatch.get(match.id) ?? []).join(", ")}
+                initialStatus={match.status as "scheduled" | "live" | "finished"}
               />
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>

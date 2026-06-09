@@ -1,4 +1,5 @@
 import { AppNav } from "@/shared/ui/AppNav";
+import { BottomTabBar } from "@/shared/ui/BottomTabBar";
 import { isAdmin } from "@/shared/lib/auth";
 
 export default async function AppLayout({
@@ -9,9 +10,12 @@ export default async function AppLayout({
   const admin = await isAdmin();
 
   return (
-    <>
-      <AppNav isAdmin={admin} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
-    </>
+    <div className="flex min-h-full flex-col">
+      <AppNav />
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
+        {children}
+      </main>
+      <BottomTabBar isAdmin={admin} />
+    </div>
   );
 }

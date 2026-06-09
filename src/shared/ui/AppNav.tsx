@@ -1,35 +1,41 @@
-import Link from "next/link";
+import Image from "next/image";
 import { signOut } from "@/features/auth/actions";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Logout01Icon } from "@hugeicons/core-free-icons";
 
-interface AppNavProps {
-  isAdmin?: boolean;
-}
-
-export function AppNav({ isAdmin }: AppNavProps) {
+export function AppNav() {
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/matches" className="text-lg font-bold text-emerald-700">
-          WC 2026 Forecast
-        </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/matches" className="hover:text-emerald-600">
-            Matches
-          </Link>
-          <Link href="/leaderboard" className="hover:text-emerald-600">
-            Leaderboard
-          </Link>
-          {isAdmin && (
-            <Link href="/admin" className="hover:text-emerald-600">
-              Admin
-            </Link>
-          )}
+    <header className="glass safe-top sticky top-0 z-40 border-b border-border/50">
+      <div className="mx-auto flex max-w-md items-center justify-between px-4 py-2.5">
+        <div
+          className="relative size-9 shrink-0 overflow-hidden rounded-full"
+          aria-hidden
+        >
+          <Image
+            src="/fifa-logo.png"
+            alt=""
+            fill
+            className="object-contain"
+            sizes="36px"
+            priority
+          />
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          <ThemeToggle />
           <form action={signOut}>
-            <button type="submit" className="text-zinc-500 hover:text-zinc-800">
-              Sign out
-            </button>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Sign out"
+            >
+              <HugeiconsIcon icon={Logout01Icon} />
+            </Button>
           </form>
-        </nav>
+        </div>
       </div>
     </header>
   );
