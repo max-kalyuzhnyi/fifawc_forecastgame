@@ -1,20 +1,19 @@
-import Link from "next/link";
-import { ROUND_LABELS, type Match } from "@/entities/match/model/types";
+import { Suspense } from "react";
+import type { Match } from "@/entities/match/model/types";
+import {
+  buildPlayersByMatch,
+  getMatchTeamIds,
+} from "@/features/matches/lib/playersByMatch";
+import { buildVoterMap } from "@/features/matches/lib/voterInfo";
+import { MatchesView } from "@/features/matches/ui/MatchesView";
 import { createClient } from "@/shared/lib/supabase/server";
-import { formatKickoff } from "@/shared/lib/formatDate";
 import { getCurrentUserId } from "@/shared/lib/auth";
-
-const ROUND_ORDER = [
-  "group_1",
-  "group_2",
-  "group_3",
-  "round_of_32",
-  "round_of_16",
-  "quarter_final",
-  "semi_final",
-  "third_place",
-  "final",
-];
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 export default async function MatchesPage() {
   const supabase = await createClient();
@@ -25,87 +24,81 @@ export default async function MatchesPage() {
     .select("*")
     .order("kickoff_at", { ascending: true });
 
-  const { data: predictions } = userId
-    ? await supabase
-        .from("predictions")
-        .select("match_id, home_score, away_score, boost_multiplier")
-        .eq("user_id", userId)
-    : { data: [] };
+  const teamIds = getMatchTeamIds((matches ?? []) as Match[]);
 
-  const predictionMap = new Map(
-    (predictions ?? []).map((p) => [p.match_id, p]),
+  const [
+    { data: predictions },
+    { data: allPredictions },
+    { data: profiles },
+    { data: players },
+  ] = await Promise.all([
+    userId
+      ? supabase
+          .from("predictions")
+          .select(
+            "match_id, round_key, home_score, away_score, boost_multiplier, scorer_player_id, scorer_name",
+          )
+          .eq("user_id", userId)
+      : Promise.resolve({ data: [] }),
+    supabase.from("predictions").select("match_id, user_id"),
+    supabase.from("profiles").select("id, display_name"),
+    teamIds.length > 0
+      ? supabase
+          .from("players")
+          .select("id, name, team_id")
+          .in("team_id", teamIds)
+          .order("name")
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const predictionMap = Object.fromEntries(
+    (predictions ?? []).map((p) => [
+      p.match_id,
+      {
+        round_key: p.round_key,
+        home_score: p.home_score,
+        away_score: p.away_score,
+        boost_multiplier: p.boost_multiplier,
+        scorer_player_id: p.scorer_player_id,
+        scorer_name: p.scorer_name,
+      },
+    ]),
   );
 
-  const grouped = new Map<string, Match[]>();
-  for (const match of (matches ?? []) as Match[]) {
-    const list = grouped.get(match.round_key) ?? [];
-    list.push(match);
-    grouped.set(match.round_key, list);
+  const voterMap = Object.fromEntries(
+    buildVoterMap(allPredictions ?? [], profiles ?? []),
+  );
+
+  const playersByMatch = buildPlayersByMatch(
+    (matches ?? []) as Match[],
+    players ?? [],
+  );
+
+  if (!matches || matches.length === 0) {
+    return (
+      <Empty className="glass corner-squircle mt-4 rounded-3xl border-0">
+        <EmptyHeader>
+          <EmptyTitle>No matches loaded yet</EmptyTitle>
+          <EmptyDescription>
+            An admin should run{" "}
+            <code className="rounded-md bg-muted px-1.5 py-0.5 text-xs">
+              npm run import:schedule
+            </code>
+            .
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
   }
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold">Matches</h1>
-
-      {(!matches || matches.length === 0) && (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">
-          No matches loaded yet. An admin should run{" "}
-          <code className="rounded bg-zinc-100 px-1">npm run import:schedule</code>.
-        </p>
-      )}
-
-      {ROUND_ORDER.filter((key) => grouped.has(key)).map((roundKey) => (
-        <section key={roundKey} className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-emerald-700">
-            {ROUND_LABELS[roundKey] ?? roundKey}
-          </h2>
-          <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-            {grouped.get(roundKey)!.map((match) => {
-              const pred = predictionMap.get(match.id);
-              const locked = new Date(match.kickoff_at) <= new Date();
-              const finished =
-                match.status === "finished" &&
-                match.home_score !== null &&
-                match.away_score !== null;
-
-              return (
-                <li key={match.id}>
-                  <Link
-                    href={`/matches/${match.id}`}
-                    className="flex flex-col gap-1 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {match.home_team_name}{" "}
-                        {finished
-                          ? `${match.home_score}–${match.away_score}`
-                          : "vs"}{" "}
-                        {match.away_team_name}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {formatKickoff(match.kickoff_at)}
-                        {match.group_name && ` · ${match.group_name}`}
-                      </p>
-                    </div>
-                    <div className="text-xs">
-                      {pred ? (
-                        <span className="text-emerald-600">
-                          Your pick: {pred.home_score}–{pred.away_score}
-                          {pred.boost_multiplier > 1 && ` x${pred.boost_multiplier}`}
-                        </span>
-                      ) : locked ? (
-                        <span className="text-zinc-400">Missed</span>
-                      ) : (
-                        <span className="text-amber-600">No pick yet</span>
-                      )}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-    </div>
+    <Suspense>
+      <MatchesView
+        matches={matches as Match[]}
+        voterMap={voterMap}
+        predictionMap={predictionMap}
+        playersByMatch={playersByMatch}
+      />
+    </Suspense>
   );
 }

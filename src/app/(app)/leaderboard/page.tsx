@@ -1,5 +1,21 @@
 import { calculateLeaderboard } from "@/entities/leaderboard/lib/calculateLeaderboard";
 import { createClient } from "@/shared/lib/supabase/server";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -63,44 +79,52 @@ export default async function LeaderboardPage() {
   );
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold">Leaderboard</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-xl font-bold">Leaderboard</h1>
 
-      {entries.length === 0 ? (
-        <p className="text-sm text-zinc-500">No players yet.</p>
-      ) : (
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="py-2 pr-4">#</th>
-              <th className="py-2 pr-4">Player</th>
-              <th className="py-2 pr-4 text-right">Points</th>
-              <th className="py-2 text-right">Scored</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry, i) => (
-              <tr
-                key={entry.user_id}
-                className="border-b border-zinc-100 dark:border-zinc-900"
-              >
-                <td className="py-3 pr-4 text-zinc-400">{i + 1}</td>
-                <td className="py-3 pr-4 font-medium">{entry.display_name}</td>
-                <td className="py-3 pr-4 text-right font-bold text-emerald-700">
-                  {entry.total_points}
-                </td>
-                <td className="py-3 text-right text-zinc-500">
-                  {entry.predictions_scored}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <p className="mt-6 text-xs text-zinc-400">
-        Scoring: 3 exact · 2 goal diff · 1 result · +3 scorer · x2/x3 boost per round
-      </p>
+      <Card className="glass corner-squircle border-0 bg-transparent shadow-none ring-0">
+        <CardHeader>
+          <CardTitle>Standings</CardTitle>
+          <CardDescription>
+            Scoring: 3 exact · 2 goal diff · 1 result · +3 scorer · x2/x3 boost
+            per round
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {entries.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No players yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="text-right">Points</TableHead>
+                  <TableHead className="text-right">Scored</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries.map((entry, i) => (
+                  <TableRow key={entry.user_id}>
+                    <TableCell className="text-muted-foreground">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {entry.display_name}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge>{entry.total_points}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {entry.predictions_scored}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

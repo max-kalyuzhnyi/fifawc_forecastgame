@@ -1,8 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { savePrediction } from "../actions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TeamName } from "@/shared/ui/TeamFlag";
 
 interface PlayerOption {
   id: string;
@@ -42,140 +63,166 @@ export function PredictionForm({
   currentBoost,
 }: PredictionFormProps) {
   const [state, action, pending] = useActionState(savePrediction, null);
+  const [scorerPlayerId, setScorerPlayerId] = useState(
+    initial?.scorer_player_id ?? "",
+  );
+  const [boost, setBoost] = useState(String(initial?.boost_multiplier ?? 1));
 
   const homePlayers = players.filter((p) => p.team_id === homeTeamId);
   const awayPlayers = players.filter((p) => p.team_id === awayTeamId);
 
   if (locked) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="font-medium">Predictions locked</p>
-        {initial && (
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-            Your pick: {initial.home_score}–{initial.away_score}
-            {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
-            {initial.boost_multiplier > 1 && ` · x${initial.boost_multiplier}`}
-          </p>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Predictions locked</CardTitle>
+          {initial && (
+            <CardDescription>
+              Your pick: {initial.home_score}–{initial.away_score}
+              {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
+              {initial.boost_multiplier > 1 && ` · x${initial.boost_multiplier}`}
+            </CardDescription>
+          )}
+        </CardHeader>
+      </Card>
     );
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action}>
       <input type="hidden" name="match_id" value={matchId} />
+      <input type="hidden" name="scorer_player_id" value={scorerPlayerId} />
+      <input type="hidden" name="boost_multiplier" value={boost} />
 
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-500">
-            {homeTeamName}
-          </label>
-          <input
-            name="home_score"
-            type="number"
-            min={0}
-            max={20}
-            defaultValue={initial?.home_score ?? 0}
-            required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
+      <FieldGroup>
+        <div className="flex items-center gap-4">
+          <Field className="flex-1">
+            <Input
+              id="home_score"
+              name="home_score"
+              type="number"
+              min={0}
+              max={20}
+              defaultValue={initial?.home_score ?? 0}
+              placeholder={homeTeamName}
+              aria-label={homeTeamName}
+              required
+            />
+          </Field>
+          <span className="text-muted-foreground">:</span>
+          <Field className="flex-1">
+            <Input
+              id="away_score"
+              name="away_score"
+              type="number"
+              min={0}
+              max={20}
+              defaultValue={initial?.away_score ?? 0}
+              placeholder={awayTeamName}
+              aria-label={awayTeamName}
+              required
+            />
+          </Field>
         </div>
-        <span className="pt-5 text-zinc-400">:</span>
-        <div className="flex-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-500">
-            {awayTeamName}
-          </label>
-          <input
-            name="away_score"
-            type="number"
-            min={0}
-            max={20}
-            defaultValue={initial?.away_score ?? 0}
-            required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+
+        <Field>
+          <Select
+            value={scorerPlayerId || "none"}
+            onValueChange={(value) =>
+              setScorerPlayerId(value === "none" ? "" : value)
+            }
+          >
+            <SelectTrigger className="w-full" aria-label="Goalscorer">
+              <SelectValue placeholder="Goalscorer (+3)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="none">None</SelectItem>
+              </SelectGroup>
+              {homePlayers.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>
+                    <TeamName name={homeTeamName} />
+                  </SelectLabel>
+                  {homePlayers.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              {awayPlayers.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>
+                    <TeamName name={awayTeamName} />
+                  </SelectLabel>
+                  {awayPlayers.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+            </SelectContent>
+          </Select>
+          <Input
+            name="scorer_name"
+            type="text"
+            placeholder="Or type a name manually"
+            aria-label="Scorer name"
+            defaultValue={initial?.scorer_name ?? ""}
+            className="mt-2"
           />
-        </div>
-      </div>
+        </Field>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium">Goalscorer (+3)</label>
-        <select
-          name="scorer_player_id"
-          defaultValue={initial?.scorer_player_id ?? ""}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          <option value="">None</option>
-          {homePlayers.length > 0 && (
-            <optgroup label={homeTeamName}>
-              {homePlayers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          {awayPlayers.length > 0 && (
-            <optgroup label={awayTeamName}>
-              {awayPlayers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-        <input
-          name="scorer_name"
-          type="text"
-          placeholder="Or type a name manually"
-          defaultValue={initial?.scorer_name ?? ""}
-          className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </div>
+        <Field>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={boost}
+            onValueChange={(value) => {
+              if (value) setBoost(value);
+            }}
+            aria-label="Boost"
+          >
+            {([1, 2, 3] as const).map((mult) => {
+              const disabled =
+                mult === 2
+                  ? boostUsed.x2 && currentBoost !== 2
+                  : mult === 3
+                    ? boostUsed.x3 && currentBoost !== 3
+                    : false;
 
-      <div>
-        <label className="mb-1 block text-sm font-medium">Boost</label>
-        <div className="flex gap-2">
-          {([1, 2, 3] as const).map((mult) => {
-            const disabled =
-              mult === 2
-                ? boostUsed.x2 && currentBoost !== 2
-                : mult === 3
-                  ? boostUsed.x3 && currentBoost !== 3
-                  : false;
-            return (
-              <label
-                key={mult}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-                  disabled ? "cursor-not-allowed opacity-40" : ""
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="boost_multiplier"
-                  value={mult}
-                  defaultChecked={(initial?.boost_multiplier ?? 1) === mult}
+              return (
+                <ToggleGroupItem
+                  key={mult}
+                  value={String(mult)}
                   disabled={disabled}
-                />
-                {mult === 1 ? "None" : `x${mult}`}
-              </label>
-            );
-          })}
-        </div>
-      </div>
+                  aria-label={mult === 1 ? "No boost" : `Boost x${mult}`}
+                >
+                  {mult === 1 ? "None" : `x${mult}`}
+                </ToggleGroupItem>
+              );
+            })}
+          </ToggleGroup>
+          <FieldDescription>One x2 and one x3 boost per round.</FieldDescription>
+        </Field>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state?.success && (
-        <p className="text-sm text-emerald-600">Prediction saved!</p>
-      )}
+        {state?.error && (
+          <Alert variant="destructive">
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        )}
+        {state?.success && (
+          <Alert>
+            <AlertDescription>Prediction saved!</AlertDescription>
+          </Alert>
+        )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-      >
-        {pending ? "Saving…" : "Save prediction"}
-      </button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save prediction"}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }
