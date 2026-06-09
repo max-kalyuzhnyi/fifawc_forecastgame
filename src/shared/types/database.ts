@@ -5,12 +5,16 @@ export interface Database {
         Row: {
           id: string;
           display_name: string;
+          telegram_id: number | null;
+          photo_url: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
           display_name: string;
+          telegram_id?: number | null;
+          photo_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

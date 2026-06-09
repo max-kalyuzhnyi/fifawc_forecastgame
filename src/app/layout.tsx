@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TelegramWebAppInit } from "@/shared/ui/TelegramWebAppInit";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -36,6 +38,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col text-foreground">
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+        <TelegramWebAppInit />
         <div className="app-bg" aria-hidden="true" />
         <ThemeProvider
           attribute="class"

@@ -1,9 +1,5 @@
 import Image from "next/image";
-import { signOut } from "@/features/auth/actions";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/shared/ui/ThemeToggle";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Logout01Icon } from "@hugeicons/core-free-icons";
 
 export function AppNav() {
   return (
@@ -23,19 +19,7 @@ export function AppNav() {
           />
         </div>
 
-        <div className="flex items-center gap-0.5">
-          <ThemeToggle />
-          <form action={signOut}>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Sign out"
-            >
-              <HugeiconsIcon icon={Logout01Icon} />
-            </Button>
-          </form>
-        </div>
+        <ThemeToggle />
       </div>
     </header>
   );
