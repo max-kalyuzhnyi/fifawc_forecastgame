@@ -1,5 +1,5 @@
 /** OpenFootball team name → circle-flags ISO code (WC 2026 squads). */
-const TEAM_FLAG_CODES: Record<string, string> = {
+export const TEAM_FLAG_CODES: Record<string, string> = {
   Mexico: "mx",
   "South Africa": "za",
   "South Korea": "kr",

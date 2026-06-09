@@ -24,8 +24,18 @@ export interface Database {
         Relationships: [];
       };
       teams: {
-        Row: { id: string; name: string; created_at: string };
-        Insert: { id?: string; name: string; created_at?: string };
+        Row: {
+          id: string;
+          name: string;
+          primary_color: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          primary_color?: string | null;
+          created_at?: string;
+        };
         Update: Partial<Database["public"]["Tables"]["teams"]["Insert"]>;
         Relationships: [];
       };

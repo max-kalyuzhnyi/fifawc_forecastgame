@@ -10,6 +10,7 @@ const resultSchema = z.object({
   home_score: z.coerce.number().int().min(0),
   away_score: z.coerce.number().int().min(0),
   scorers: z.string().optional(),
+  result_type: z.enum(["live", "finished"]),
 });
 
 const playerSchema = z.object({
@@ -28,6 +29,7 @@ export async function saveMatchResult(
     home_score: formData.get("home_score"),
     away_score: formData.get("away_score"),
     scorers: formData.get("scorers"),
+    result_type: formData.get("result_type"),
   });
 
   if (!parsed.success) {
@@ -35,36 +37,38 @@ export async function saveMatchResult(
   }
 
   const supabase = await createClient();
-  const { match_id, home_score, away_score } = parsed.data;
+  const { match_id, home_score, away_score, result_type } = parsed.data;
+  const isFinal = result_type === "finished";
 
   const { error: matchError } = await supabase
     .from("matches")
     .update({
       home_score,
       away_score,
-      status: "finished",
+      status: isFinal ? "finished" : "live",
       updated_at: new Date().toISOString(),
     })
     .eq("id", match_id);
 
   if (matchError) return { error: matchError.message };
 
-  // Replace scorers for this match
-  await supabase.from("match_scorers").delete().eq("match_id", match_id);
+  if (isFinal) {
+    await supabase.from("match_scorers").delete().eq("match_id", match_id);
 
-  const scorerNames = (parsed.data.scorers ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+    const scorerNames = (parsed.data.scorers ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-  if (scorerNames.length > 0) {
-    const { error: scorerError } = await supabase.from("match_scorers").insert(
-      scorerNames.map((name) => ({
-        match_id,
-        scorer_name: name,
-      })),
-    );
-    if (scorerError) return { error: scorerError.message };
+    if (scorerNames.length > 0) {
+      const { error: scorerError } = await supabase.from("match_scorers").insert(
+        scorerNames.map((name) => ({
+          match_id,
+          scorer_name: name,
+        })),
+      );
+      if (scorerError) return { error: scorerError.message };
+    }
   }
 
   revalidatePath("/admin");

@@ -189,6 +189,47 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  .match-team-bg-gradient {
+    background: linear-gradient(
+      115deg,
+      var(--home-color) 0% 44%,
+      var(--away-color) 56% 100%
+    );
+    background-size: 200% 200%;
+    animation: match-team-bg-shift 20s ease-in-out infinite;
+  }
+
+  .match-team-bg-fade {
+    background: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.12) 0%,
+      rgb(0 0 0 / 0.38) 42%,
+      rgb(0 0 0 / 0.72) 100%
+    );
+  }
+
+  .match-team-bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  @keyframes match-team-bg-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .match-team-bg-gradient {
+      animation: none;
+    }
+  }
 }
 
 @layer base {

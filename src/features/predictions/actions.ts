@@ -7,10 +7,9 @@ import { getCurrentUserId } from "@/shared/lib/auth";
 
 const predictionSchema = z.object({
   match_id: z.string().uuid(),
-  home_score: z.coerce.number().int().min(0).max(20),
-  away_score: z.coerce.number().int().min(0).max(20),
+  home_score: z.coerce.number().int().min(0).max(10),
+  away_score: z.coerce.number().int().min(0).max(10),
   scorer_player_id: z.string().uuid().optional().or(z.literal("")),
-  scorer_name: z.string().optional(),
   boost_multiplier: z.coerce.number().int().refine((v) => [1, 2, 3].includes(v)),
 });
 
@@ -26,7 +25,6 @@ export async function savePrediction(
     home_score: formData.get("home_score"),
     away_score: formData.get("away_score"),
     scorer_player_id: formData.get("scorer_player_id") || undefined,
-    scorer_name: formData.get("scorer_name") || undefined,
     boost_multiplier: formData.get("boost_multiplier"),
   });
 
@@ -37,7 +35,7 @@ export async function savePrediction(
   const supabase = await createClient();
   const { match_id, home_score, away_score, boost_multiplier } = parsed.data;
   let scorer_player_id = parsed.data.scorer_player_id || null;
-  let scorer_name = parsed.data.scorer_name?.trim() || null;
+  let scorer_name: string | null = null;
 
   // Resolve player name from selected player id when dropdown used
   if (scorer_player_id) {

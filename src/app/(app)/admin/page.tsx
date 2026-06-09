@@ -88,6 +88,7 @@ export default async function AdminPage() {
                 initialHome={match.home_score}
                 initialAway={match.away_score}
                 initialScorers={(scorersByMatch.get(match.id) ?? []).join(", ")}
+                initialStatus={match.status as "scheduled" | "live" | "finished"}
               />
               </CardContent>
             </Card>

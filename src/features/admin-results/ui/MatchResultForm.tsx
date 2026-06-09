@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldGroup } from "@/components/ui/field";
+import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TeamName } from "@/shared/ui/TeamFlag";
 
@@ -22,6 +22,7 @@ interface MatchResultFormProps {
   initialHome?: number | null;
   initialAway?: number | null;
   initialScorers?: string;
+  initialStatus?: "scheduled" | "live" | "finished";
 }
 
 export function MatchResultForm({
@@ -31,6 +32,7 @@ export function MatchResultForm({
   initialHome,
   initialAway,
   initialScorers = "",
+  initialStatus = "scheduled",
 }: MatchResultFormProps) {
   const [state, action, pending] = useActionState(saveMatchResult, null);
 
@@ -43,6 +45,11 @@ export function MatchResultForm({
             <TeamName name={homeTeamName} />
             <span>vs</span>
             <TeamName name={awayTeamName} />
+            {initialStatus === "live" && (
+              <span className="rounded-md bg-red-500/20 px-1.5 py-0.5 text-xs font-medium text-red-300">
+                LIVE
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -79,10 +86,13 @@ export function MatchResultForm({
                 id={`scorers-${matchId}`}
                 name="scorers"
                 type="text"
-                placeholder="Scorers (comma-separated)"
+                placeholder="Scorers (comma-separated, final only)"
                 aria-label="Scorers"
                 defaultValue={initialScorers}
               />
+              <FieldDescription>
+                Scorers are saved only when submitting the final result.
+              </FieldDescription>
             </Field>
             {state?.error && (
               <Alert variant="destructive">
@@ -96,9 +106,25 @@ export function MatchResultForm({
             )}
           </FieldGroup>
         </CardContent>
-        <CardFooter>
-          <Button type="submit" disabled={pending} size="sm">
-            {pending ? "Saving…" : "Save result"}
+        <CardFooter className="flex gap-2">
+          <Button
+            type="submit"
+            name="result_type"
+            value="live"
+            disabled={pending}
+            variant="outline"
+            size="sm"
+          >
+            {pending ? "Saving…" : "Save live score"}
+          </Button>
+          <Button
+            type="submit"
+            name="result_type"
+            value="finished"
+            disabled={pending}
+            size="sm"
+          >
+            {pending ? "Saving…" : "Save final result"}
           </Button>
         </CardFooter>
       </form>

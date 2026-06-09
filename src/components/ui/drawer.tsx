@@ -61,7 +61,9 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="absolute left-1/2 top-4 z-30 hidden h-0.5 w-[60px] -translate-x-1/2 shrink-0 rounded-full bg-white/80 shadow-sm group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div className="absolute inset-x-0 top-0 z-30 hidden h-10 group-data-[vaul-drawer-direction=bottom]/drawer-content:flex group-data-[vaul-drawer-direction=bottom]/drawer-content:items-start group-data-[vaul-drawer-direction=bottom]/drawer-content:justify-center group-data-[vaul-drawer-direction=bottom]/drawer-content:pt-3">
+          <div className="h-1.5 w-24 shrink-0 rounded-full bg-white/80 shadow-sm" />
+        </div>
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

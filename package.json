@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "portless run --name fifawc next dev",
+    "dev": "portless run --name fifawc --force next dev",
     "dev:plain": "next dev",
     "proxy:start": "portless proxy start -p 1355 --no-tls",
     "proxy:start:https": "portless proxy start -p 1355",
@@ -14,7 +14,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "import:schedule": "tsx scripts/import-schedule.ts"
+    "import:schedule": "tsx scripts/import-schedule.ts",
+    "extract:team-colors": "tsx scripts/extract-team-colors.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.2.0",
@@ -45,6 +46,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "portless": "^0.14.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5",

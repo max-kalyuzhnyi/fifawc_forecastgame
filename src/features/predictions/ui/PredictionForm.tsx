@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { savePrediction } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
 import { TeamName } from "@/shared/ui/TeamFlag";
 
 interface PlayerOption {
@@ -50,6 +50,49 @@ interface PredictionFormProps {
   currentBoost: BoostMultiplier;
 }
 
+function formatBoostLabel(mult: BoostMultiplier): string {
+  if (mult === 1) return "None";
+  if (mult === 2) return "🔥🔥 x2";
+  return "🔥🔥🔥 x3";
+}
+
+function PredictionSummary({
+  initial,
+  onEdit,
+}: {
+  initial: NonNullable<PredictionFormProps["initial"]>;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 text-center">
+        <p className="text-3xl font-bold tabular-nums">
+          {initial.home_score}–{initial.away_score}
+        </p>
+        {initial.scorer_name && (
+          <p className="text-sm text-muted-foreground">
+            Scorer: {initial.scorer_name}
+          </p>
+        )}
+        {initial.boost_multiplier > 1 && (
+          <p className="text-sm text-muted-foreground">
+            Boost: {formatBoostLabel(initial.boost_multiplier)}
+          </p>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="xl"
+        onClick={onEdit}
+        className="bg-white text-black hover:bg-white/90 aria-expanded:bg-white aria-expanded:text-black"
+      >
+        I change my mind
+      </Button>
+    </div>
+  );
+}
+
 export function PredictionForm({
   matchId,
   homeTeamName,
@@ -62,7 +105,24 @@ export function PredictionForm({
   boostUsed,
   currentBoost,
 }: PredictionFormProps) {
-  const [state, action, pending] = useActionState(savePrediction, null);
+  const [mode, setMode] = useState<"readonly" | "edit">(
+    initial ? "readonly" : "edit",
+  );
+  const [state, action, pending] = useActionState(
+    async (
+      prev: { error?: string; success?: boolean } | null,
+      formData: FormData,
+    ) => {
+      const result = await savePrediction(prev, formData);
+      if (result.success) {
+        setMode("readonly");
+      }
+      return result;
+    },
+    null,
+  );
+  const [homeScore, setHomeScore] = useState(initial?.home_score ?? 0);
+  const [awayScore, setAwayScore] = useState(initial?.away_score ?? 0);
   const [scorerPlayerId, setScorerPlayerId] = useState(
     initial?.scorer_player_id ?? "",
   );
@@ -70,6 +130,28 @@ export function PredictionForm({
 
   const homePlayers = players.filter((p) => p.team_id === homeTeamId);
   const awayPlayers = players.filter((p) => p.team_id === awayTeamId);
+
+  const showX2 = !boostUsed.x2 || currentBoost === 2;
+  const showX3 = !boostUsed.x3 || currentBoost === 3;
+  const showBoostBlock = showX2 || showX3;
+  const boostTabTriggerClassName =
+    "h-full flex-1 text-sm text-white/60 hover:text-white data-active:bg-white/20 data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:bg-white/20 dark:data-active:text-white";
+
+  const savedSnapshot = useMemo(() => {
+    if (!state?.success) return null;
+
+    const selectedPlayer = players.find((player) => player.id === scorerPlayerId);
+
+    return {
+      home_score: homeScore,
+      away_score: awayScore,
+      scorer_player_id: scorerPlayerId || null,
+      scorer_name: selectedPlayer?.name ?? null,
+      boost_multiplier: Number(boost) as BoostMultiplier,
+    };
+  }, [state?.success, homeScore, awayScore, scorerPlayerId, boost, players]);
+
+  const summaryData = savedSnapshot ?? initial;
 
   if (locked) {
     return (
@@ -80,7 +162,8 @@ export function PredictionForm({
             <CardDescription>
               Your pick: {initial.home_score}–{initial.away_score}
               {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
-              {initial.boost_multiplier > 1 && ` · x${initial.boost_multiplier}`}
+              {initial.boost_multiplier > 1 &&
+                ` · x${initial.boost_multiplier}`}
             </CardDescription>
           )}
         </CardHeader>
@@ -88,42 +171,34 @@ export function PredictionForm({
     );
   }
 
+  if (summaryData && mode === "readonly") {
+    return (
+      <PredictionSummary
+        initial={summaryData}
+        onEdit={() => setMode("edit")}
+      />
+    );
+  }
+
   return (
     <form action={action}>
       <input type="hidden" name="match_id" value={matchId} />
+      <input type="hidden" name="home_score" value={homeScore} />
+      <input type="hidden" name="away_score" value={awayScore} />
       <input type="hidden" name="scorer_player_id" value={scorerPlayerId} />
       <input type="hidden" name="boost_multiplier" value={boost} />
 
       <FieldGroup>
-        <div className="flex items-center gap-4">
-          <Field className="flex-1">
-            <Input
-              id="home_score"
-              name="home_score"
-              type="number"
-              min={0}
-              max={20}
-              defaultValue={initial?.home_score ?? 0}
-              placeholder={homeTeamName}
-              aria-label={homeTeamName}
-              required
-            />
-          </Field>
-          <span className="text-muted-foreground">:</span>
-          <Field className="flex-1">
-            <Input
-              id="away_score"
-              name="away_score"
-              type="number"
-              min={0}
-              max={20}
-              defaultValue={initial?.away_score ?? 0}
-              placeholder={awayTeamName}
-              aria-label={awayTeamName}
-              required
-            />
-          </Field>
-        </div>
+        <Field>
+          <ScoreWheelPicker
+            homeScore={homeScore}
+            awayScore={awayScore}
+            onHomeChange={setHomeScore}
+            onAwayChange={setAwayScore}
+            homeLabel={homeTeamName}
+            awayLabel={awayTeamName}
+          />
+        </Field>
 
         <Field>
           <Select
@@ -132,8 +207,11 @@ export function PredictionForm({
               setScorerPlayerId(value === "none" ? "" : value)
             }
           >
-            <SelectTrigger className="w-full" aria-label="Goalscorer">
-              <SelectValue placeholder="Goalscorer (+3)" />
+            <SelectTrigger
+              className="h-12 w-full text-base"
+              aria-label="Goalscorer"
+            >
+              <SelectValue placeholder="Choose player who score" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -165,61 +243,50 @@ export function PredictionForm({
               )}
             </SelectContent>
           </Select>
-          <Input
-            name="scorer_name"
-            type="text"
-            placeholder="Or type a name manually"
-            aria-label="Scorer name"
-            defaultValue={initial?.scorer_name ?? ""}
-            className="mt-2"
-          />
         </Field>
 
-        <Field>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            value={boost}
-            onValueChange={(value) => {
-              if (value) setBoost(value);
-            }}
-            aria-label="Boost"
-          >
-            {([1, 2, 3] as const).map((mult) => {
-              const disabled =
-                mult === 2
-                  ? boostUsed.x2 && currentBoost !== 2
-                  : mult === 3
-                    ? boostUsed.x3 && currentBoost !== 3
-                    : false;
-
-              return (
-                <ToggleGroupItem
-                  key={mult}
-                  value={String(mult)}
-                  disabled={disabled}
-                  aria-label={mult === 1 ? "No boost" : `Boost x${mult}`}
-                >
-                  {mult === 1 ? "None" : `x${mult}`}
-                </ToggleGroupItem>
-              );
-            })}
-          </ToggleGroup>
-          <FieldDescription>One x2 and one x3 boost per round.</FieldDescription>
-        </Field>
+        {showBoostBlock && (
+          <Field>
+            <Tabs
+              value={boost}
+              onValueChange={(value) => {
+                if (value) setBoost(value);
+              }}
+            >
+              <TabsList className="h-11 w-full bg-white/10 p-1 group-data-horizontal/tabs:h-11">
+                <TabsTrigger value="1" className={boostTabTriggerClassName}>
+                  None
+                </TabsTrigger>
+                {showX2 && (
+                  <TabsTrigger value="2" className={boostTabTriggerClassName}>
+                    🔥🔥 x2
+                  </TabsTrigger>
+                )}
+                {showX3 && (
+                  <TabsTrigger value="3" className={boostTabTriggerClassName}>
+                    🔥🔥🔥 x3
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </Tabs>
+            <FieldDescription className="text-white/60">
+              One x2 and one x3 boost per round.
+            </FieldDescription>
+          </Field>
+        )}
 
         {state?.error && (
           <Alert variant="destructive">
             <AlertDescription>{state.error}</AlertDescription>
           </Alert>
         )}
-        {state?.success && (
-          <Alert>
-            <AlertDescription>Prediction saved!</AlertDescription>
-          </Alert>
-        )}
 
-        <Button type="submit" disabled={pending}>
+        <Button
+          type="submit"
+          disabled={pending}
+          size="xl"
+          className="w-full bg-white text-black hover:bg-white/90"
+        >
           {pending ? "Saving…" : "Save prediction"}
         </Button>
       </FieldGroup>

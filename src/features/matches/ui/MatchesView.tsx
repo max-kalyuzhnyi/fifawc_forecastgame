@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Match } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
+import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
+import { createClient } from "@/shared/lib/supabase/client";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,10 @@ interface MatchesViewProps {
   voterMap: Record<string, MatchVoterInfo>;
   predictionMap: Record<string, PredictionDetail>;
   playersByMatch: Record<string, MatchPlayerOption[]>;
+  predictionsByMatch: Record<string, MatchPredictionEntry[]>;
+  scorersByMatch: Record<string, string[]>;
+  currentUserId: string | null;
+  teamColors: Record<string, string>;
 }
 
 const TABS: { key: MatchDayBucket; label: string }[] = [
@@ -86,10 +92,40 @@ export function MatchesView({
   voterMap,
   predictionMap,
   playersByMatch,
+  predictionsByMatch,
+  scorersByMatch,
+  currentUserId,
+  teamColors,
 }: MatchesViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedMatchId = searchParams.get("match");
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("matches-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "predictions" },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_scorers" },
+        () => router.refresh(),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [router]);
 
   const [activeTab, setActiveTab] = useState<MatchDayBucket>(() =>
     getDefaultTab(matches),
@@ -238,10 +274,15 @@ export function MatchesView({
                       voters: [],
                     };
                     const locked = new Date(match.kickoff_at) <= new Date();
+                    const live =
+                      match.status === "live" &&
+                      match.home_score !== null &&
+                      match.away_score !== null;
                     const finished =
                       match.status === "finished" &&
                       match.home_score !== null &&
                       match.away_score !== null;
+                    const showScore = live || finished;
                     const isSelected = selectedMatchId === match.id;
 
                     return (
@@ -269,11 +310,18 @@ export function MatchesView({
                             />
                           </div>
 
-                          <div className="col-start-2 row-span-2 flex items-center justify-center self-center">
-                            {finished ? (
-                              <p className="min-w-[3.25rem] text-center text-[20px] font-bold leading-none tabular-nums">
-                                {match.home_score}–{match.away_score}
-                              </p>
+                          <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-0.5 self-center">
+                            {showScore ? (
+                              <>
+                                <p className="min-w-[3.25rem] text-center text-[20px] font-bold leading-none tabular-nums">
+                                  {match.home_score}–{match.away_score}
+                                </p>
+                                {live && (
+                                  <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
+                                    Live
+                                  </span>
+                                )}
+                              </>
                             ) : (
                               <p className="min-w-[3.25rem] text-center text-[20px] font-bold leading-none tabular-nums">
                                 {formatMatchTime(match.kickoff_at)}
@@ -340,6 +388,10 @@ export function MatchesView({
         voterMap={voterMap}
         predictionMap={predictionMap}
         playersByMatch={playersByMatch}
+        predictionsByMatch={predictionsByMatch}
+        scorersByMatch={scorersByMatch}
+        currentUserId={currentUserId}
+        teamColors={teamColors}
       />
     </div>
   );

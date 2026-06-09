@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Match } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
+import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
@@ -27,6 +28,10 @@ interface MatchDrawerProps {
   voterMap: Record<string, MatchVoterInfo>;
   predictionMap: Record<string, PredictionDetail>;
   playersByMatch: Record<string, MatchPlayerOption[]>;
+  predictionsByMatch: Record<string, MatchPredictionEntry[]>;
+  scorersByMatch: Record<string, string[]>;
+  currentUserId: string | null;
+  teamColors: Record<string, string>;
 }
 
 export function MatchDrawer({
@@ -35,6 +40,10 @@ export function MatchDrawer({
   voterMap,
   predictionMap,
   playersByMatch,
+  predictionsByMatch,
+  scorersByMatch,
+  currentUserId,
+  teamColors,
 }: MatchDrawerProps) {
   const router = useRouter();
   const open = Boolean(matchId);
@@ -99,11 +108,11 @@ export function MatchDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange} modal>
-      <DrawerContent className="corner-squircle max-h-[96dvh] border-0 bg-transparent p-0 shadow-none before:hidden data-[vaul-drawer-direction=bottom]:mt-8">
+      <DrawerContent className="corner-squircle h-[92dvh] max-h-[92dvh] border-0 bg-transparent p-0 shadow-none before:hidden data-[vaul-drawer-direction=bottom]:mt-10">
         <DrawerTitle className="sr-only">Match details</DrawerTitle>
 
         {contentMounted ? (
-          <div className="corner-squircle flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px]">
+          <div className="corner-squircle flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] pt-8">
             <Carousel
               setApi={setCarouselApi}
               opts={{
@@ -121,13 +130,15 @@ export function MatchDrawer({
                   const voters = voterMap[match.id] ?? { count: 0, voters: [] };
                   const prediction = predictionMap[match.id];
                   const players = playersByMatch[match.id] ?? [];
+                  const matchPredictions = predictionsByMatch[match.id] ?? [];
+                  const matchScorers = scorersByMatch[match.id] ?? [];
 
                   return (
                     <CarouselItem
                       key={match.id}
-                      className="basis-[92%] px-2"
+                      className="basis-[90%] px-0.5"
                     >
-                      <div className="h-[calc(96dvh-2rem)] overflow-y-auto overscroll-contain px-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+                      <div className="h-[calc(92dvh-3rem)] overflow-y-auto overscroll-contain px-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
                         {inWindow ? (
                           <MatchDetailContent
                             match={match}
@@ -135,6 +146,10 @@ export function MatchDrawer({
                             prediction={prediction}
                             predictionMap={predictionMap}
                             players={players}
+                            matchPredictions={matchPredictions}
+                            matchScorers={matchScorers}
+                            currentUserId={currentUserId}
+                            teamColors={teamColors}
                           />
                         ) : null}
                       </div>

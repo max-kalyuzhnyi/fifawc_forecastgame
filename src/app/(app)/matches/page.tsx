@@ -4,6 +4,11 @@ import {
   buildPlayersByMatch,
   getMatchTeamIds,
 } from "@/features/matches/lib/playersByMatch";
+import {
+  buildPredictionsByMatch,
+  buildScorersByMatch,
+} from "@/features/matches/lib/predictionsByMatch";
+import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { MatchesView } from "@/features/matches/ui/MatchesView";
 import { createClient } from "@/shared/lib/supabase/server";
@@ -31,6 +36,8 @@ export default async function MatchesPage() {
     { data: allPredictions },
     { data: profiles },
     { data: players },
+    { data: matchScorers },
+    { data: teams },
   ] = await Promise.all([
     userId
       ? supabase
@@ -40,7 +47,11 @@ export default async function MatchesPage() {
           )
           .eq("user_id", userId)
       : Promise.resolve({ data: [] }),
-    supabase.from("predictions").select("match_id, user_id"),
+    supabase
+      .from("predictions")
+      .select(
+        "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier, round_key",
+      ),
     supabase.from("profiles").select("id, display_name"),
     teamIds.length > 0
       ? supabase
@@ -49,6 +60,8 @@ export default async function MatchesPage() {
           .in("team_id", teamIds)
           .order("name")
       : Promise.resolve({ data: [] }),
+    supabase.from("match_scorers").select("match_id, scorer_name"),
+    supabase.from("teams").select("name, primary_color"),
   ]);
 
   const predictionMap = Object.fromEntries(
@@ -74,6 +87,14 @@ export default async function MatchesPage() {
     players ?? [],
   );
 
+  const predictionsByMatch = buildPredictionsByMatch(
+    allPredictions ?? [],
+    profiles ?? [],
+  );
+
+  const scorersByMatch = buildScorersByMatch(matchScorers ?? []);
+  const teamColors = buildTeamColorsMap(teams ?? []);
+
   if (!matches || matches.length === 0) {
     return (
       <Empty className="glass corner-squircle mt-4 rounded-3xl border-0">
@@ -98,6 +119,10 @@ export default async function MatchesPage() {
         voterMap={voterMap}
         predictionMap={predictionMap}
         playersByMatch={playersByMatch}
+        predictionsByMatch={predictionsByMatch}
+        scorersByMatch={scorersByMatch}
+        currentUserId={userId}
+        teamColors={teamColors}
       />
     </Suspense>
   );
