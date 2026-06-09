@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WC 2026 Forecast Game
 
-## Getting Started
+Private forecasting competition for FIFA World Cup 2026.
 
-First, run the development server:
+## Scoring
+
+- **3 pts** — exact score
+- **2 pts** — correct goal difference
+- **1 pt** — correct result (win/draw)
+- **+3 pts** — correct goalscorer pick
+- **x2 / x3 boost** — one of each per round (group round 1/2/3 + each knockout round)
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript + Tailwind
+- Supabase Auth + Postgres + RLS
+
+## Setup
+
+1. Create a Supabase project and enable Email auth.
+2. Copy `.env.example` → `.env.local` and fill in keys.
+3. Run the migration in `supabase/migrations/001_initial_schema.sql` via Supabase SQL editor.
+4. Import the schedule:
+
+```bash
+npm run import:schedule
+```
+
+5. Promote yourself to admin (replace UUID):
+
+```sql
+insert into admin_users (user_id) values ('your-auth-user-uuid');
+```
+
+6. Start dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — development server
+- `npm run import:schedule` — fetch OpenFootball WC 2026 fixtures
+- `npm test` — unit tests for scoring logic
