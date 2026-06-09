@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
 
 const ITEM_HEIGHT = 44;
@@ -31,17 +30,8 @@ export function WheelPicker({
   );
 
   const valueIndex = Math.max(0, Math.min(value - min, items.length - 1));
-  const startIndex = PADDING_COUNT + valueIndex;
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    axis: "y",
-    loop: false,
-    dragFree: false,
-    containScroll: "trimSnaps",
-    align: "center",
-    startIndex,
-  });
-
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const isSyncingRef = React.useRef(false);
   const [selectedIndex, setSelectedIndex] = React.useState(valueIndex);
 
   const onChangeRef = React.useRef(onChange);
@@ -49,53 +39,48 @@ export function WheelPicker({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  React.useEffect(() => {
-    if (!emblaApi) return;
+  // Native scroll keeps wheel, trackpad, and touch on one browser path (no Embla snap drift).
+  const syncScrollToValue = React.useCallback(
+    (index: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
 
-    const clampSnap = (snapIndex: number) =>
-      Math.max(
-        PADDING_COUNT,
-        Math.min(snapIndex, PADDING_COUNT + items.length - 1),
-      );
-
-    const syncFromEmbla = () => {
-      const snapIndex = clampSnap(emblaApi.selectedScrollSnap());
-      if (snapIndex !== emblaApi.selectedScrollSnap()) {
-        emblaApi.scrollTo(snapIndex, false);
+      const targetScrollTop = index * ITEM_HEIGHT;
+      if (Math.abs(el.scrollTop - targetScrollTop) <= 1) {
+        setSelectedIndex(index);
+        return;
       }
-      const nextValueIndex = snapIndex - PADDING_COUNT;
-      setSelectedIndex(nextValueIndex);
-      onChangeRef.current(min + nextValueIndex);
-    };
 
-    const scrollToValue = () => {
-      emblaApi.scrollTo(PADDING_COUNT + valueIndex, false);
-      setSelectedIndex(valueIndex);
-    };
+      isSyncingRef.current = true;
+      el.scrollTop = targetScrollTop;
+      setSelectedIndex(index);
+      requestAnimationFrame(() => {
+        isSyncingRef.current = false;
+      });
+    },
+    [],
+  );
 
-    emblaApi.on("init", scrollToValue);
-    emblaApi.on("reInit", scrollToValue);
-    emblaApi.on("select", syncFromEmbla);
+  React.useLayoutEffect(() => {
+    syncScrollToValue(valueIndex);
+  }, [valueIndex, syncScrollToValue]);
 
-    if (emblaApi.scrollSnapList().length > 0) {
-      scrollToValue();
+  const handleScroll = React.useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || isSyncingRef.current) return;
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(Math.round(el.scrollTop / ITEM_HEIGHT), items.length - 1),
+    );
+
+    setSelectedIndex(nextIndex);
+
+    const nextValue = min + nextIndex;
+    if (nextValue !== value) {
+      onChangeRef.current(nextValue);
     }
-
-    return () => {
-      emblaApi.off("init", scrollToValue);
-      emblaApi.off("reInit", scrollToValue);
-      emblaApi.off("select", syncFromEmbla);
-    };
-  }, [emblaApi, items.length, valueIndex]);
-
-  React.useEffect(() => {
-    if (!emblaApi) return;
-    const targetSnap = PADDING_COUNT + valueIndex;
-    if (emblaApi.selectedScrollSnap() !== targetSnap) {
-      emblaApi.scrollTo(targetSnap, false);
-      setSelectedIndex(valueIndex);
-    }
-  }, [emblaApi, valueIndex]);
+  }, [items.length, min, value]);
 
   const containerHeight = ITEM_HEIGHT * VISIBLE_ITEMS;
 
@@ -112,8 +97,9 @@ export function WheelPicker({
       />
 
       <div
-        ref={emblaRef}
-        className="overflow-hidden overscroll-contain touch-pan-x"
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="snap-y snap-mandatory overflow-y-auto overscroll-contain touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ height: containerHeight }}
         data-vaul-no-drag
       >
@@ -134,7 +120,7 @@ export function WheelPicker({
             return (
               <div
                 key={item}
-                className="flex shrink-0 grow-0 items-center justify-center tabular-nums transition-[opacity,transform] duration-150"
+                className="flex shrink-0 grow-0 snap-center items-center justify-center tabular-nums transition-[opacity,transform] duration-150"
                 style={{
                   height: ITEM_HEIGHT,
                   flexBasis: ITEM_HEIGHT,
