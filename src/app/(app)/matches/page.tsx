@@ -52,7 +52,7 @@ export default async function MatchesPage() {
       .select(
         "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier, round_key",
       ),
-    supabase.from("profiles").select("id, display_name"),
+    supabase.from("profiles").select("id, display_name, photo_url"),
     teamIds.length > 0
       ? supabase
           .from("players")

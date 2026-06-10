@@ -3,6 +3,7 @@ import type { BoostMultiplier } from "@/entities/prediction/model/types";
 export interface MatchPredictionEntry {
   user_id: string;
   display_name: string;
+  photo_url: string | null;
   home_score: number;
   away_score: number;
   scorer_name: string | null;
@@ -18,17 +19,22 @@ export function buildPredictionsByMatch(
     scorer_name: string | null;
     boost_multiplier: number;
   }[],
-  profiles: { id: string; display_name: string }[],
+  profiles: { id: string; display_name: string; photo_url?: string | null }[],
 ): Record<string, MatchPredictionEntry[]> {
-  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+  const profileMap = new Map(
+    profiles.map((p) => [
+      p.id,
+      { name: p.display_name, photoUrl: p.photo_url ?? null },
+    ]),
+  );
   const result: Record<string, MatchPredictionEntry[]> = {};
 
   for (const prediction of predictions) {
-    const displayName =
-      profileMap.get(prediction.user_id) ?? "Unknown player";
+    const profile = profileMap.get(prediction.user_id);
     const entry: MatchPredictionEntry = {
       user_id: prediction.user_id,
-      display_name: displayName,
+      display_name: profile?.name ?? "Unknown player",
+      photo_url: profile?.photoUrl ?? null,
       home_score: prediction.home_score,
       away_score: prediction.away_score,
       scorer_name: prediction.scorer_name,

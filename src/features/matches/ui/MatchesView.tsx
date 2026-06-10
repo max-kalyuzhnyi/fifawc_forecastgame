@@ -25,6 +25,8 @@ import {
   type MatchDayBucket,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
+import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
+import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -97,29 +99,60 @@ function MatchTimeBadge({ kickoffAt }: { kickoffAt: string }) {
 function MatchCenterFocus({
   prediction,
   locked,
-  showScore,
   live,
+  finished,
   homeScore,
   awayScore,
+  points,
 }: {
   prediction: PredictionDetail | undefined;
   locked: boolean;
-  showScore: boolean;
   live: boolean;
+  finished: boolean;
   homeScore: number;
   awayScore: number;
+  points: number | null;
 }) {
-  return (
-    <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-0.5 self-center">
-      {prediction ? (
+  if (finished) {
+    return (
+      <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
         <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
-          {formatMatchScore(prediction.home_score, prediction.away_score)}
-          {prediction.boost_multiplier > 1 && (
-            <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
-              x{prediction.boost_multiplier}
-            </span>
-          )}
+          {formatMatchScore(homeScore, awayScore)}
         </p>
+        {prediction ? (
+          <span
+            className={cn(
+              "text-center text-[11px] font-semibold leading-none tabular-nums",
+              points && points > 0 ? "text-emerald-300" : "text-muted-foreground",
+            )}
+          >
+            {points && points > 0 ? `+${points} pts` : `${points ?? 0} pts`}
+          </span>
+        ) : (
+          <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
+            {locked ? "Missed" : "No pick"}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
+      {prediction ? (
+        <>
+          <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+            {formatMatchScore(prediction.home_score, prediction.away_score)}
+            {prediction.boost_multiplier > 1 && (
+              <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
+                x{prediction.boost_multiplier}
+              </span>
+            )}
+          </p>
+          <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+            My pick
+          </span>
+        </>
       ) : locked ? (
         <p className="text-center text-[13px] font-medium text-muted-foreground">
           Missed
@@ -128,16 +161,14 @@ function MatchCenterFocus({
         <p className="text-center text-[13px] font-medium text-red-300">No pick</p>
       )}
 
-      {showScore && (
+      {live && (
         <div className="flex items-center gap-1">
           <p className="text-center text-[11px] font-medium leading-none tabular-nums text-muted-foreground">
             {formatMatchScore(homeScore, awayScore)}
           </p>
-          {live && (
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
-              Live
-            </span>
-          )}
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
+            Live
+          </span>
         </div>
       )}
     </div>
@@ -358,8 +389,20 @@ export function MatchesView({
                       match.status === "finished" &&
                       match.home_score !== null &&
                       match.away_score !== null;
-                    const showScore = live || finished;
                     const isSelected = selectedMatchId === match.id;
+                    const points =
+                      finished && prediction
+                        ? calculatePredictionPoints({
+                            predictedHome: prediction.home_score,
+                            predictedAway: prediction.away_score,
+                            actualHome: match.home_score!,
+                            actualAway: match.away_score!,
+                            predictedScorer: prediction.scorer_name,
+                            actualScorers: scorersByMatch[match.id] ?? [],
+                            boostMultiplier:
+                              prediction.boost_multiplier as BoostMultiplier,
+                          }).totalPoints
+                        : null;
 
                     return (
                       <button
@@ -399,10 +442,11 @@ export function MatchesView({
                           <MatchCenterFocus
                             prediction={prediction}
                             locked={locked}
-                            showScore={showScore}
                             live={live}
+                            finished={finished}
                             homeScore={match.home_score ?? 0}
                             awayScore={match.away_score ?? 0}
+                            points={points}
                           />
 
                           <div className="col-start-3 row-start-1 flex justify-center">

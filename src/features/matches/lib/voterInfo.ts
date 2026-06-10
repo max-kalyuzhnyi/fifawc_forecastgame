@@ -1,13 +1,23 @@
+export interface MatchVoter {
+  name: string;
+  photoUrl: string | null;
+}
+
 export interface MatchVoterInfo {
   count: number;
-  voters: string[];
+  voters: MatchVoter[];
 }
 
 export function buildVoterMap(
   predictions: { match_id: string; user_id: string }[],
-  profiles: { id: string; display_name: string }[],
+  profiles: { id: string; display_name: string; photo_url?: string | null }[],
 ): Map<string, MatchVoterInfo> {
-  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+  const profileMap = new Map(
+    profiles.map((p) => [
+      p.id,
+      { name: p.display_name, photoUrl: p.photo_url ?? null },
+    ]),
+  );
   const voterMap = new Map<string, MatchVoterInfo>();
 
   for (const prediction of predictions) {
@@ -18,9 +28,9 @@ export function buildVoterMap(
     entry.count += 1;
 
     if (entry.voters.length < 3) {
-      const name = profileMap.get(prediction.user_id);
-      if (name && !entry.voters.includes(name)) {
-        entry.voters.push(name);
+      const profile = profileMap.get(prediction.user_id);
+      if (profile && !entry.voters.some((v) => v.name === profile.name)) {
+        entry.voters.push({ name: profile.name, photoUrl: profile.photoUrl });
       }
     }
 

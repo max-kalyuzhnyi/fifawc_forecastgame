@@ -5,7 +5,7 @@ import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePr
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import { getInitials } from "@/features/matches/lib/voterInfo";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 interface MatchPredictionsBoardProps {
@@ -75,6 +75,9 @@ export function MatchPredictionsBoard({
             className="flex items-center gap-3 rounded-2xl bg-white/5 px-3 py-2.5"
           >
             <Avatar className="size-8 shrink-0">
+              {entry.photo_url && (
+                <AvatarImage src={entry.photo_url} alt={entry.display_name} />
+              )}
               <AvatarFallback className="text-xs">
                 {getInitials(entry.display_name)}
               </AvatarFallback>

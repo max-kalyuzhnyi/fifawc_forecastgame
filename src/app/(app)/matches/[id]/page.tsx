@@ -56,7 +56,7 @@ export default async function MatchDetailPage({
         "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier, round_key",
       )
       .eq("match_id", id),
-    supabase.from("profiles").select("id, display_name"),
+    supabase.from("profiles").select("id, display_name, photo_url"),
     supabase
       .from("players")
       .select("id, name, team_id, position, shirt_number")

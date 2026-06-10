@@ -1,5 +1,7 @@
 import { calculateLeaderboard } from "@/entities/leaderboard/lib/calculateLeaderboard";
+import { getInitials } from "@/features/matches/lib/voterInfo";
 import { createClient } from "@/shared/lib/supabase/server";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const RANK_LABELS: Record<number, { emoji: string; label: string }> = {
   1: { emoji: "🥇", label: "1st place" },
   2: { emoji: "🥈", label: "2nd place" },
@@ -31,7 +33,7 @@ export default async function LeaderboardPage() {
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, display_name")
+    .select("id, display_name, photo_url")
     .order("display_name");
 
   const { data: predictions } = await supabase
@@ -121,9 +123,22 @@ export default async function LeaderboardPage() {
                     className="grid grid-cols-[2rem_minmax(0,1fr)_4rem_3rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
                   >
                     <RankCell rank={rank} />
-                    <p className="truncate text-[13px] font-medium leading-tight">
-                      {entry.display_name}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Avatar size="sm" className="shrink-0">
+                        {entry.photo_url && (
+                          <AvatarImage
+                            src={entry.photo_url}
+                            alt={entry.display_name}
+                          />
+                        )}
+                        <AvatarFallback className="text-[10px]">
+                          {getInitials(entry.display_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="truncate text-[13px] font-medium leading-tight">
+                        {entry.display_name}
+                      </p>
+                    </div>
                     <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
                       {entry.total_points}
                     </p>

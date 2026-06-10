@@ -3,6 +3,7 @@ import {
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
+  AvatarImage,
 } from "@/components/ui/avatar";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import { getVoterLetter } from "@/features/matches/lib/voterInfo";
@@ -32,14 +33,17 @@ export function MatchVoters({ voters, compact }: MatchVotersProps) {
           compact && "*:data-[slot=avatar]:size-5",
         )}
       >
-        {voters.voters.map((name) => (
+        {voters.voters.map((voter) => (
           <Avatar
-            key={name}
+            key={voter.name}
             size="sm"
             className={cn(compact && "size-5 after:hidden")}
           >
+            {voter.photoUrl && (
+              <AvatarImage src={voter.photoUrl} alt={voter.name} />
+            )}
             <AvatarFallback className={voterAvatarFallbackClass(compact)}>
-              {getVoterLetter(name)}
+              {getVoterLetter(voter.name)}
             </AvatarFallback>
           </Avatar>
         ))}

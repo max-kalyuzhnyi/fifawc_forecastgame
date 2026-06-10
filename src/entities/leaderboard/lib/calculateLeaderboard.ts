@@ -19,12 +19,13 @@ export interface LeaderboardMatch {
 export interface LeaderboardEntry {
   user_id: string;
   display_name: string;
+  photo_url: string | null;
   total_points: number;
   predictions_scored: number;
 }
 
 export function calculateLeaderboard(
-  profiles: { id: string; display_name: string }[],
+  profiles: { id: string; display_name: string; photo_url?: string | null }[],
   predictions: (LeaderboardPrediction & { match_id: string })[],
   matches: Record<string, LeaderboardMatch>,
 ): LeaderboardEntry[] {
@@ -34,6 +35,7 @@ export function calculateLeaderboard(
     totals.set(profile.id, {
       user_id: profile.id,
       display_name: profile.display_name,
+      photo_url: profile.photo_url ?? null,
       total_points: 0,
       predictions_scored: 0,
     });
