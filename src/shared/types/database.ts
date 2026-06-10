@@ -72,8 +72,22 @@ export interface Database {
         Relationships: [];
       };
       players: {
-        Row: { id: string; team_id: string; name: string; created_at: string };
-        Insert: { id?: string; team_id: string; name: string; created_at?: string };
+        Row: {
+          id: string;
+          team_id: string;
+          name: string;
+          position: "GK" | "DF" | "MF" | "FW" | null;
+          shirt_number: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          name: string;
+          position?: "GK" | "DF" | "MF" | "FW" | null;
+          shirt_number?: number | null;
+          created_at?: string;
+        };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
         Relationships: [];
       };

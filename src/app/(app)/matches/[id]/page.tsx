@@ -59,14 +59,13 @@ export default async function MatchDetailPage({
     supabase.from("profiles").select("id, display_name"),
     supabase
       .from("players")
-      .select("id, name, team_id")
+      .select("id, name, team_id, position, shirt_number")
       .in(
         "team_id",
         [typedMatch.home_team_id, typedMatch.away_team_id].filter(
           Boolean,
         ) as string[],
-      )
-      .order("name"),
+      ),
     supabase.from("match_scorers").select("match_id, scorer_name").eq("match_id", id),
     supabase.from("teams").select("name, primary_color"),
   ]);

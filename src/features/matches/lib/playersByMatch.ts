@@ -1,5 +1,6 @@
 import type { Match } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
+import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
 
 export function getMatchTeamIds(matches: Match[]): string[] {
   return [
@@ -35,7 +36,7 @@ export function buildPlayersByMatch(
       matchPlayers.push(...(byTeam.get(match.away_team_id) ?? []));
     }
 
-    result[match.id] = matchPlayers.sort((a, b) => a.name.localeCompare(b.name));
+    result[match.id] = sortPlayersForScorerSelect(matchPlayers);
   }
 
   return result;
