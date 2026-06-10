@@ -5,11 +5,18 @@ import {
   AvatarGroupCount,
 } from "@/components/ui/avatar";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
-import { getInitials } from "@/features/matches/lib/voterInfo";
+import { getVoterLetter } from "@/features/matches/lib/voterInfo";
+import { cn } from "@/lib/utils";
 
 interface MatchVotersProps {
   voters: MatchVoterInfo;
   compact?: boolean;
+}
+
+function voterAvatarFallbackClass(compact: boolean | undefined) {
+  return compact
+    ? "bg-[#5c6daf] text-[9px] font-semibold text-white"
+    : "bg-[#5c6daf] text-[11px] font-semibold text-white";
 }
 
 export function MatchVoters({ voters, compact }: MatchVotersProps) {
@@ -19,27 +26,29 @@ export function MatchVoters({ voters, compact }: MatchVotersProps) {
 
   return (
     <div className={compact ? "flex items-center gap-1" : "flex items-center gap-2"}>
-      <AvatarGroup className={compact ? "*:data-[slot=avatar]:size-5" : undefined}>
+      <AvatarGroup
+        className={cn(
+          "*:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-[#181e44]",
+          compact && "*:data-[slot=avatar]:size-5",
+        )}
+      >
         {voters.voters.map((name) => (
-          <Avatar key={name} size="sm" className={compact ? "size-5" : undefined}>
-            <AvatarFallback
-              className={
-                compact
-                  ? "bg-primary/25 text-[8px] text-primary-foreground"
-                  : "bg-primary/25 text-[10px] text-primary-foreground"
-              }
-            >
-              {getInitials(name)}
+          <Avatar
+            key={name}
+            size="sm"
+            className={cn(compact && "size-5 after:hidden")}
+          >
+            <AvatarFallback className={voterAvatarFallbackClass(compact)}>
+              {getVoterLetter(name)}
             </AvatarFallback>
           </Avatar>
         ))}
         {remaining > 0 && (
           <AvatarGroupCount
-            className={
-              compact
-                ? "size-5 bg-primary/20 text-[8px] text-primary-foreground"
-                : "bg-primary/20 text-[10px] text-primary-foreground"
-            }
+            className={cn(
+              "bg-[#4a578f] font-semibold text-white ring-[#181e44]",
+              compact ? "size-5 text-[8px]" : "text-[10px]",
+            )}
           >
             +{remaining}
           </AvatarGroupCount>

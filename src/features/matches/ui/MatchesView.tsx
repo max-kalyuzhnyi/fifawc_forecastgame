@@ -24,6 +24,7 @@ import {
   getMatchDayBucket,
   type MatchDayBucket,
 } from "@/shared/lib/formatDate";
+import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -41,8 +42,8 @@ interface MatchesViewProps {
 }
 
 const TABS: { key: MatchDayBucket; label: string }[] = [
-  { key: "past", label: "Past games" },
-  { key: "upcoming3days", label: "Upcoming 3 days" },
+  { key: "past", label: "Past" },
+  { key: "upcoming3days", label: "Next 3 days" },
   { key: "future", label: "Future" },
 ];
 
@@ -52,7 +53,8 @@ const EMPTY_TAB_DESCRIPTION: Record<MatchDayBucket, string> = {
   future: "Nothing scheduled further out.",
 };
 
-const FLAG_SIZE = 34;
+const FLAG_SIZE = 28;
+const MATCH_CARD_MIN_H = "min-h-[7rem]";
 
 function getDefaultTab(matches: Match[]): MatchDayBucket {
   if (
@@ -79,6 +81,67 @@ function toggleCollapsed(
     next.add(dateKey);
   }
   return next;
+}
+
+function MatchTimeBadge({ kickoffAt }: { kickoffAt: string }) {
+  return (
+    <Badge
+      variant="secondary"
+      className="h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums"
+    >
+      {formatMatchTime(kickoffAt)}
+    </Badge>
+  );
+}
+
+function MatchCenterFocus({
+  prediction,
+  locked,
+  showScore,
+  live,
+  homeScore,
+  awayScore,
+}: {
+  prediction: PredictionDetail | undefined;
+  locked: boolean;
+  showScore: boolean;
+  live: boolean;
+  homeScore: number;
+  awayScore: number;
+}) {
+  return (
+    <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-0.5 self-center">
+      {prediction ? (
+        <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+          {formatMatchScore(prediction.home_score, prediction.away_score)}
+          {prediction.boost_multiplier > 1 && (
+            <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
+              x{prediction.boost_multiplier}
+            </span>
+          )}
+        </p>
+      ) : locked ? (
+        <p className="text-center text-[13px] font-medium text-muted-foreground">
+          Missed
+        </p>
+      ) : (
+        <p className="text-center text-[13px] font-medium text-red-300">No pick</p>
+      )}
+
+      {showScore && (
+        <div className="flex items-center gap-1">
+          <p className="text-center text-[11px] font-medium leading-none tabular-nums text-muted-foreground">
+            {formatMatchScore(homeScore, awayScore)}
+          </p>
+          {live && (
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
+              Live
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function formatMatchSubtitle(match: Match): string {
@@ -213,42 +276,37 @@ export function MatchesView({
   };
 
   return (
-    <div className="-mx-4 flex min-h-0 flex-1 flex-col">
-      <div
-        className="flex px-1"
-        role="tablist"
-        aria-label="Match schedule"
-      >
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
+    <div className="flex flex-col">
+      <div className="sports-panel sports-panel-max-h flex flex-col overflow-hidden">
+        <div
+          className="flex shrink-0 border-b border-white/[0.08] px-3 pt-3 pb-2.5"
+          role="tablist"
+          aria-label="Match schedule"
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
 
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => handleTabChange(tab.key)}
-              className={cn(
-                "relative flex-1 px-1 pb-2 pt-0.5 text-[13px] transition-colors",
-                isActive
-                  ? "font-semibold text-foreground"
-                  : "font-medium text-muted-foreground hover:text-foreground/80",
-              )}
-            >
-              {tab.label}
-              {isActive && (
-                <span
-                  className="absolute inset-x-4 bottom-0 h-px rounded-full bg-foreground"
-                  aria-hidden
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleTabChange(tab.key)}
+                className={cn(
+                  "flex-1 px-0.5 py-1 text-center text-[15px] leading-none whitespace-nowrap transition-colors",
+                  isActive
+                    ? "font-semibold text-foreground"
+                    : "font-normal text-white/40 hover:text-white/55",
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-      <div className="sports-panel corner-squircle mt-0.5 min-h-0 flex-1 overflow-hidden rounded-t-[22px]">
+        <div className="overflow-y-auto overscroll-contain">
         {groupedByDate.length === 0 ? (
           <Empty className="border-0 py-8">
             <EmptyHeader>
@@ -270,8 +328,8 @@ export function MatchesView({
                     setCollapsed((prev) => toggleCollapsed(prev, dateKey))
                   }
                   className={cn(
-                    "flex w-full items-center justify-center gap-0.5 px-3 py-2 text-[13px] font-semibold text-foreground transition-colors hover:bg-white/[0.03]",
-                    groupIndex > 0 && "border-t border-white/[0.08]",
+                    "flex w-full items-center justify-center gap-0.5 border-t border-white/[0.08] px-3 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-white/[0.03]",
+                    groupIndex === 0 && "border-t-0",
                   )}
                   aria-expanded={!isCollapsed}
                 >
@@ -285,7 +343,7 @@ export function MatchesView({
                 </button>
 
                 {!isCollapsed &&
-                  dayMatches.map((match, index) => {
+                  dayMatches.map((match) => {
                     const prediction = predictionMap[match.id];
                     const voters = voterMap[match.id] ?? {
                       count: 0,
@@ -310,17 +368,27 @@ export function MatchesView({
                         onClick={() => openMatch(match.id)}
                         aria-pressed={isSelected}
                         className={cn(
-                          "block w-full px-3 py-2.5 text-left transition-colors hover:bg-white/[0.03]",
+                          "flex w-full flex-col justify-center px-3 py-2 text-left transition-colors hover:bg-white/[0.03]",
+                          MATCH_CARD_MIN_H,
                           "border-t border-white/[0.08]",
-                          index === 0 && "border-t-0",
                           isSelected && "bg-white/[0.05]",
                         )}
                       >
-                        <p className="mb-1.5 text-center text-[11px] leading-tight text-muted-foreground">
-                          {formatMatchSubtitle(match)}
-                        </p>
+                        <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2">
+                          <div className="flex min-w-0 items-center justify-start">
+                            <MatchVoters voters={voters} compact />
+                          </div>
 
-                        <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-2 gap-y-1">
+                          <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
+                            {formatMatchSubtitle(match)}
+                          </p>
+
+                          <div className="flex min-w-0 items-center justify-end">
+                            <MatchTimeBadge kickoffAt={match.kickoff_at} />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-2 gap-y-0.5">
                           <div className="col-start-1 row-start-1 flex justify-center">
                             <TeamFlag
                               name={match.home_team_name}
@@ -328,24 +396,14 @@ export function MatchesView({
                             />
                           </div>
 
-                          <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-0.5 self-center">
-                            {showScore ? (
-                              <>
-                                <p className="min-w-[3.25rem] text-center text-[20px] font-bold leading-none tabular-nums">
-                                  {match.home_score}–{match.away_score}
-                                </p>
-                                {live && (
-                                  <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
-                                    Live
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <p className="min-w-[3.25rem] text-center text-[20px] font-bold leading-none tabular-nums">
-                                {formatMatchTime(match.kickoff_at)}
-                              </p>
-                            )}
-                          </div>
+                          <MatchCenterFocus
+                            prediction={prediction}
+                            locked={locked}
+                            showScore={showScore}
+                            live={live}
+                            homeScore={match.home_score ?? 0}
+                            awayScore={match.away_score ?? 0}
+                          />
 
                           <div className="col-start-3 row-start-1 flex justify-center">
                             <TeamFlag
@@ -354,42 +412,13 @@ export function MatchesView({
                             />
                           </div>
 
-                          <p className="col-start-1 row-start-2 line-clamp-2 text-center text-[12px] font-medium leading-tight">
+                          <p className="col-start-1 row-start-2 line-clamp-2 text-center text-[11px] font-medium leading-tight">
                             {match.home_team_name}
                           </p>
 
-                          <p className="col-start-3 row-start-2 line-clamp-2 text-center text-[12px] font-medium leading-tight">
+                          <p className="col-start-3 row-start-2 line-clamp-2 text-center text-[11px] font-medium leading-tight">
                             {match.away_team_name}
                           </p>
-                        </div>
-
-                        <div className="mt-1.5 flex flex-col items-center gap-0.5">
-                          {prediction ? (
-                            <Badge
-                              variant="secondary"
-                              className="h-4 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground"
-                            >
-                              Your pick: {prediction.home_score}–
-                              {prediction.away_score}
-                              {prediction.boost_multiplier > 1 &&
-                                ` x${prediction.boost_multiplier}`}
-                            </Badge>
-                          ) : locked ? (
-                            <Badge
-                              variant="outline"
-                              className="h-4 rounded-md border-white/15 bg-transparent px-1.5 text-[10px] font-medium text-muted-foreground"
-                            >
-                              Missed
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="destructive"
-                              className="h-4 rounded-md border-0 bg-red-500/15 px-1.5 text-[10px] font-medium text-red-300"
-                            >
-                              No pick yet
-                            </Badge>
-                          )}
-                          <MatchVoters voters={voters} compact />
                         </div>
                       </button>
                     );
@@ -398,6 +427,7 @@ export function MatchesView({
             );
           })
         )}
+        </div>
       </div>
 
       <MatchDrawer

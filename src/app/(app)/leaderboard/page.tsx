@@ -1,21 +1,30 @@
 import { calculateLeaderboard } from "@/entities/leaderboard/lib/calculateLeaderboard";
 import { createClient } from "@/shared/lib/supabase/server";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+const RANK_LABELS: Record<number, { emoji: string; label: string }> = {
+  1: { emoji: "🥇", label: "1st place" },
+  2: { emoji: "🥈", label: "2nd place" },
+  3: { emoji: "🥉", label: "3rd place" },
+};
+
+function RankCell({ rank }: { rank: number }) {
+  const medal = RANK_LABELS[rank];
+
+  if (medal) {
+    return (
+      <span className="flex size-6 items-center justify-center text-base leading-none">
+        <span role="img" aria-label={medal.label}>
+          {medal.emoji}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex size-6 items-center justify-center text-[12px] tabular-nums text-muted-foreground">
+      {rank}
+    </span>
+  );
+}
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -79,52 +88,55 @@ export default async function LeaderboardPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-bold">Leaderboard</h1>
-
-      <Card className="glass corner-squircle border-0 bg-transparent shadow-none ring-0">
-        <CardHeader>
-          <CardTitle>Standings</CardTitle>
-          <CardDescription>
+    <div className="flex flex-col">
+      <div className="sports-panel sports-panel-max-h flex flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-white/[0.08] px-4 py-3">
+          <h1 className="text-[15px] font-semibold text-foreground">Leaderboard</h1>
+          <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
             Scoring: 3 exact · 2 goal diff · 1 result · +3 scorer · x2/x3 boost
             per round
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+
+        <div className="overflow-y-auto overscroll-contain">
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No players yet.</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              No players yet.
+            </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Points</TableHead>
-                  <TableHead className="text-right">Scored</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry, i) => (
-                  <TableRow key={entry.user_id}>
-                    <TableCell className="text-muted-foreground">
-                      {i + 1}
-                    </TableCell>
-                    <TableCell className="font-medium">
+            <>
+              <div className="grid grid-cols-[2rem_minmax(0,1fr)_4rem_3rem] items-center gap-x-3 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                <span className="text-center">#</span>
+                <span>Player</span>
+                <span className="text-right">Points</span>
+                <span className="text-right">Scored</span>
+              </div>
+
+              {entries.map((entry, index) => {
+                const rank = index + 1;
+
+                return (
+                  <div
+                    key={entry.user_id}
+                    className="grid grid-cols-[2rem_minmax(0,1fr)_4rem_3rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
+                  >
+                    <RankCell rank={rank} />
+                    <p className="truncate text-[13px] font-medium leading-tight">
                       {entry.display_name}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge>{entry.total_points}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
+                    </p>
+                    <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
+                      {entry.total_points}
+                    </p>
+                    <p className="text-right text-[12px] tabular-nums text-muted-foreground">
                       {entry.predictions_scored}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </p>
+                  </div>
+                );
+              })}
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

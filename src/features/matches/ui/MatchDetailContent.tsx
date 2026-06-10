@@ -16,6 +16,7 @@ import { MatchTeamBackground } from "@/features/matches/ui/MatchTeamBackground";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { PredictionForm } from "@/features/predictions/ui/PredictionForm";
 import { formatMatchKickoffDate, formatMatchTime } from "@/shared/lib/formatDate";
+import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { Badge } from "@/components/ui/badge";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
@@ -34,6 +35,65 @@ interface MatchDetailContentProps {
   teamColors?: Record<string, string>;
   currentBoost?: BoostMultiplier;
   isActive?: boolean;
+}
+
+function MatchDetailCenterFocus({
+  prediction,
+  locked,
+  showScore,
+  live,
+  homeScore,
+  awayScore,
+  kickoffAt,
+}: {
+  prediction: PredictionDetail | undefined;
+  locked: boolean;
+  showScore: boolean;
+  live: boolean;
+  homeScore: number;
+  awayScore: number;
+  kickoffAt: string;
+}) {
+  return (
+    <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-1 self-center">
+      {prediction ? (
+        <p className="text-3xl font-bold leading-none tabular-nums text-white">
+          {formatMatchScore(prediction.home_score, prediction.away_score)}
+          {prediction.boost_multiplier > 1 && (
+            <span className="ml-1 text-base font-semibold text-white/60">
+              x{prediction.boost_multiplier}
+            </span>
+          )}
+        </p>
+      ) : locked ? (
+        <p className="text-lg font-medium text-white/60">Missed</p>
+      ) : (
+        <p className="text-lg font-medium text-red-300">No pick</p>
+      )}
+
+      {showScore && (
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium leading-none tabular-nums text-white/70">
+            {formatMatchScore(homeScore, awayScore)}
+          </p>
+          {live && (
+            <Badge
+              variant="destructive"
+              className="h-5 rounded-md border-0 bg-red-500/20 px-2 text-[10px] font-semibold text-red-300"
+            >
+              LIVE
+            </Badge>
+          )}
+        </div>
+      )}
+
+      <p className="text-center text-[11px] text-white/70">
+        {formatMatchTime(kickoffAt)}
+        <span className="mx-1 text-white/35">·</span>
+        {formatMatchKickoffDate(kickoffAt)}
+      </p>
+    </div>
+  );
 }
 
 function formatMatchSubtitle(match: Match): string {
@@ -81,7 +141,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
     currentBoostProp ?? ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
 
   return (
-    <div className="relative min-h-full overflow-hidden rounded-t-[24px]">
+    <div className="match-drawer-card relative flex h-full w-full flex-col overflow-hidden">
       <MatchTeamBackground
         homeTeamName={match.home_team_name}
         awayTeamName={match.away_team_name}
@@ -89,8 +149,8 @@ export const MatchDetailContent = memo(function MatchDetailContent({
         animate={isActive}
       />
 
-      <div className="relative flex flex-col px-4 pb-4 pt-2">
-        <section className="flex flex-col gap-2 pb-4">
+      <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-4 pt-2">
+        <section className="flex shrink-0 flex-col gap-2 pb-4">
           <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
             {formatMatchSubtitle(match)}
           </p>
@@ -100,29 +160,15 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               <TeamFlag name={match.home_team_name} size={44} />
             </div>
 
-            <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-0.5 self-center">
-              <p className="flex items-center justify-center text-3xl font-bold leading-none tabular-nums text-white">
-                {showScore
-                  ? `${match.home_score}–${match.away_score}`
-                  : formatMatchTime(match.kickoff_at)}
-              </p>
-              <p className="text-center text-[11px] text-white/70">
-                {showScore ? (
-                  live ? (
-                    <Badge
-                      variant="destructive"
-                      className="h-5 rounded-md border-0 bg-red-500/20 px-2 text-[10px] font-semibold text-red-300"
-                    >
-                      LIVE
-                    </Badge>
-                  ) : (
-                    formatMatchKickoffDate(match.kickoff_at)
-                  )
-                ) : (
-                  formatMatchKickoffDate(match.kickoff_at)
-                )}
-              </p>
-            </div>
+            <MatchDetailCenterFocus
+              prediction={prediction}
+              locked={locked}
+              showScore={showScore}
+              live={live}
+              homeScore={match.home_score ?? 0}
+              awayScore={match.away_score ?? 0}
+              kickoffAt={match.kickoff_at}
+            />
 
             <div className="col-start-3 row-start-1 flex justify-center">
               <TeamFlag name={match.away_team_name} size={44} />
@@ -142,46 +188,44 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               {match.venue ?? "\u00a0"}
             </p>
 
-            {finished ? (
-              <Badge variant="secondary">
-                Final: {match.home_score}–{match.away_score}
-              </Badge>
-            ) : null}
-
             <MatchVoters voters={voters} />
           </div>
         </section>
 
-        <section className="flex flex-col gap-3 border-t border-white/10 pt-4">
-          <h2 className="font-heading text-base font-medium text-white">
+        <section className="flex min-h-0 flex-1 flex-col border-t border-white/10 pt-4">
+          <h2 className="mb-3 shrink-0 font-heading text-base font-medium text-white">
             {locked ? "Predictions" : "Your prediction"}
           </h2>
 
-          {locked ? (
-            <MatchPredictionsBoard
-              match={match}
-              predictions={matchPredictions}
-              actualScorers={matchScorers}
-              currentUserId={currentUserId}
-            />
-          ) : playersLoading ? (
-            <p className="text-sm text-white/70">Loading players…</p>
-          ) : (
-            <PredictionForm
-              matchId={match.id}
-              homeTeamName={match.home_team_name}
-              awayTeamName={match.away_team_name}
-              homeTeamId={match.home_team_id}
-              awayTeamId={match.away_team_id}
-              players={players}
-              initial={
-                prediction ? toPredictionFormInitial(prediction) : undefined
-              }
-              locked={false}
-              boostUsed={resolvedBoostUsed}
-              currentBoost={currentBoost}
-            />
-          )}
+          <div className="flex min-h-0 flex-1 flex-col">
+            {locked ? (
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <MatchPredictionsBoard
+                  match={match}
+                  predictions={matchPredictions}
+                  actualScorers={matchScorers}
+                  currentUserId={currentUserId}
+                />
+              </div>
+            ) : playersLoading ? (
+              <p className="text-sm text-white/70">Loading players…</p>
+            ) : (
+              <PredictionForm
+                matchId={match.id}
+                homeTeamName={match.home_team_name}
+                awayTeamName={match.away_team_name}
+                homeTeamId={match.home_team_id}
+                awayTeamId={match.away_team_id}
+                players={players}
+                initial={
+                  prediction ? toPredictionFormInitial(prediction) : undefined
+                }
+                locked={false}
+                boostUsed={resolvedBoostUsed}
+                currentBoost={currentBoost}
+              />
+            )}
+          </div>
         </section>
       </div>
     </div>

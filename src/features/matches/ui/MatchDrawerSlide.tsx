@@ -46,7 +46,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   return (
     <div
       className={cn(
-        "h-full min-h-0 overflow-y-auto overscroll-contain px-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]",
+        "flex w-full",
         !isActive && "pointer-events-none",
         isNeighbor && "scale-[0.98] opacity-80",
       )}

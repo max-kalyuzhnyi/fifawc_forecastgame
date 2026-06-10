@@ -28,7 +28,7 @@ export function MatchTeamBackground({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-0 overflow-hidden rounded-t-[24px]",
+        "pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] [corner-shape:inherit]",
         !hasCustomColors && "bg-[#1b2356]",
         className,
       )}

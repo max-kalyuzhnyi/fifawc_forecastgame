@@ -4,6 +4,7 @@ import type { Match } from "@/entities/match/model/types";
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import { getInitials } from "@/features/matches/lib/voterInfo";
+import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -18,7 +19,7 @@ function formatPrediction(entry: MatchPredictionEntry): string {
   const boost =
     entry.boost_multiplier > 1 ? ` x${entry.boost_multiplier}` : "";
   const scorer = entry.scorer_name ? ` · ${entry.scorer_name}` : "";
-  return `${entry.home_score}–${entry.away_score}${scorer}${boost}`;
+  return `${formatMatchScore(entry.home_score, entry.away_score)}${scorer}${boost}`;
 }
 
 export function MatchPredictionsBoard({

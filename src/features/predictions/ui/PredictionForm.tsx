@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
+import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
 import { TeamName } from "@/shared/ui/TeamFlag";
 
@@ -70,18 +71,18 @@ function PredictionSummary({
   onEdit: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col justify-between gap-4">
       <div className="flex flex-col gap-1 text-center">
-        <p className="text-3xl font-bold tabular-nums">
-          {initial.home_score}:{initial.away_score}
+        <p className="text-3xl font-bold tabular-nums text-white">
+          {formatMatchScore(initial.home_score, initial.away_score)}
         </p>
         {initial.scorer_name && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/70">
             Scorer: {initial.scorer_name}
           </p>
         )}
         {initial.boost_multiplier > 1 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/70">
             Boost: {formatBoostLabel(initial.boost_multiplier)}
           </p>
         )}
@@ -91,7 +92,7 @@ function PredictionSummary({
         variant="secondary"
         size="xl"
         onClick={onEdit}
-        className="bg-white text-black hover:bg-white/90 aria-expanded:bg-white aria-expanded:text-black"
+        className="shrink-0 bg-white text-black hover:bg-white/90 aria-expanded:bg-white aria-expanded:text-black"
       >
         I change my mind
       </Button>
@@ -170,7 +171,8 @@ export function PredictionForm({
           <CardTitle>Predictions locked</CardTitle>
           {initial && (
             <CardDescription>
-              Your pick: {initial.home_score}:{initial.away_score}
+              Your pick:{" "}
+              {formatMatchScore(initial.home_score, initial.away_score)}
               {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
               {initial.boost_multiplier > 1 &&
                 ` · x${initial.boost_multiplier}`}
@@ -191,14 +193,17 @@ export function PredictionForm({
   }
 
   return (
-    <form action={action}>
+    <form
+      action={action}
+      className="flex min-h-0 flex-1 flex-col justify-between gap-4"
+    >
       <input type="hidden" name="match_id" value={matchId} />
       <input type="hidden" name="home_score" value={homeScore} />
       <input type="hidden" name="away_score" value={awayScore} />
       <input type="hidden" name="scorer_player_id" value={scorerPlayerId} />
       <input type="hidden" name="boost_multiplier" value={boost} />
 
-      <FieldGroup>
+      <FieldGroup className="min-h-0 flex-1">
         <Field>
           <ScoreWheelPicker
             homeScore={homeScore}
@@ -306,16 +311,16 @@ export function PredictionForm({
             <AlertDescription>{state.error}</AlertDescription>
           </Alert>
         )}
-
-        <Button
-          type="submit"
-          disabled={pending}
-          size="xl"
-          className="w-full bg-white text-black hover:bg-white/90"
-        >
-          {pending ? "Saving…" : "Save prediction"}
-        </Button>
       </FieldGroup>
+
+      <Button
+        type="submit"
+        disabled={pending}
+        size="xl"
+        className="w-full shrink-0 bg-white text-black hover:bg-white/90"
+      >
+        {pending ? "Saving…" : "Save prediction"}
+      </Button>
     </form>
   );
 }

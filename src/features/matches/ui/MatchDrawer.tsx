@@ -170,14 +170,11 @@ export function MatchDrawer({
       modal
       shouldScaleBackground={false}
     >
-      <DrawerContent
-        fullscreen
-        className="corner-squircle border-0 bg-transparent p-0 shadow-none before:hidden"
-      >
+      <DrawerContent className="corner-squircle max-h-[92dvh] border-0 bg-transparent p-0 shadow-none before:hidden">
         <DrawerTitle className="sr-only">Match details</DrawerTitle>
 
         {contentMounted ? (
-          <div className="corner-squircle flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] pt-8">
+          <div className="corner-squircle flex flex-col pt-8 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
             <Carousel
               setApi={setCarouselApi}
               opts={{
@@ -187,13 +184,13 @@ export function MatchDrawer({
                 loop: false,
                 duration: 20,
               }}
-              className="flex min-h-0 flex-1 flex-col [&_[data-slot=carousel-content]]:min-h-0 [&_[data-slot=carousel-content]]:flex-1"
+              className="w-full"
             >
-              <CarouselContent className="ml-0 h-full" data-vaul-no-drag>
+              <CarouselContent className="ml-0 items-stretch" data-vaul-no-drag>
                 {matches.map((match, index) => (
                   <CarouselItem
                     key={match.id}
-                    className="h-full basis-[90%] px-0.5"
+                    className="flex basis-[90%] px-0.5"
                   >
                     <MatchDrawerSlide
                       match={match}
