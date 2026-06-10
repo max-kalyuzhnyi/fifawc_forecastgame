@@ -47,7 +47,7 @@ export function getLocalDayStart(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-export type MatchDayBucket = "yesterday" | "today" | "upcoming";
+export type MatchDayBucket = "past" | "upcoming3days" | "future";
 
 export function getMatchDayBucket(
   iso: string,
@@ -55,14 +55,13 @@ export function getMatchDayBucket(
 ): MatchDayBucket {
   const kickoff = new Date(iso);
   const today = getLocalDayStart(now);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const upcomingEnd = new Date(today);
+  upcomingEnd.setDate(upcomingEnd.getDate() + 3);
   const matchDay = getLocalDayStart(kickoff);
 
-  if (matchDay.getTime() === today.getTime()) return "today";
-  if (matchDay.getTime() === yesterday.getTime()) return "yesterday";
-  if (matchDay > today) return "upcoming";
-  return "yesterday";
+  if (matchDay < today) return "past";
+  if (matchDay < upcomingEnd) return "upcoming3days";
+  return "future";
 }
 
 export function getDateGroupKey(iso: string): string {

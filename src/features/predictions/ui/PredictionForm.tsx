@@ -23,12 +23,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
+import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
 import { TeamName } from "@/shared/ui/TeamFlag";
 
 interface PlayerOption {
   id: string;
   name: string;
   team_id: string;
+  position: "GK" | "DF" | "MF" | "FW" | null;
+  shirt_number: number | null;
 }
 
 interface PredictionFormProps {
@@ -49,6 +52,9 @@ interface PredictionFormProps {
   boostUsed: { x2: boolean; x3: boolean };
   currentBoost: BoostMultiplier;
 }
+
+// TODO: показать поля выбора бомбардира и буста после релиза
+const SHOW_GOALSCORER_AND_BOOST = false;
 
 function formatBoostLabel(mult: BoostMultiplier): string {
   if (mult === 1) return "None";
@@ -128,8 +134,12 @@ export function PredictionForm({
   );
   const [boost, setBoost] = useState(String(initial?.boost_multiplier ?? 1));
 
-  const homePlayers = players.filter((p) => p.team_id === homeTeamId);
-  const awayPlayers = players.filter((p) => p.team_id === awayTeamId);
+  const homePlayers = sortPlayersForScorerSelect(
+    players.filter((p) => p.team_id === homeTeamId),
+  );
+  const awayPlayers = sortPlayersForScorerSelect(
+    players.filter((p) => p.team_id === awayTeamId),
+  );
 
   const showX2 = !boostUsed.x2 || currentBoost === 2;
   const showX3 = !boostUsed.x3 || currentBoost === 3;
@@ -200,6 +210,7 @@ export function PredictionForm({
           />
         </Field>
 
+        {SHOW_GOALSCORER_AND_BOOST && (
         <Field>
           <Select
             value={scorerPlayerId || "none"}
@@ -224,7 +235,14 @@ export function PredictionForm({
                   </SelectLabel>
                   {homePlayers.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.name}
+                      <span className="flex items-center gap-2">
+                        {player.shirt_number != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            {player.shirt_number}
+                          </span>
+                        )}
+                        <span>{player.name}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -236,7 +254,14 @@ export function PredictionForm({
                   </SelectLabel>
                   {awayPlayers.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.name}
+                      <span className="flex items-center gap-2">
+                        {player.shirt_number != null && (
+                          <span className="text-muted-foreground tabular-nums">
+                            {player.shirt_number}
+                          </span>
+                        )}
+                        <span>{player.name}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -244,8 +269,9 @@ export function PredictionForm({
             </SelectContent>
           </Select>
         </Field>
+        )}
 
-        {showBoostBlock && (
+        {SHOW_GOALSCORER_AND_BOOST && showBoostBlock && (
           <Field>
             <Tabs
               value={boost}

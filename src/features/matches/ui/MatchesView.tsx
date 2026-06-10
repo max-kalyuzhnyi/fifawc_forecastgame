@@ -41,23 +41,31 @@ interface MatchesViewProps {
 }
 
 const TABS: { key: MatchDayBucket; label: string }[] = [
-  { key: "yesterday", label: "Yesterday" },
-  { key: "today", label: "Today" },
-  { key: "upcoming", label: "Upcoming" },
+  { key: "past", label: "Past games" },
+  { key: "upcoming3days", label: "Upcoming 3 days" },
+  { key: "future", label: "Future" },
 ];
+
+const EMPTY_TAB_DESCRIPTION: Record<MatchDayBucket, string> = {
+  past: "Nothing in past games.",
+  upcoming3days: "Nothing in the next 3 days.",
+  future: "Nothing scheduled further out.",
+};
 
 const FLAG_SIZE = 34;
 
 function getDefaultTab(matches: Match[]): MatchDayBucket {
-  if (matches.some((match) => getMatchDayBucket(match.kickoff_at) === "today")) {
-    return "today";
-  }
   if (
-    matches.some((match) => getMatchDayBucket(match.kickoff_at) === "upcoming")
+    matches.some(
+      (match) => getMatchDayBucket(match.kickoff_at) === "upcoming3days",
+    )
   ) {
-    return "upcoming";
+    return "upcoming3days";
   }
-  return "yesterday";
+  if (matches.some((match) => getMatchDayBucket(match.kickoff_at) === "future")) {
+    return "future";
+  }
+  return "past";
 }
 
 function toggleCollapsed(
@@ -246,7 +254,7 @@ export function MatchesView({
             <EmptyHeader>
               <EmptyTitle>No matches</EmptyTitle>
               <EmptyDescription>
-                Nothing scheduled for {activeTab}.
+                {EMPTY_TAB_DESCRIPTION[activeTab]}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

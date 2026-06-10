@@ -6,6 +6,8 @@ export interface MatchPlayerOption {
   id: string;
   name: string;
   team_id: string;
+  position: "GK" | "DF" | "MF" | "FW" | null;
+  shirt_number: number | null;
 }
 
 export async function loadMatchPlayers(
@@ -21,9 +23,8 @@ export async function loadMatchPlayers(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("players")
-    .select("id, name, team_id")
-    .in("team_id", teamIds)
-    .order("name");
+    .select("id, name, team_id, position, shirt_number")
+    .in("team_id", teamIds);
 
   if (error) {
     throw new Error(error.message);

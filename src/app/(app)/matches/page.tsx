@@ -56,9 +56,8 @@ export default async function MatchesPage() {
     teamIds.length > 0
       ? supabase
           .from("players")
-          .select("id, name, team_id")
+          .select("id, name, team_id, position, shirt_number")
           .in("team_id", teamIds)
-          .order("name")
       : Promise.resolve({ data: [] }),
     supabase.from("match_scorers").select("match_id, scorer_name"),
     supabase.from("teams").select("name, primary_color"),
