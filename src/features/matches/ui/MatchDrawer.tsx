@@ -67,9 +67,6 @@ export function MatchDrawer({
   const open = Boolean(matchId);
   const [contentMounted, setContentMounted] = useState(() => Boolean(matchId));
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
-  const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(
-    open ? 1 : null,
-  );
 
   const activeIndex = Math.max(
     0,
@@ -96,7 +93,6 @@ export function MatchDrawer({
   useEffect(() => {
     if (open) {
       setContentMounted(true);
-      setActiveSnapPoint(1);
     }
   }, [open]);
 
@@ -157,12 +153,8 @@ export function MatchDrawer({
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
-        setActiveSnapPoint(null);
         onClose();
-        return;
       }
-
-      setActiveSnapPoint(1);
     },
     [onClose],
   );
@@ -176,9 +168,6 @@ export function MatchDrawer({
       open={open}
       onOpenChange={handleOpenChange}
       modal
-      snapPoints={[1]}
-      activeSnapPoint={activeSnapPoint}
-      setActiveSnapPoint={setActiveSnapPoint}
       shouldScaleBackground={false}
     >
       <DrawerContent
