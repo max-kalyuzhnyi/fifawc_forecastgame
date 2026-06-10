@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Match } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
@@ -99,7 +99,9 @@ export function MatchesView({
 }: MatchesViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedMatchId = searchParams.get("match");
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
+    () => searchParams.get("match"),
+  );
 
   useEffect(() => {
     const supabase = createClient();
@@ -177,9 +179,17 @@ export function MatchesView({
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [filteredMatches]);
 
-  const openMatch = (matchId: string) => {
-    router.push(`/matches?match=${matchId}`, { scroll: false });
-  };
+  const openMatch = useCallback((matchId: string) => {
+    setSelectedMatchId(matchId);
+  }, []);
+
+  const closeMatch = useCallback(() => {
+    setSelectedMatchId(null);
+  }, []);
+
+  const handleMatchChange = useCallback((matchId: string) => {
+    setSelectedMatchId(matchId);
+  }, []);
 
   const handleTabChange = (tab: MatchDayBucket) => {
     setActiveTab(tab);
@@ -190,7 +200,7 @@ export function MatchesView({
 
     const match = matches.find((item) => item.id === selectedMatchId);
     if (!match || getMatchDayBucket(match.kickoff_at) !== tab) {
-      router.replace("/matches", { scroll: false });
+      setSelectedMatchId(null);
     }
   };
 
@@ -392,6 +402,8 @@ export function MatchesView({
         scorersByMatch={scorersByMatch}
         currentUserId={currentUserId}
         teamColors={teamColors}
+        onMatchChange={handleMatchChange}
+        onClose={closeMatch}
       />
     </div>
   );

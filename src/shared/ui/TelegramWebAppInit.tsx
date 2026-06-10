@@ -10,6 +10,7 @@ export function TelegramWebAppInit() {
 
     tg.ready();
     tg.expand();
+    tg.disableVerticalSwipes?.();
   }, []);
 
   return null;

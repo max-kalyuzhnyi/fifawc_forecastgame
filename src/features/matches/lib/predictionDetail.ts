@@ -9,10 +9,12 @@ export interface PredictionDetail {
   scorer_name: string | null;
 }
 
+export type BoostUsed = { x2: boolean; x3: boolean };
+
 export function getBoostUsed(
   predictionMap: Record<string, PredictionDetail>,
   roundKey: string,
-): { x2: boolean; x3: boolean } {
+): BoostUsed {
   const roundPredictions = Object.values(predictionMap).filter(
     (prediction) => prediction.round_key === roundKey,
   );

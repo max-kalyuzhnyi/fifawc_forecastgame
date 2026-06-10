@@ -1,11 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { Match } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import {
   getBoostUsed,
   toPredictionFormInitial,
+  type BoostUsed,
   type PredictionDetail,
 } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
@@ -22,13 +24,16 @@ interface MatchDetailContentProps {
   match: Match;
   voters: MatchVoterInfo;
   prediction?: PredictionDetail;
-  predictionMap: Record<string, PredictionDetail>;
+  predictionMap?: Record<string, PredictionDetail>;
+  boostUsed?: BoostUsed;
   players: MatchPlayerOption[];
   playersLoading?: boolean;
   matchPredictions?: MatchPredictionEntry[];
   matchScorers?: string[];
   currentUserId?: string | null;
   teamColors?: Record<string, string>;
+  currentBoost?: BoostMultiplier;
+  isActive?: boolean;
 }
 
 function formatMatchSubtitle(match: Match): string {
@@ -45,17 +50,20 @@ function formatMatchSubtitle(match: Match): string {
   return match.round_display;
 }
 
-export function MatchDetailContent({
+export const MatchDetailContent = memo(function MatchDetailContent({
   match,
   voters,
   prediction,
   predictionMap,
+  boostUsed,
   players,
   playersLoading = false,
   matchPredictions = [],
   matchScorers = [],
   currentUserId,
   teamColors = {},
+  currentBoost: currentBoostProp,
+  isActive = true,
 }: MatchDetailContentProps) {
   const locked = new Date(match.kickoff_at) <= new Date();
   const live =
@@ -67,8 +75,10 @@ export function MatchDetailContent({
     match.home_score !== null &&
     match.away_score !== null;
   const showScore = live || finished;
-  const boostUsed = getBoostUsed(predictionMap, match.round_key);
-  const currentBoost = (prediction?.boost_multiplier ?? 1) as BoostMultiplier;
+  const resolvedBoostUsed =
+    boostUsed ?? getBoostUsed(predictionMap ?? {}, match.round_key);
+  const currentBoost =
+    currentBoostProp ?? ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
 
   return (
     <div className="relative min-h-full overflow-hidden rounded-t-[24px]">
@@ -76,21 +86,22 @@ export function MatchDetailContent({
         homeTeamName={match.home_team_name}
         awayTeamName={match.away_team_name}
         teamColors={teamColors}
+        animate={isActive}
       />
 
-      <div className="relative flex flex-col px-4 pb-6 pt-3">
-        <section className="flex flex-col gap-3 pb-6">
-          <p className="line-clamp-1 min-h-4 text-center text-[11px] uppercase tracking-wide text-white/70">
+      <div className="relative flex flex-col px-4 pb-4 pt-2">
+        <section className="flex flex-col gap-2 pb-4">
+          <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
             {formatMatchSubtitle(match)}
           </p>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-3 gap-y-2">
+          <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-3 gap-y-1.5">
             <div className="col-start-1 row-start-1 flex justify-center">
-              <TeamFlag name={match.home_team_name} size={56} />
+              <TeamFlag name={match.home_team_name} size={44} />
             </div>
 
-            <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-1 self-center">
-              <p className="flex min-h-11 items-center justify-center text-4xl font-bold leading-none tabular-nums text-white">
+            <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-0.5 self-center">
+              <p className="flex items-center justify-center text-3xl font-bold leading-none tabular-nums text-white">
                 {showScore
                   ? `${match.home_score}–${match.away_score}`
                   : formatMatchTime(match.kickoff_at)}
@@ -114,20 +125,20 @@ export function MatchDetailContent({
             </div>
 
             <div className="col-start-3 row-start-1 flex justify-center">
-              <TeamFlag name={match.away_team_name} size={56} />
+              <TeamFlag name={match.away_team_name} size={44} />
             </div>
 
-            <p className="col-start-1 row-start-2 line-clamp-2 min-h-10 text-center text-sm font-semibold leading-tight text-white">
+            <p className="col-start-1 row-start-2 line-clamp-2 text-center text-sm font-semibold leading-tight text-white">
               {match.home_team_name}
             </p>
 
-            <p className="col-start-3 row-start-2 line-clamp-2 min-h-10 text-center text-sm font-semibold leading-tight text-white">
+            <p className="col-start-3 row-start-2 line-clamp-2 text-center text-sm font-semibold leading-tight text-white">
               {match.away_team_name}
             </p>
           </div>
 
-          <div className="flex flex-col items-center gap-1.5">
-            <p className="line-clamp-1 min-h-4 text-center text-xs text-white/65">
+          <div className="flex flex-col items-center gap-1">
+            <p className="line-clamp-1 text-center text-xs text-white/65">
               {match.venue ?? "\u00a0"}
             </p>
 
@@ -141,7 +152,7 @@ export function MatchDetailContent({
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 border-t border-white/10 pt-6">
+        <section className="flex flex-col gap-3 border-t border-white/10 pt-4">
           <h2 className="font-heading text-base font-medium text-white">
             {locked ? "Predictions" : "Your prediction"}
           </h2>
@@ -167,7 +178,7 @@ export function MatchDetailContent({
                 prediction ? toPredictionFormInitial(prediction) : undefined
               }
               locked={false}
-              boostUsed={boostUsed}
+              boostUsed={resolvedBoostUsed}
               currentBoost={currentBoost}
             />
           )}
@@ -175,4 +186,4 @@ export function MatchDetailContent({
       </div>
     </div>
   );
-}
+});

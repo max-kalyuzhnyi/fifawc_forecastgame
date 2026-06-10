@@ -7,15 +7,16 @@ import { parse, validate } from "@tma.js/init-data-node";
 import { createAdminClient } from "@/shared/lib/supabase/admin";
 import { createClient } from "@/shared/lib/supabase/server";
 
-function requireEnv(name: string): string {
+const DEFAULT_DEV_TELEGRAM_ID = 169900085;
+
+function getEnv(name: string): string | null {
   const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name}`);
-  return value;
+  return value && value.length > 0 ? value : null;
 }
 
 // Deterministic password from telegram id + server pepper (never exposed to client)
-function derivePassword(telegramId: number): string {
-  return createHmac("sha256", requireEnv("TELEGRAM_AUTH_PEPPER"))
+function derivePassword(telegramId: number, pepper: string): string {
+  return createHmac("sha256", pepper)
     .update(String(telegramId))
     .digest("hex");
 }
@@ -36,29 +37,24 @@ function buildDisplayName(user: {
   return `User ${user.id}`;
 }
 
-export async function signInWithTelegram(
-  initDataRaw: string,
+type TelegramUserLike = {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+};
+
+async function ensureTelegramUserAndSignIn(
+  tgUser: TelegramUserLike,
 ): Promise<{ error?: string }> {
-  if (!initDataRaw) {
-    return { error: "Missing Telegram init data" };
-  }
-
-  const botToken = requireEnv("TELEGRAM_BOT_TOKEN");
-
-  try {
-    validate(initDataRaw, botToken, { expiresIn: 3600 });
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Invalid Telegram data" };
-  }
-
-  const initData = parse(initDataRaw);
-  const tgUser = initData.user;
-  if (!tgUser) {
-    return { error: "Telegram user not found in init data" };
+  const pepper = getEnv("TELEGRAM_AUTH_PEPPER");
+  if (!pepper) {
+    return { error: "Missing TELEGRAM_AUTH_PEPPER in server config" };
   }
 
   const email = telegramEmail(tgUser.id);
-  const password = derivePassword(tgUser.id);
+  const password = derivePassword(tgUser.id, pepper);
   const displayName = buildDisplayName(tgUser);
   const photoUrl = tgUser.photo_url ?? null;
 
@@ -69,7 +65,6 @@ export async function signInWithTelegram(
     photo_url: photoUrl,
   };
 
-  // Existing Telegram user: refresh password (pepper rotation) and profile
   const { data: profile } = await admin
     .from("profiles")
     .select("id")
@@ -106,4 +101,50 @@ export async function signInWithTelegram(
 
   revalidatePath("/", "layout");
   redirect("/matches");
+}
+
+export async function signInWithTelegram(
+  initDataRaw: string,
+): Promise<{ error?: string }> {
+  if (!initDataRaw) {
+    return { error: "Missing Telegram init data" };
+  }
+
+  const botToken = getEnv("TELEGRAM_BOT_TOKEN");
+  if (!botToken) {
+    return { error: "Missing TELEGRAM_BOT_TOKEN in server config" };
+  }
+
+  try {
+    validate(initDataRaw, botToken, { expiresIn: 3600 });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Invalid Telegram data" };
+  }
+
+  const initData = parse(initDataRaw);
+  const tgUser = initData.user;
+  if (!tgUser) {
+    return { error: "Telegram user not found in init data" };
+  }
+
+  return ensureTelegramUserAndSignIn(tgUser);
+}
+
+export async function signInWithDevBypass(): Promise<{ error?: string }> {
+  if (process.env.NODE_ENV !== "development") {
+    return { error: "outside_telegram" };
+  }
+
+  const telegramId = Number(
+    process.env.DEV_TELEGRAM_ID ?? DEFAULT_DEV_TELEGRAM_ID,
+  );
+  if (!Number.isFinite(telegramId)) {
+    return { error: "Invalid DEV_TELEGRAM_ID" };
+  }
+
+  return ensureTelegramUserAndSignIn({
+    id: telegramId,
+    first_name: "Dev",
+    username: "dev_user",
+  });
 }

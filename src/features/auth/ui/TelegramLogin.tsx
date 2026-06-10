@@ -1,42 +1,51 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { signInWithTelegram } from "../actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { signInWithDevBypass, signInWithTelegram } from "../actions";
+
+function isRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: string }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
 
 export function TelegramLogin() {
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const [outsideTelegram, setOutsideTelegram] = useState(false);
   const attemptedRef = useRef(false);
 
   useEffect(() => {
-    const initData = window.Telegram?.WebApp?.initData;
-    if (!initData) {
-      setOutsideTelegram(true);
-      return;
-    }
-
     if (attemptedRef.current) return;
     attemptedRef.current = true;
-    setPending(true);
 
-    signInWithTelegram(initData)
+    const initData = window.Telegram?.WebApp?.initData;
+    const signIn = initData
+      ? signInWithTelegram(initData)
+      : signInWithDevBypass();
+
+    signIn
       .then((result) => {
+        if (result?.error === "outside_telegram") {
+          setOutsideTelegram(true);
+          return;
+        }
         if (result?.error) {
           setError(result.error);
-          setPending(false);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (isRedirectError(err)) return;
         setError("Authentication failed");
-        setPending(false);
       });
   }, []);
 
   if (outsideTelegram) {
     return (
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="max-w-xs text-center text-xs text-muted-foreground">
         Open this app inside Telegram to sign in.
       </p>
     );
@@ -44,15 +53,11 @@ export function TelegramLogin() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <p className="max-w-xs text-center text-xs text-muted-foreground">
+        {error}
+      </p>
     );
   }
 
-  return (
-    <p className="text-center text-sm text-muted-foreground">
-      {pending ? "Signing in with Telegram…" : "Preparing Telegram sign-in…"}
-    </p>
-  );
+  return null;
 }

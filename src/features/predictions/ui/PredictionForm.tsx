@@ -67,7 +67,7 @@ function PredictionSummary({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 text-center">
         <p className="text-3xl font-bold tabular-nums">
-          {initial.home_score}–{initial.away_score}
+          {initial.home_score}:{initial.away_score}
         </p>
         {initial.scorer_name && (
           <p className="text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ export function PredictionForm({
           <CardTitle>Predictions locked</CardTitle>
           {initial && (
             <CardDescription>
-              Your pick: {initial.home_score}–{initial.away_score}
+              Your pick: {initial.home_score}:{initial.away_score}
               {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
               {initial.boost_multiplier > 1 &&
                 ` · x${initial.boost_multiplier}`}

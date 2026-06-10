@@ -3,15 +3,16 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const ITEM_HEIGHT = 44;
-const VISIBLE_ITEMS = 5;
-const PADDING_COUNT = Math.floor(VISIBLE_ITEMS / 2);
+const DEFAULT_ITEM_HEIGHT = 44;
+const DEFAULT_VISIBLE_ITEMS = 5;
 
 interface WheelPickerProps {
   value: number;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
+  itemHeight?: number;
+  visibleItems?: number;
   "aria-label"?: string;
   className?: string;
 }
@@ -21,9 +22,12 @@ export function WheelPicker({
   onChange,
   min = 0,
   max = 10,
+  itemHeight = DEFAULT_ITEM_HEIGHT,
+  visibleItems = DEFAULT_VISIBLE_ITEMS,
   "aria-label": ariaLabel,
   className,
 }: WheelPickerProps) {
+  const paddingCount = Math.floor(visibleItems / 2);
   const items = React.useMemo(
     () => Array.from({ length: max - min + 1 }, (_, i) => min + i),
     [min, max],
@@ -45,7 +49,7 @@ export function WheelPicker({
       const el = scrollRef.current;
       if (!el) return;
 
-      const targetScrollTop = index * ITEM_HEIGHT;
+      const targetScrollTop = index * itemHeight;
       if (Math.abs(el.scrollTop - targetScrollTop) <= 1) {
         setSelectedIndex(index);
         return;
@@ -58,7 +62,7 @@ export function WheelPicker({
         isSyncingRef.current = false;
       });
     },
-    [],
+    [itemHeight],
   );
 
   React.useLayoutEffect(() => {
@@ -71,7 +75,7 @@ export function WheelPicker({
 
     const nextIndex = Math.max(
       0,
-      Math.min(Math.round(el.scrollTop / ITEM_HEIGHT), items.length - 1),
+      Math.min(Math.round(el.scrollTop / itemHeight), items.length - 1),
     );
 
     setSelectedIndex(nextIndex);
@@ -80,9 +84,9 @@ export function WheelPicker({
     if (nextValue !== value) {
       onChangeRef.current(nextValue);
     }
-  }, [items.length, min, value]);
+  }, [items.length, min, value, itemHeight]);
 
-  const containerHeight = ITEM_HEIGHT * VISIBLE_ITEMS;
+  const containerHeight = itemHeight * visibleItems;
 
   return (
     <div
@@ -92,7 +96,7 @@ export function WheelPicker({
     >
       <div
         className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 rounded-xl border border-white/10 bg-white/5"
-        style={{ height: ITEM_HEIGHT }}
+        style={{ height: itemHeight }}
         aria-hidden
       />
 
@@ -104,11 +108,11 @@ export function WheelPicker({
         data-vaul-no-drag
       >
         <div className="flex flex-col">
-          {Array.from({ length: PADDING_COUNT }, (_, padIndex) => (
+          {Array.from({ length: paddingCount }, (_, padIndex) => (
             <div
               key={`pad-top-${padIndex}`}
               className="shrink-0 grow-0"
-              style={{ height: ITEM_HEIGHT, flexBasis: ITEM_HEIGHT }}
+              style={{ height: itemHeight, flexBasis: itemHeight }}
               aria-hidden
             />
           ))}
@@ -122,8 +126,8 @@ export function WheelPicker({
                 key={item}
                 className="flex shrink-0 grow-0 snap-center items-center justify-center tabular-nums transition-[opacity,transform] duration-150"
                 style={{
-                  height: ITEM_HEIGHT,
-                  flexBasis: ITEM_HEIGHT,
+                  height: itemHeight,
+                  flexBasis: itemHeight,
                   opacity,
                   transform: `scale(${scale})`,
                   fontSize: distance === 0 ? "1.5rem" : "1.125rem",
@@ -136,11 +140,11 @@ export function WheelPicker({
               </div>
             );
           })}
-          {Array.from({ length: PADDING_COUNT }, (_, padIndex) => (
+          {Array.from({ length: paddingCount }, (_, padIndex) => (
             <div
               key={`pad-bottom-${padIndex}`}
               className="shrink-0 grow-0"
-              style={{ height: ITEM_HEIGHT, flexBasis: ITEM_HEIGHT }}
+              style={{ height: itemHeight, flexBasis: itemHeight }}
               aria-hidden
             />
           ))}
@@ -174,14 +178,18 @@ export function ScoreWheelPicker({
       <WheelPicker
         value={homeScore}
         onChange={onHomeChange}
+        itemHeight={36}
+        visibleItems={3}
         aria-label={homeLabel}
       />
-      <span className="shrink-0 px-0.5 text-2xl font-light text-muted-foreground">
+      <span className="shrink-0 px-0.5 text-xl font-light text-muted-foreground">
         :
       </span>
       <WheelPicker
         value={awayScore}
         onChange={onAwayChange}
+        itemHeight={36}
+        visibleItems={3}
         aria-label={awayLabel}
       />
     </div>

@@ -230,6 +230,28 @@
       animation: none;
     }
   }
+
+  @keyframes login-logo-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-login-logo-pulse {
+    animation: login-logo-pulse 1.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-login-logo-pulse {
+      animation: none;
+      opacity: 1;
+    }
+  }
 }
 
 @layer base {
