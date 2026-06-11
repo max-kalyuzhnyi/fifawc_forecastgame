@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import type { Match } from "@/entities/match/model/types";
+import type { Match, MatchEvent } from "@/entities/match/model/types";
 import {
   buildPlayersByMatch,
   getMatchTeamIds,
@@ -38,6 +38,7 @@ export default async function MatchesPage() {
     { data: players },
     { data: matchScorers },
     { data: teams },
+    { data: matchEvents },
   ] = await Promise.all([
     userId
       ? supabase
@@ -61,7 +62,15 @@ export default async function MatchesPage() {
       : Promise.resolve({ data: [] }),
     supabase.from("match_scorers").select("match_id, scorer_name"),
     supabase.from("teams").select("name, primary_color"),
+    supabase.from("match_events").select("*").order("minute", { ascending: true }),
   ]);
+
+  const eventsByMatch: Record<string, MatchEvent[]> = {};
+  for (const event of matchEvents ?? []) {
+    const list = eventsByMatch[event.match_id] ?? [];
+    list.push(event as MatchEvent);
+    eventsByMatch[event.match_id] = list;
+  }
 
   const predictionMap = Object.fromEntries(
     (predictions ?? []).map((p) => [
@@ -120,6 +129,7 @@ export default async function MatchesPage() {
         playersByMatch={playersByMatch}
         predictionsByMatch={predictionsByMatch}
         scorersByMatch={scorersByMatch}
+        eventsByMatch={eventsByMatch}
         currentUserId={userId}
         teamColors={teamColors}
       />

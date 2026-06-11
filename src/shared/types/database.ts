@@ -1,3 +1,14 @@
+export type Locale = "en" | "ru" | "pl";
+export type MatchEventType =
+  | "goal"
+  | "penalty"
+  | "own_goal"
+  | "yellow_card"
+  | "red_card"
+  | "yellow_red_card"
+  | "substitution";
+export type MatchEventSide = "home" | "away";
+
 export interface Database {
   public: {
     Tables: {
@@ -7,6 +18,12 @@ export interface Database {
           display_name: string;
           telegram_id: number | null;
           photo_url: string | null;
+          timezone: string | null;
+          notify_goals: boolean;
+          locale: Locale;
+          locale_custom: boolean;
+          display_name_custom: boolean;
+          avatar_custom: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -15,6 +32,12 @@ export interface Database {
           display_name: string;
           telegram_id?: number | null;
           photo_url?: string | null;
+          timezone?: string | null;
+          notify_goals?: boolean;
+          locale?: Locale;
+          locale_custom?: boolean;
+          display_name_custom?: boolean;
+          avatar_custom?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -60,15 +83,61 @@ export interface Database {
           status: string;
           home_score: number | null;
           away_score: number | null;
+          fd_match_id: number | null;
+          minute: number | null;
+          injury_time: number | null;
+          fd_status: string | null;
+          fd_last_updated: string | null;
+          home_lineup: Record<string, unknown> | null;
+          away_lineup: Record<string, unknown> | null;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["matches"]["Row"], "id" | "created_at" | "updated_at"> & {
+        Insert: Omit<
+          Database["public"]["Tables"]["matches"]["Row"],
+          "id" | "created_at" | "updated_at"
+        > & {
           id?: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["matches"]["Insert"]>;
+        Relationships: [];
+      };
+      match_events: {
+        Row: {
+          id: string;
+          match_id: string;
+          event_key: string;
+          type: MatchEventType;
+          minute: number;
+          injury_time: number | null;
+          side: MatchEventSide;
+          player_name: string;
+          secondary_player_name: string | null;
+          score_home: number | null;
+          score_away: number | null;
+          payload: Record<string, unknown> | null;
+          notified_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          event_key: string;
+          type: MatchEventType;
+          minute: number;
+          injury_time?: number | null;
+          side: MatchEventSide;
+          player_name: string;
+          secondary_player_name?: string | null;
+          score_home?: number | null;
+          score_away?: number | null;
+          payload?: Record<string, unknown> | null;
+          notified_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["match_events"]["Insert"]>;
         Relationships: [];
       };
       players: {

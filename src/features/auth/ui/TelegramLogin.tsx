@@ -1,63 +1,55 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { signInWithDevBypass, signInWithTelegram } from "../actions";
-
-function isRedirectError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "digest" in error &&
-    typeof (error as { digest?: string }).digest === "string" &&
-    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
-  );
-}
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import {
+  signInWithDevBypass,
+  signInWithTelegram,
+} from "@/features/auth/actions";
 
 export function TelegramLogin() {
+  const t = useTranslations("auth");
+  const tErrors = useTranslations("common.errors");
   const [error, setError] = useState<string | null>(null);
   const [outsideTelegram, setOutsideTelegram] = useState(false);
-  const attemptedRef = useRef(false);
 
   useEffect(() => {
-    if (attemptedRef.current) return;
-    attemptedRef.current = true;
-
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const initData = window.Telegram?.WebApp?.initData;
     const signIn = initData
-      ? signInWithTelegram(initData)
-      : signInWithDevBypass();
+      ? signInWithTelegram(initData, timezone)
+      : signInWithDevBypass(timezone);
 
-    signIn
-      .then((result) => {
-        if (result?.error === "outside_telegram") {
+    signIn.then((result) => {
+      if (result?.error) {
+        if (result.error === "outside_telegram") {
           setOutsideTelegram(true);
-          return;
-        }
-        if (result?.error) {
+        } else {
           setError(result.error);
         }
-      })
-      .catch((err) => {
-        if (isRedirectError(err)) return;
-        setError("Authentication failed");
-      });
+      }
+    });
   }, []);
 
   if (outsideTelegram) {
     return (
       <p className="max-w-xs text-center text-xs text-muted-foreground">
-        Open this app inside Telegram to sign in.
+        {t("openInTelegram")}
       </p>
     );
   }
 
   if (error) {
     return (
-      <p className="max-w-xs text-center text-xs text-muted-foreground">
-        {error}
+      <p className="max-w-xs text-center text-xs text-destructive">
+        {error === "outside_telegram" ? tErrors("outsideTelegram") : error}
       </p>
     );
   }
 
-  return null;
+  return (
+    <p className="max-w-xs text-center text-xs text-muted-foreground">
+      {t("signingIn")}
+    </p>
+  );
 }

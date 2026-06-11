@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import Script from "next/script";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TelegramWebAppInit } from "@/shared/ui/TelegramWebAppInit";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -10,6 +13,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
 };
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,20 +26,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "WC 2026 Forecast",
-  description: "FIFA World Cup 2026 forecasting competition",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
 
-export default function RootLayout({
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang={locale}
+      className={cn(
+        "h-full antialiased",
+        geistSans.variable,
+        geistMono.variable,
+        "font-sans",
+        inter.variable,
+      )}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col text-foreground">
@@ -50,7 +68,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <NextIntlClientProvider messages={messages}>
+            {children}
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>

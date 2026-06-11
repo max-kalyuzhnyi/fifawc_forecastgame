@@ -1,8 +1,11 @@
 "use client";
 
 import { memo } from "react";
-import type { Match } from "@/entities/match/model/types";
+import { useLocale, useTranslations } from "next-intl";
+import type { GroupStanding } from "@/entities/match/lib/standings";
+import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
+import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import {
   getBoostUsed,
@@ -11,15 +14,29 @@ import {
   type PredictionDetail,
 } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
+import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
+import { MatchEventsTimeline } from "@/features/matches/ui/MatchEventsTimeline";
+import { MatchLineups } from "@/features/matches/ui/MatchLineups";
 import { MatchPredictionsBoard } from "@/features/matches/ui/MatchPredictionsBoard";
 import { MatchTeamBackground } from "@/features/matches/ui/MatchTeamBackground";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { PredictionForm } from "@/features/predictions/ui/PredictionForm";
-import { formatMatchKickoffDate, formatMatchTime } from "@/shared/lib/formatDate";
+import {
+  formatMatchKickoffDate,
+  formatMatchTime,
+} from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
+import type { Locale } from "@/shared/types/database";
+import { cn } from "@/lib/utils";
 
 interface MatchDetailContentProps {
   match: Match;
@@ -31,10 +48,31 @@ interface MatchDetailContentProps {
   playersLoading?: boolean;
   matchPredictions?: MatchPredictionEntry[];
   matchScorers?: string[];
+  matchEvents?: MatchEvent[];
   currentUserId?: string | null;
   teamColors?: Record<string, string>;
   currentBoost?: BoostMultiplier;
+  groupStanding?: GroupStanding;
   isActive?: boolean;
+  expanded?: boolean;
+  onRequestExpand?: () => void;
+}
+
+const matchTabClassName =
+  "min-h-9 flex-1 text-xs text-white/60 hover:text-white data-active:bg-white/20 data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:bg-white/20 dark:data-active:text-white";
+
+function formatMatchSubtitle(match: Match, t: ReturnType<typeof useTranslations<"matches">>): string {
+  if (match.round_key.startsWith("group_")) {
+    return match.match_number != null
+      ? t("groupStageMatch", { number: match.match_number })
+      : t("groupStage");
+  }
+
+  if (match.match_number != null) {
+    return t("roundMatch", { round: match.round_display, number: match.match_number });
+  }
+
+  return match.round_display;
 }
 
 function MatchDetailCenterFocus({
@@ -45,6 +83,9 @@ function MatchDetailCenterFocus({
   homeScore,
   awayScore,
   kickoffAt,
+  liveMinute,
+  locale,
+  t,
 }: {
   prediction: PredictionDetail | undefined;
   locked: boolean;
@@ -53,6 +94,9 @@ function MatchDetailCenterFocus({
   homeScore: number;
   awayScore: number;
   kickoffAt: string;
+  liveMinute: string | null;
+  locale: Locale;
+  t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   return (
     <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-1 self-center">
@@ -66,9 +110,9 @@ function MatchDetailCenterFocus({
           )}
         </p>
       ) : locked ? (
-        <p className="text-lg font-medium text-white/60">Missed</p>
+        <p className="text-lg font-medium text-white/60">{t("missed")}</p>
       ) : (
-        <p className="text-lg font-medium text-red-300">No pick</p>
+        <p className="text-lg font-medium text-red-300">{t("noPick")}</p>
       )}
 
       {showScore && (
@@ -81,33 +125,19 @@ function MatchDetailCenterFocus({
               variant="destructive"
               className="h-5 rounded-md border-0 bg-red-500/20 px-2 text-[10px] font-semibold text-red-300"
             >
-              LIVE
+              {liveMinute ? t("liveMinute", { minute: liveMinute }) : t("live")}
             </Badge>
           )}
         </div>
       )}
 
       <p className="text-center text-[11px] text-white/70">
-        {formatMatchTime(kickoffAt)}
+        {formatMatchTime(kickoffAt, locale)}
         <span className="mx-1 text-white/35">·</span>
-        {formatMatchKickoffDate(kickoffAt)}
+        {formatMatchKickoffDate(kickoffAt, locale)}
       </p>
     </div>
   );
-}
-
-function formatMatchSubtitle(match: Match): string {
-  if (match.round_key.startsWith("group_")) {
-    return match.match_number != null
-      ? `Group Stage · Match ${match.match_number}`
-      : "Group Stage";
-  }
-
-  if (match.match_number != null) {
-    return `${match.round_display} · Match ${match.match_number}`;
-  }
-
-  return match.round_display;
 }
 
 export const MatchDetailContent = memo(function MatchDetailContent({
@@ -120,11 +150,18 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   playersLoading = false,
   matchPredictions = [],
   matchScorers = [],
+  matchEvents = [],
   currentUserId,
   teamColors = {},
   currentBoost: currentBoostProp,
+  groupStanding,
   isActive = true,
+  expanded = false,
+  onRequestExpand,
 }: MatchDetailContentProps) {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("matches");
+
   const locked = new Date(match.kickoff_at) <= new Date();
   const live =
     match.status === "live" &&
@@ -135,13 +172,24 @@ export const MatchDetailContent = memo(function MatchDetailContent({
     match.home_score !== null &&
     match.away_score !== null;
   const showScore = live || finished;
+  const liveMinute = formatLiveMinute(match.minute ?? null, match.injury_time ?? null);
+  const defaultMatchTab = groupStanding
+    ? "standings"
+    : live || finished
+      ? "updates"
+      : "lineups";
   const resolvedBoostUsed =
     boostUsed ?? getBoostUsed(predictionMap ?? {}, match.round_key);
   const currentBoost =
     currentBoostProp ?? ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
 
   return (
-    <div className="match-drawer-card relative flex h-full w-full flex-col overflow-hidden">
+    <div
+      className={cn(
+        "match-drawer-card corner-squircle relative flex h-full w-full flex-col",
+        expanded && "rounded-none border-0 shadow-none",
+      )}
+    >
       <MatchTeamBackground
         homeTeamName={match.home_team_name}
         awayTeamName={match.away_team_name}
@@ -149,10 +197,17 @@ export const MatchDetailContent = memo(function MatchDetailContent({
         animate={isActive}
       />
 
-      <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-4 pt-2">
+      <div
+        className={cn(
+          "relative flex min-h-0 flex-1 flex-col px-4",
+          expanded
+            ? "overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+            : "overflow-hidden pb-4 pt-2",
+        )}
+      >
         <section className="flex shrink-0 flex-col gap-2 pb-4">
           <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
-            {formatMatchSubtitle(match)}
+            {formatMatchSubtitle(match, t)}
           </p>
 
           <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-3 gap-y-1.5">
@@ -168,6 +223,9 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               homeScore={match.home_score ?? 0}
               awayScore={match.away_score ?? 0}
               kickoffAt={match.kickoff_at}
+              liveMinute={liveMinute}
+              locale={locale}
+              t={t}
             />
 
             <div className="col-start-3 row-start-1 flex justify-center">
@@ -192,23 +250,21 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-1 flex-col border-t border-white/10 pt-4">
+        <section className="flex shrink-0 flex-col border-t border-white/10 pt-4">
           <h2 className="mb-3 shrink-0 font-heading text-base font-medium text-white">
-            {locked ? "Predictions" : "Your prediction"}
+            {locked ? t("predictions") : t("yourPrediction")}
           </h2>
 
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-col">
             {locked ? (
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <MatchPredictionsBoard
-                  match={match}
-                  predictions={matchPredictions}
-                  actualScorers={matchScorers}
-                  currentUserId={currentUserId}
-                />
-              </div>
+              <MatchPredictionsBoard
+                match={match}
+                predictions={matchPredictions}
+                actualScorers={matchScorers}
+                currentUserId={currentUserId}
+              />
             ) : playersLoading ? (
-              <p className="text-sm text-white/70">Loading players…</p>
+              <p className="text-sm text-white/70">{t("lineupsUnavailable")}</p>
             ) : (
               <PredictionForm
                 matchId={match.id}
@@ -226,6 +282,68 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               />
             )}
           </div>
+        </section>
+
+        <section className="flex shrink-0 flex-col border-t border-white/10 pt-4">
+          <Tabs
+            defaultValue={defaultMatchTab}
+            onValueChange={() => {
+              if (!expanded) {
+                onRequestExpand?.();
+              }
+            }}
+            className="flex flex-col gap-3"
+          >
+            <TabsList
+              onClick={() => {
+                if (!expanded) {
+                  onRequestExpand?.();
+                }
+              }}
+              className="flex h-auto w-full shrink-0 bg-white/10 p-1 group-data-horizontal/tabs:h-auto"
+            >
+              {groupStanding && (
+                <TabsTrigger value="standings" className={matchTabClassName}>
+                  {t("standings")}
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="lineups" className={matchTabClassName}>
+                {t("lineups")}
+              </TabsTrigger>
+              <TabsTrigger value="updates" className={matchTabClassName}>
+                {t("updates")}
+              </TabsTrigger>
+            </TabsList>
+
+            {groupStanding && (
+              <TabsContent value="standings" className="mt-0">
+                <GroupStandingsCard
+                  group={groupStanding}
+                  highlightedTeams={[
+                    match.home_team_name,
+                    match.away_team_name,
+                  ]}
+                />
+              </TabsContent>
+            )}
+
+            <TabsContent value="lineups" className="mt-0">
+              <MatchLineups
+                homeTeamName={match.home_team_name}
+                awayTeamName={match.away_team_name}
+                homeLineup={match.home_lineup ?? null}
+                awayLineup={match.away_lineup ?? null}
+              />
+            </TabsContent>
+
+            <TabsContent value="updates" className="mt-0">
+              <MatchEventsTimeline
+                events={matchEvents}
+                homeTeamName={match.home_team_name}
+                awayTeamName={match.away_team_name}
+              />
+            </TabsContent>
+          </Tabs>
         </section>
       </div>
     </div>

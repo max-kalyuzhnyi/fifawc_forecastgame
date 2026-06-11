@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import type { Match } from "@/entities/match/model/types";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { buildGroupStandings } from "@/entities/match/lib/standings";
+import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
+import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
-import { createClient } from "@/shared/lib/supabase/client";
+import { useLiveRefresh } from "@/shared/lib/supabase/useLiveRefresh";
+import { GroupStandingsList } from "@/features/matches/ui/GroupStandingsList";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +35,7 @@ import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
+import type { Locale } from "@/shared/types/database";
 
 interface MatchesViewProps {
   matches: Match[];
@@ -39,21 +44,12 @@ interface MatchesViewProps {
   playersByMatch: Record<string, MatchPlayerOption[]>;
   predictionsByMatch: Record<string, MatchPredictionEntry[]>;
   scorersByMatch: Record<string, string[]>;
+  eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
 }
 
-const TABS: { key: MatchDayBucket; label: string }[] = [
-  { key: "past", label: "Past" },
-  { key: "upcoming3days", label: "Next 3 days" },
-  { key: "future", label: "Future" },
-];
-
-const EMPTY_TAB_DESCRIPTION: Record<MatchDayBucket, string> = {
-  past: "Nothing in past games.",
-  upcoming3days: "Nothing in the next 3 days.",
-  future: "Nothing scheduled further out.",
-};
+const TAB_KEYS: MatchDayBucket[] = ["past", "upcoming3days", "future"];
 
 const FLAG_SIZE = 28;
 const MATCH_CARD_MIN_H = "min-h-[7rem]";
@@ -85,13 +81,19 @@ function toggleCollapsed(
   return next;
 }
 
-function MatchTimeBadge({ kickoffAt }: { kickoffAt: string }) {
+function MatchTimeBadge({
+  kickoffAt,
+  locale,
+}: {
+  kickoffAt: string;
+  locale: Locale;
+}) {
   return (
     <Badge
       variant="secondary"
       className="h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums"
     >
-      {formatMatchTime(kickoffAt)}
+      {formatMatchTime(kickoffAt, locale)}
     </Badge>
   );
 }
@@ -104,6 +106,8 @@ function MatchCenterFocus({
   homeScore,
   awayScore,
   points,
+  liveMinute,
+  t,
 }: {
   prediction: PredictionDetail | undefined;
   locked: boolean;
@@ -112,6 +116,8 @@ function MatchCenterFocus({
   homeScore: number;
   awayScore: number;
   points: number | null;
+  liveMinute: string | null;
+  t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   if (finished) {
     return (
@@ -126,11 +132,13 @@ function MatchCenterFocus({
               points && points > 0 ? "text-emerald-300" : "text-muted-foreground",
             )}
           >
-            {points && points > 0 ? `+${points} pts` : `${points ?? 0} pts`}
+            {points && points > 0
+              ? t("ptsPositive", { count: points })
+              : t("pts", { count: points ?? 0 })}
           </span>
         ) : (
           <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
-            {locked ? "Missed" : "No pick"}
+            {locked ? t("missed") : t("noPick")}
           </span>
         )}
       </div>
@@ -150,15 +158,17 @@ function MatchCenterFocus({
             )}
           </p>
           <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
-            My pick
+            {t("myPick")}
           </span>
         </>
       ) : locked ? (
         <p className="text-center text-[13px] font-medium text-muted-foreground">
-          Missed
+          {t("missed")}
         </p>
       ) : (
-        <p className="text-center text-[13px] font-medium text-red-300">No pick</p>
+        <p className="text-center text-[13px] font-medium text-red-300">
+          {t("noPick")}
+        </p>
       )}
 
       {live && (
@@ -167,7 +177,7 @@ function MatchCenterFocus({
             {formatMatchScore(homeScore, awayScore)}
           </p>
           <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
-            Live
+            {liveMinute ? t("liveMinute", { minute: liveMinute }) : t("live")}
           </span>
         </div>
       )}
@@ -175,15 +185,18 @@ function MatchCenterFocus({
   );
 }
 
-function formatMatchSubtitle(match: Match): string {
+function formatMatchSubtitle(
+  match: Match,
+  t: ReturnType<typeof useTranslations<"matches">>,
+): string {
   if (match.round_key.startsWith("group_")) {
     return match.match_number != null
-      ? `Group Stage · Match ${match.match_number}`
-      : "Group Stage";
+      ? t("groupStageMatch", { number: match.match_number })
+      : t("groupStage");
   }
 
   if (match.match_number != null) {
-    return `${match.round_display} · Match ${match.match_number}`;
+    return t("roundMatch", { round: match.round_display, number: match.match_number });
   }
 
   return match.round_display;
@@ -196,40 +209,36 @@ export function MatchesView({
   playersByMatch,
   predictionsByMatch,
   scorersByMatch,
+  eventsByMatch,
   currentUserId,
   teamColors,
 }: MatchesViewProps) {
-  const router = useRouter();
+  const locale = useLocale() as Locale;
+  const t = useTranslations("matches");
   const searchParams = useSearchParams();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => searchParams.get("match"),
   );
 
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("matches-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "matches" },
-        () => router.refresh(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "predictions" },
-        () => router.refresh(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "match_scorers" },
-        () => router.refresh(),
-      )
-      .subscribe();
+  useLiveRefresh(
+    "matches-live",
+    "matches",
+    "predictions",
+    "match_scorers",
+    "match_events",
+  );
 
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [router]);
+  const groupStandings = useMemo(() => buildGroupStandings(matches), [matches]);
+  const groupStandingsByName = useMemo(
+    () => Object.fromEntries(groupStandings.map((group) => [group.groupName, group])),
+    [groupStandings],
+  );
+
+  const emptyTabDescription: Record<MatchDayBucket, string> = {
+    past: t("emptyPast"),
+    upcoming3days: t("emptyUpcoming3days"),
+    future: t("emptyFuture"),
+  };
 
   const [activeTab, setActiveTab] = useState<MatchDayBucket>(() =>
     getDefaultTab(matches),
@@ -247,6 +256,7 @@ export function MatchesView({
     }
 
     const bucket = getMatchDayBucket(match.kickoff_at);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- align tab with deep-linked match
     setActiveTab(bucket);
   }, [matches, selectedMatchId]);
 
@@ -308,22 +318,28 @@ export function MatchesView({
 
   return (
     <div className="flex flex-col">
-      <div className="sports-panel sports-panel-max-h flex flex-col overflow-hidden">
+      <div className="sports-panel corner-squircle sports-panel-max-h flex flex-col overflow-hidden">
         <div
           className="flex shrink-0 border-b border-white/[0.08] px-3 pt-3 pb-2.5"
           role="tablist"
-          aria-label="Match schedule"
+          aria-label={t("scheduleTabs")}
         >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
+          {TAB_KEYS.map((tabKey) => {
+            const isActive = activeTab === tabKey;
+            const tabLabel =
+              tabKey === "past"
+                ? t("tabPast")
+                : tabKey === "upcoming3days"
+                  ? t("tabUpcoming3days")
+                  : t("tabFuture");
 
             return (
               <button
-                key={tab.key}
+                key={tabKey}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => handleTabChange(tab.key)}
+                onClick={() => handleTabChange(tabKey)}
                 className={cn(
                   "flex-1 px-0.5 py-1 text-center text-[15px] leading-none whitespace-nowrap transition-colors",
                   isActive
@@ -331,7 +347,7 @@ export function MatchesView({
                     : "font-normal text-white/40 hover:text-white/55",
                 )}
               >
-                {tab.label}
+                {tabLabel}
               </button>
             );
           })}
@@ -341,9 +357,9 @@ export function MatchesView({
         {groupedByDate.length === 0 ? (
           <Empty className="border-0 py-8">
             <EmptyHeader>
-              <EmptyTitle>No matches</EmptyTitle>
+              <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
               <EmptyDescription>
-                {EMPTY_TAB_DESCRIPTION[activeTab]}
+                {emptyTabDescription[activeTab]}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -364,7 +380,7 @@ export function MatchesView({
                   )}
                   aria-expanded={!isCollapsed}
                 >
-                  <span>{formatMatchDateHeader(dayMatches[0].kickoff_at)}</span>
+                  <span>{formatMatchDateHeader(dayMatches[0].kickoff_at, locale)}</span>
                   {groupIndex > 0 && (
                     <HugeiconsIcon
                       icon={isCollapsed ? ArrowDown01Icon : ArrowUp01Icon}
@@ -423,11 +439,11 @@ export function MatchesView({
                           </div>
 
                           <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
-                            {formatMatchSubtitle(match)}
+                            {formatMatchSubtitle(match, t)}
                           </p>
 
                           <div className="flex min-w-0 items-center justify-end">
-                            <MatchTimeBadge kickoffAt={match.kickoff_at} />
+                            <MatchTimeBadge kickoffAt={match.kickoff_at} locale={locale} />
                           </div>
                         </div>
 
@@ -447,6 +463,11 @@ export function MatchesView({
                             homeScore={match.home_score ?? 0}
                             awayScore={match.away_score ?? 0}
                             points={points}
+                            liveMinute={formatLiveMinute(
+                              match.minute ?? null,
+                              match.injury_time ?? null,
+                            )}
+                            t={t}
                           />
 
                           <div className="col-start-3 row-start-1 flex justify-center">
@@ -474,6 +495,8 @@ export function MatchesView({
         </div>
       </div>
 
+      <GroupStandingsList groups={groupStandings} />
+
       <MatchDrawer
         matches={filteredMatches}
         matchId={drawerMatchId}
@@ -482,8 +505,10 @@ export function MatchesView({
         playersByMatch={playersByMatch}
         predictionsByMatch={predictionsByMatch}
         scorersByMatch={scorersByMatch}
+        eventsByMatch={eventsByMatch}
         currentUserId={currentUserId}
         teamColors={teamColors}
+        groupStandingsByName={groupStandingsByName}
         onMatchChange={handleMatchChange}
         onClose={closeMatch}
       />

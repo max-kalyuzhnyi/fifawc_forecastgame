@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Match } from "@/entities/match/model/types";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
+import type { GroupStanding } from "@/entities/match/lib/standings";
+import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
-import { getBoostUsed } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
@@ -19,8 +25,13 @@ import {
   DrawerContent,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
 
 const PRELOAD_RADIUS = 2;
+// First snap reveals header + prediction + tab bar; second is full-screen scroll.
+const COLLAPSED_SNAP = 0.72;
+const EXPANDED_SNAP = 1;
+const SNAP_POINTS = [COLLAPSED_SNAP, EXPANDED_SNAP] as const;
 
 function expandMountedIndices(
   indices: Set<number>,
@@ -45,8 +56,10 @@ interface MatchDrawerProps {
   playersByMatch: Record<string, MatchPlayerOption[]>;
   predictionsByMatch: Record<string, MatchPredictionEntry[]>;
   scorersByMatch: Record<string, string[]>;
+  eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
+  groupStandingsByName: Record<string, GroupStanding>;
   onMatchChange: (matchId: string) => void;
   onClose: () => void;
 }
@@ -59,14 +72,27 @@ export function MatchDrawer({
   playersByMatch,
   predictionsByMatch,
   scorersByMatch,
+  eventsByMatch,
   currentUserId,
   teamColors,
+  groupStandingsByName,
   onMatchChange,
   onClose,
 }: MatchDrawerProps) {
   const open = Boolean(matchId);
   const [contentMounted, setContentMounted] = useState(() => Boolean(matchId));
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [snap, setSnap] = useState<number | string>(COLLAPSED_SNAP);
+  const [frozenExpanded, setFrozenExpanded] = useState(false);
+  const isClosingRef = useRef(false);
+  const dragStartedExpandedRef = useRef(false);
+  const snapRef = useRef(snap);
+  const expanded = snap === EXPANDED_SNAP;
+  const visualExpanded = expanded || frozenExpanded;
+
+  useEffect(() => {
+    snapRef.current = snap;
+  }, [snap]);
 
   const activeIndex = Math.max(
     0,
@@ -78,34 +104,34 @@ export function MatchDrawer({
     expandMountedIndices(new Set(), activeIndex, matches.length, PRELOAD_RADIUS),
   );
 
-  const boostUsedByRound = useMemo(() => {
-    const byRound = new Map<string, ReturnType<typeof getBoostUsed>>();
-
-    for (const match of matches) {
-      if (!byRound.has(match.round_key)) {
-        byRound.set(match.round_key, getBoostUsed(predictionMap, match.round_key));
-      }
-    }
-
-    return byRound;
-  }, [matches, predictionMap]);
-
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lazy-mount drawer content after first open
       setContentMounted(true);
+      setSnap(COLLAPSED_SNAP);
+      setFrozenExpanded(false);
+      isClosingRef.current = false;
+      dragStartedExpandedRef.current = false;
     }
   }, [open]);
 
-  useEffect(() => {
-    if (activeIndex < 0) {
+  const handleRequestExpand = useCallback(() => {
+    setSnap(EXPANDED_SNAP);
+  }, []);
+
+  const handleSnapChange = useCallback((snapPoint: number | string | null) => {
+    if (isClosingRef.current || snapPoint == null) {
       return;
     }
-
-    setSnapIndex(activeIndex);
-    setMountedIndices((prev) =>
-      expandMountedIndices(prev, activeIndex, matches.length, PRELOAD_RADIUS),
-    );
-  }, [activeIndex, matches.length]);
+    if (
+      dragStartedExpandedRef.current &&
+      snapPoint === COLLAPSED_SNAP &&
+      snapRef.current === EXPANDED_SNAP
+    ) {
+      return;
+    }
+    setSnap(snapPoint);
+  }, []);
 
   useEffect(() => {
     if (!carouselApi || !matchId) {
@@ -142,7 +168,7 @@ export function MatchDrawer({
 
     carouselApi.on("select", handleSnap);
     carouselApi.on("settle", handleSettle);
-    handleSnap();
+    requestAnimationFrame(handleSnap);
 
     return () => {
       carouselApi.off("select", handleSnap);
@@ -150,14 +176,58 @@ export function MatchDrawer({
     };
   }, [carouselApi, matchId, matches, onMatchChange]);
 
+  useEffect(() => {
+    if (!carouselApi || frozenExpanded) {
+      return;
+    }
+    // Slide widths change between carousel (90%) and full-screen (100%) modes.
+    carouselApi.reInit();
+    carouselApi.scrollTo(carouselApi.selectedScrollSnap(), true);
+  }, [carouselApi, visualExpanded, frozenExpanded]);
+
+  const handleDrag = useCallback(
+    (_event: PointerEvent<HTMLDivElement>, percentageDragged: number) => {
+      if (percentageDragged > 0 && snapRef.current === EXPANDED_SNAP) {
+        dragStartedExpandedRef.current = true;
+      }
+    },
+    [],
+  );
+
+  const handleRelease = useCallback(
+    (_event: PointerEvent<HTMLDivElement>, willStayOpen: boolean) => {
+      if (dragStartedExpandedRef.current) {
+        if (!willStayOpen) {
+          isClosingRef.current = true;
+          setFrozenExpanded(true);
+        } else {
+          setSnap(COLLAPSED_SNAP);
+        }
+      }
+      dragStartedExpandedRef.current = false;
+    },
+    [],
+  );
+
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
+        isClosingRef.current = true;
+        if (snapRef.current === EXPANDED_SNAP) {
+          setFrozenExpanded(true);
+        }
         onClose();
       }
     },
     [onClose],
   );
+
+  const handleAnimationEnd = useCallback(() => {
+    isClosingRef.current = false;
+    dragStartedExpandedRef.current = false;
+    setFrozenExpanded(false);
+    setSnap(COLLAPSED_SNAP);
+  }, []);
 
   if (matches.length === 0) {
     return null;
@@ -167,14 +237,28 @@ export function MatchDrawer({
     <Drawer
       open={open}
       onOpenChange={handleOpenChange}
+      onDrag={handleDrag}
+      onRelease={handleRelease}
+      onAnimationEnd={handleAnimationEnd}
       modal
       shouldScaleBackground={false}
+      snapPoints={[...SNAP_POINTS]}
+      activeSnapPoint={snap}
+      setActiveSnapPoint={handleSnapChange}
     >
-      <DrawerContent className="corner-squircle max-h-[92dvh] border-0 bg-transparent p-0 shadow-none before:hidden">
+      <DrawerContent
+        fullscreen
+        className="border-0 bg-transparent p-0 shadow-none before:hidden"
+      >
         <DrawerTitle className="sr-only">Match details</DrawerTitle>
 
         {contentMounted ? (
-          <div className="corner-squircle flex flex-col pt-8 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+          <div
+            className={cn(
+              "flex h-full min-h-0 flex-col",
+              visualExpanded ? "pt-0" : "pt-6",
+            )}
+          >
             <Carousel
               setApi={setCarouselApi}
               opts={{
@@ -184,32 +268,37 @@ export function MatchDrawer({
                 loop: false,
                 duration: 20,
               }}
-              className="w-full"
+              className="h-full min-h-0 w-full flex-1"
             >
-              <CarouselContent className="ml-0 items-stretch" data-vaul-no-drag>
+              <CarouselContent
+                viewportClassName="h-full"
+                className="ml-0 h-full items-stretch"
+              >
                 {matches.map((match, index) => (
                   <CarouselItem
                     key={match.id}
-                    className="flex basis-[90%] px-0.5"
+                    className={cn(
+                      "flex h-full",
+                      visualExpanded ? "basis-full px-0" : "basis-[90%] px-1",
+                    )}
                   >
                     <MatchDrawerSlide
                       match={match}
-                      voters={voterMap[match.id] ?? { count: 0, voters: [] }}
+                      voters={voterMap[match.id] ?? { count: 0 }}
                       prediction={predictionMap[match.id]}
-                      boostUsed={
-                        boostUsedByRound.get(match.round_key) ?? {
-                          x2: false,
-                          x3: false,
-                        }
-                      }
+                      predictionMap={predictionMap}
                       players={playersByMatch[match.id] ?? []}
                       matchPredictions={predictionsByMatch[match.id] ?? []}
                       matchScorers={scorersByMatch[match.id] ?? []}
+                      matchEvents={eventsByMatch[match.id] ?? []}
                       currentUserId={currentUserId}
                       teamColors={teamColors}
+                      groupStandingsByName={groupStandingsByName}
                       isActive={index === snapIndex}
                       isMounted={mountedIndices.has(index)}
                       distanceFromActive={Math.abs(index - snapIndex)}
+                      expanded={visualExpanded}
+                      onRequestExpand={handleRequestExpand}
                     />
                   </CarouselItem>
                 ))}

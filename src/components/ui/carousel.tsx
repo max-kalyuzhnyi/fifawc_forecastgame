@@ -62,10 +62,10 @@ function Carousel({
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
 
-  const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) return
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
+  const onSelect = React.useCallback((carouselApi: CarouselApi) => {
+    if (!carouselApi) return
+    setCanScrollPrev(carouselApi.canScrollPrev())
+    setCanScrollNext(carouselApi.canScrollNext())
   }, [])
 
   const scrollPrev = React.useCallback(() => {
@@ -96,12 +96,14 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
+    const frame = requestAnimationFrame(() => onSelect(api))
 
     return () => {
-      api?.off("select", onSelect)
+      cancelAnimationFrame(frame)
+      api.off("reInit", onSelect)
+      api.off("select", onSelect)
     }
   }, [api, onSelect])
 
@@ -133,13 +135,17 @@ function Carousel({
   )
 }
 
-function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
+function CarouselContent({
+  className,
+  viewportClassName,
+  ...props
+}: React.ComponentProps<"div"> & { viewportClassName?: string }) {
   const { carouselRef, orientation } = useCarousel()
 
   return (
     <div
       ref={carouselRef}
-      className="overflow-hidden"
+      className={cn("overflow-hidden", viewportClassName)}
       data-slot="carousel-content"
     >
       <div
