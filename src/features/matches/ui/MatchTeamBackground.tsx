@@ -49,7 +49,7 @@ export function MatchTeamBackground({
             }
           />
           <div className="match-team-bg-fade absolute inset-0" />
-          <div className="match-team-bg-noise absolute inset-0 opacity-30" />
+          <div className="match-team-bg-noise absolute inset-0 opacity-[0.07]" />
         </>
       ) : null}
     </div>

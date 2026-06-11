@@ -250,12 +250,14 @@
     }
 
     .match-team-bg-gradient {
+        right: auto;
+        width: 200%;
         background: linear-gradient(
             90deg,
             var(--home-color) 0% 36%,
             var(--away-color) 64% 100%
         );
-        background-size: 200% 200%;
+        will-change: transform;
         animation: match-team-bg-shift 20s ease-in-out infinite;
     }
 
@@ -270,23 +272,23 @@
 
     .match-team-bg-noise {
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        mix-blend-mode: overlay;
     }
 
     @keyframes match-team-bg-shift {
         0%,
         100% {
-            background-position: 0% 50%;
+            transform: translate3d(0, 0, 0);
         }
 
         50% {
-            background-position: 100% 50%;
+            transform: translate3d(-50%, 0, 0);
         }
     }
 
     @media (prefers-reduced-motion: reduce) {
         .match-team-bg-gradient {
             animation: none;
+            will-change: auto;
         }
     }
 
