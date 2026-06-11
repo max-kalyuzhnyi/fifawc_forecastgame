@@ -3,8 +3,11 @@
 import { useTranslations } from "next-intl";
 import type {
   GroupStanding,
+  LiveScoreByTeam,
+  TeamLiveScore,
   TeamStandingRow,
 } from "@/entities/match/lib/standings";
+import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +23,29 @@ function formatGoalDifference(value: number): string {
   }
 
   return String(value);
+}
+
+function LiveScoreChip({ liveScore }: { liveScore: TeamLiveScore }) {
+  const { goalsFor, goalsAgainst } = liveScore;
+  const variant =
+    goalsFor > goalsAgainst
+      ? "winning"
+      : goalsFor < goalsAgainst
+        ? "losing"
+        : "drawing";
+
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded px-1 py-px text-[9px] font-semibold leading-none tabular-nums",
+        variant === "winning" && "bg-emerald-500/20 text-emerald-300",
+        variant === "losing" && "bg-red-500/20 text-red-300",
+        variant === "drawing" && "bg-white/10 text-muted-foreground",
+      )}
+    >
+      {formatMatchScore(goalsFor, goalsAgainst)}
+    </span>
+  );
 }
 
 function StandingStat({
@@ -45,10 +71,12 @@ function StandingRow({
   position,
   row,
   highlighted = false,
+  liveScore,
 }: {
   position: number;
   row: TeamStandingRow;
   highlighted?: boolean;
+  liveScore?: TeamLiveScore;
 }) {
   return (
     <div
@@ -64,8 +92,11 @@ function StandingRow({
 
       <TeamFlag name={row.teamName} size={FLAG_SIZE} />
 
-      <span className="truncate text-[11px] font-medium leading-tight text-foreground">
-        {row.teamName}
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="truncate text-[11px] font-medium leading-tight text-foreground">
+          {row.teamName}
+        </span>
+        {liveScore && <LiveScoreChip liveScore={liveScore} />}
       </span>
 
       <StandingStat value={row.played} />
@@ -82,10 +113,12 @@ export function GroupStandingsCard({
   group,
   className,
   highlightedTeams,
+  liveScoreByTeam,
 }: {
   group: GroupStanding;
   className?: string;
   highlightedTeams?: string[];
+  liveScoreByTeam?: LiveScoreByTeam;
 }) {
   const t = useTranslations("matches");
   const highlightedTeamSet = highlightedTeams
@@ -122,6 +155,7 @@ export function GroupStandingsCard({
           position={index + 1}
           row={row}
           highlighted={highlightedTeamSet?.has(row.teamName) ?? false}
+          liveScore={liveScoreByTeam?.[row.teamName]}
         />
       ))}
     </section>
@@ -130,9 +164,13 @@ export function GroupStandingsCard({
 
 interface GroupStandingsListProps {
   groups: GroupStanding[];
+  liveScoreByTeam?: LiveScoreByTeam;
 }
 
-export function GroupStandingsList({ groups }: GroupStandingsListProps) {
+export function GroupStandingsList({
+  groups,
+  liveScoreByTeam,
+}: GroupStandingsListProps) {
   if (groups.length === 0) {
     return null;
   }
@@ -140,7 +178,11 @@ export function GroupStandingsList({ groups }: GroupStandingsListProps) {
   return (
     <div className="mt-3 flex flex-col gap-3">
       {groups.map((group) => (
-        <GroupStandingsCard key={group.groupName} group={group} />
+        <GroupStandingsCard
+          key={group.groupName}
+          group={group}
+          liveScoreByTeam={liveScoreByTeam}
+        />
       ))}
     </div>
   );

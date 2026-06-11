@@ -1,5 +1,4 @@
 import { buildLeaderboardAnalytics } from "@/features/leaderboard/lib/buildAnalytics";
-import { LeaderboardLiveRefresh } from "@/features/leaderboard/ui/LeaderboardLiveRefresh";
 import { LeaderboardTabs } from "@/features/leaderboard/ui/LeaderboardTabs";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { createClient } from "@/shared/lib/supabase/server";
@@ -47,25 +46,23 @@ export default async function LeaderboardPage() {
   });
 
   return (
-    <LeaderboardLiveRefresh>
-      <div className="flex flex-col">
-        <div className="sports-panel corner-squircle sports-panel-max-h flex flex-col overflow-hidden">
-          <div className="shrink-0 border-b border-white/[0.08] px-4 py-3">
-            <h1 className="text-[15px] font-semibold text-foreground">
-              {t("title")}
-            </h1>
-            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-              {t("description")}
-            </p>
-          </div>
-
-          <LeaderboardTabs
-            analytics={analytics}
-            currentUserId={userId}
-            canSeePlayerNames
-          />
+    <div className="flex flex-col">
+      <div className="sports-panel corner-squircle sports-panel-max-h flex flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-white/[0.08] px-4 py-3">
+          <h1 className="text-[15px] font-semibold text-foreground">
+            {t("title")}
+          </h1>
+          <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+            {t("description")}
+          </p>
         </div>
+
+        <LeaderboardTabs
+          analytics={analytics}
+          currentUserId={userId}
+          canSeePlayerNames
+        />
       </div>
-    </LeaderboardLiveRefresh>
+    </div>
   );
 }

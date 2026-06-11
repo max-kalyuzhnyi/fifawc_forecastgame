@@ -2,7 +2,10 @@
 
 import { memo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { GroupStanding } from "@/entities/match/lib/standings";
+import type {
+  GroupStanding,
+  LiveScoreByTeam,
+} from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
@@ -14,6 +17,7 @@ import {
   type PredictionDetail,
 } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
+import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
 import { MatchEventsTimeline } from "@/features/matches/ui/MatchEventsTimeline";
 import { MatchLineups } from "@/features/matches/ui/MatchLineups";
@@ -27,7 +31,6 @@ import {
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
-import { Badge } from "@/components/ui/badge";
 import {
   Tabs,
   TabsContent,
@@ -53,6 +56,7 @@ interface MatchDetailContentProps {
   teamColors?: Record<string, string>;
   currentBoost?: BoostMultiplier;
   groupStanding?: GroupStanding;
+  liveScoreByTeam?: LiveScoreByTeam;
   isActive?: boolean;
   expanded?: boolean;
   onRequestExpand?: () => void;
@@ -116,26 +120,24 @@ function MatchDetailCenterFocus({
       )}
 
       {showScore && (
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium leading-none tabular-nums text-white/70">
-            {formatMatchScore(homeScore, awayScore)}
-          </p>
-          {live && (
-            <Badge
-              variant="destructive"
-              className="h-5 rounded-md border-0 bg-red-500/20 px-2 text-[10px] font-semibold text-red-300"
-            >
-              {liveMinute ? t("liveMinute", { minute: liveMinute }) : t("live")}
-            </Badge>
-          )}
-        </div>
+        <p className="text-sm font-medium leading-none tabular-nums text-white/70">
+          {formatMatchScore(homeScore, awayScore)}
+        </p>
       )}
 
-      <p className="text-center text-[11px] text-white/70">
-        {formatMatchTime(kickoffAt, locale)}
-        <span className="mx-1 text-white/35">·</span>
-        {formatMatchKickoffDate(kickoffAt, locale)}
-      </p>
+      {live ? (
+        <LiveMinuteIndicator
+          liveMinute={liveMinute}
+          liveLabel={t("live")}
+          className="text-[11px] font-medium text-red-300"
+        />
+      ) : (
+        <p className="text-center text-[11px] text-white/70">
+          {formatMatchTime(kickoffAt, locale)}
+          <span className="mx-1 text-white/35">·</span>
+          {formatMatchKickoffDate(kickoffAt, locale)}
+        </p>
+      )}
     </div>
   );
 }
@@ -155,6 +157,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   teamColors = {},
   currentBoost: currentBoostProp,
   groupStanding,
+  liveScoreByTeam,
   isActive = true,
   expanded = false,
   onRequestExpand,
@@ -323,6 +326,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                     match.home_team_name,
                     match.away_team_name,
                   ]}
+                  liveScoreByTeam={liveScoreByTeam}
                 />
               </TabsContent>
             )}

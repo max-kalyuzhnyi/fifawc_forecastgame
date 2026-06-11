@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { buildGroupStandings } from "@/entities/match/lib/standings";
+import {
+  buildGroupStandings,
+  buildLiveScoreByTeam,
+} from "@/entities/match/lib/standings";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
-import { useLiveRefresh } from "@/shared/lib/supabase/useLiveRefresh";
 import { GroupStandingsList } from "@/features/matches/ui/GroupStandingsList";
+import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { Badge } from "@/components/ui/badge";
@@ -84,16 +87,30 @@ function toggleCollapsed(
 function MatchTimeBadge({
   kickoffAt,
   locale,
+  live,
+  liveMinute,
+  t,
 }: {
   kickoffAt: string;
   locale: Locale;
+  live: boolean;
+  liveMinute: string | null;
+  t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   return (
     <Badge
       variant="secondary"
       className="h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums"
     >
-      {formatMatchTime(kickoffAt, locale)}
+      {live ? (
+        <LiveMinuteIndicator
+          liveMinute={liveMinute}
+          liveLabel={t("live")}
+          className="text-red-300"
+        />
+      ) : (
+        formatMatchTime(kickoffAt, locale)
+      )}
     </Badge>
   );
 }
@@ -106,7 +123,6 @@ function MatchCenterFocus({
   homeScore,
   awayScore,
   points,
-  liveMinute,
   t,
 }: {
   prediction: PredictionDetail | undefined;
@@ -116,7 +132,6 @@ function MatchCenterFocus({
   homeScore: number;
   awayScore: number;
   points: number | null;
-  liveMinute: string | null;
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   if (finished) {
@@ -138,6 +153,53 @@ function MatchCenterFocus({
           </span>
         ) : (
           <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
+            {locked ? t("missed") : t("noPick")}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (live) {
+    const pickOnTrack =
+      prediction &&
+      calculatePredictionPoints({
+        predictedHome: prediction.home_score,
+        predictedAway: prediction.away_score,
+        actualHome: homeScore,
+        actualAway: awayScore,
+        predictedScorer: prediction.scorer_name,
+        actualScorers: [],
+        boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+      }).basePoints > 0;
+
+    return (
+      <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
+        <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+          {formatMatchScore(homeScore, awayScore)}
+        </p>
+        {prediction ? (
+          <span
+            className={cn(
+              "text-center text-[11px] font-semibold leading-none tabular-nums whitespace-nowrap",
+              pickOnTrack ? "text-emerald-300" : "text-red-300",
+            )}
+          >
+            {t("myPick")}{" "}
+            {formatMatchScore(prediction.home_score, prediction.away_score)}
+            {prediction.boost_multiplier > 1 && (
+              <span className="ml-0.5 font-medium opacity-80">
+                x{prediction.boost_multiplier}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "text-center text-[11px] font-medium leading-none",
+              locked ? "text-muted-foreground" : "text-red-300",
+            )}
+          >
             {locked ? t("missed") : t("noPick")}
           </span>
         )}
@@ -169,17 +231,6 @@ function MatchCenterFocus({
         <p className="text-center text-[13px] font-medium text-red-300">
           {t("noPick")}
         </p>
-      )}
-
-      {live && (
-        <div className="flex items-center gap-1">
-          <p className="text-center text-[11px] font-medium leading-none tabular-nums text-muted-foreground">
-            {formatMatchScore(homeScore, awayScore)}
-          </p>
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-red-300">
-            {liveMinute ? t("liveMinute", { minute: liveMinute }) : t("live")}
-          </span>
-        </div>
       )}
     </div>
   );
@@ -220,18 +271,14 @@ export function MatchesView({
     () => searchParams.get("match"),
   );
 
-  useLiveRefresh(
-    "matches-live",
-    "matches",
-    "predictions",
-    "match_scorers",
-    "match_events",
-  );
-
   const groupStandings = useMemo(() => buildGroupStandings(matches), [matches]);
   const groupStandingsByName = useMemo(
     () => Object.fromEntries(groupStandings.map((group) => [group.groupName, group])),
     [groupStandings],
+  );
+  const liveScoreByTeam = useMemo(
+    () => buildLiveScoreByTeam(matches),
+    [matches],
   );
 
   const emptyTabDescription: Record<MatchDayBucket, string> = {
@@ -443,7 +490,16 @@ export function MatchesView({
                           </p>
 
                           <div className="flex min-w-0 items-center justify-end">
-                            <MatchTimeBadge kickoffAt={match.kickoff_at} locale={locale} />
+                            <MatchTimeBadge
+                              kickoffAt={match.kickoff_at}
+                              locale={locale}
+                              live={live}
+                              liveMinute={formatLiveMinute(
+                                match.minute ?? null,
+                                match.injury_time ?? null,
+                              )}
+                              t={t}
+                            />
                           </div>
                         </div>
 
@@ -463,10 +519,6 @@ export function MatchesView({
                             homeScore={match.home_score ?? 0}
                             awayScore={match.away_score ?? 0}
                             points={points}
-                            liveMinute={formatLiveMinute(
-                              match.minute ?? null,
-                              match.injury_time ?? null,
-                            )}
                             t={t}
                           />
 
@@ -495,7 +547,10 @@ export function MatchesView({
         </div>
       </div>
 
-      <GroupStandingsList groups={groupStandings} />
+      <GroupStandingsList
+        groups={groupStandings}
+        liveScoreByTeam={liveScoreByTeam}
+      />
 
       <MatchDrawer
         matches={filteredMatches}
@@ -509,6 +564,7 @@ export function MatchesView({
         currentUserId={currentUserId}
         teamColors={teamColors}
         groupStandingsByName={groupStandingsByName}
+        liveScoreByTeam={liveScoreByTeam}
         onMatchChange={handleMatchChange}
         onClose={closeMatch}
       />

@@ -214,7 +214,7 @@ function buildEvents(
     const scoreAway = goal.score?.away ?? null;
     events.push({
       match_id: matchId,
-      event_key: `goal-${goal.minute}-${goal.injuryTime ?? 0}-${slug(player)}-${scoreHome ?? "x"}-${scoreAway ?? "x"}`,
+      event_key: `goal-${goal.minute}-${goal.injuryTime ?? 0}-${slug(player)}`,
       type: goalEventType(goal.type),
       minute: goal.minute,
       injury_time: goal.injuryTime ?? null,

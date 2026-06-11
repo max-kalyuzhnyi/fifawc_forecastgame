@@ -17,6 +17,13 @@ export interface GroupStanding {
   rows: TeamStandingRow[];
 }
 
+export interface TeamLiveScore {
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
+export type LiveScoreByTeam = Record<string, TeamLiveScore>;
+
 interface TeamStats {
   teamName: string;
   played: number;
@@ -120,6 +127,31 @@ function compareStandingRows(a: TeamStandingRow, b: TeamStandingRow): number {
   }
 
   return a.teamName.localeCompare(b.teamName);
+}
+
+export function buildLiveScoreByTeam(matches: Match[]): LiveScoreByTeam {
+  const result: LiveScoreByTeam = {};
+
+  for (const match of matches) {
+    if (
+      match.status !== "live" ||
+      match.home_score === null ||
+      match.away_score === null
+    ) {
+      continue;
+    }
+
+    result[match.home_team_name] = {
+      goalsFor: match.home_score,
+      goalsAgainst: match.away_score,
+    };
+    result[match.away_team_name] = {
+      goalsFor: match.away_score,
+      goalsAgainst: match.home_score,
+    };
+  }
+
+  return result;
 }
 
 export function buildGroupStandings(matches: Match[]): GroupStanding[] {

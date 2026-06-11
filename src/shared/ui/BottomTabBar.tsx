@@ -45,7 +45,9 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
               <Link
                 key={tab.href}
                 href={tab.href}
-                prefetch
+                prefetch={
+                  tab.href === "/settings" || tab.href === "/admin"
+                }
                 className={cn(
                   "flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[11px] font-medium transition-[color,transform] duration-200 active:scale-95 motion-reduce:transition-none",
                   active

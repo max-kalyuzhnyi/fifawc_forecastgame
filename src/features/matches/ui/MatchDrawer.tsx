@@ -7,7 +7,10 @@ import {
   useState,
   type PointerEvent,
 } from "react";
-import type { GroupStanding } from "@/entities/match/lib/standings";
+import type {
+  GroupStanding,
+  LiveScoreByTeam,
+} from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
@@ -60,6 +63,7 @@ interface MatchDrawerProps {
   currentUserId: string | null;
   teamColors: Record<string, string>;
   groupStandingsByName: Record<string, GroupStanding>;
+  liveScoreByTeam: LiveScoreByTeam;
   onMatchChange: (matchId: string) => void;
   onClose: () => void;
 }
@@ -76,6 +80,7 @@ export function MatchDrawer({
   currentUserId,
   teamColors,
   groupStandingsByName,
+  liveScoreByTeam,
   onMatchChange,
   onClose,
 }: MatchDrawerProps) {
@@ -294,6 +299,7 @@ export function MatchDrawer({
                       currentUserId={currentUserId}
                       teamColors={teamColors}
                       groupStandingsByName={groupStandingsByName}
+                      liveScoreByTeam={liveScoreByTeam}
                       isActive={index === snapIndex}
                       isMounted={mountedIndices.has(index)}
                       distanceFromActive={Math.abs(index - snapIndex)}

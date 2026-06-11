@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
-import { buildGroupStandings } from "@/entities/match/lib/standings";
+import {
+  buildGroupStandings,
+  buildLiveScoreByTeam,
+} from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import {
   buildPredictionsByMatch,
@@ -43,6 +46,7 @@ export default async function MatchDetailPage({
     { data: matchScorers },
     { data: teams },
     { data: matchEvents },
+    { data: liveMatches },
   ] = await Promise.all([
     userId
       ? supabase
@@ -75,6 +79,10 @@ export default async function MatchDetailPage({
       .select("*")
       .eq("match_id", id)
       .order("minute", { ascending: true }),
+    supabase
+      .from("matches")
+      .select("home_team_name, away_team_name, home_score, away_score, status")
+      .eq("status", "live"),
   ]);
 
   const groupStanding = buildGroupStandings([typedMatch]).find(
@@ -104,6 +112,7 @@ export default async function MatchDetailPage({
   );
   const scorersByMatch = buildScorersByMatch(matchScorers ?? []);
   const teamColors = buildTeamColorsMap(teams ?? []);
+  const liveScoreByTeam = buildLiveScoreByTeam((liveMatches ?? []) as Match[]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,6 +132,7 @@ export default async function MatchDetailPage({
         matchScorers={scorersByMatch[id] ?? []}
         matchEvents={(matchEvents ?? []) as MatchEvent[]}
         groupStanding={groupStanding}
+        liveScoreByTeam={liveScoreByTeam}
         currentUserId={userId}
         teamColors={teamColors}
         expanded

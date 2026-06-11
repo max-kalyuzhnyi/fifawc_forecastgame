@@ -17,7 +17,8 @@
     "import:schedule": "tsx scripts/import-schedule.ts",
     "import:squads": "tsx scripts/import-squads.ts",
     "map:fd": "tsx scripts/map-football-data.ts",
-    "extract:team-colors": "tsx scripts/extract-team-colors.ts"
+    "extract:team-colors": "tsx scripts/extract-team-colors.ts",
+    "broadcast:send": "tsx scripts/send-broadcast.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.2.0",

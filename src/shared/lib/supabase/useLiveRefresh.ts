@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/shared/lib/supabase/client";
 
 type LiveTable =
@@ -9,6 +10,8 @@ type LiveTable =
   | "match_events"
   | "predictions"
   | "match_scorers";
+
+const DEBOUNCE_MS = 1000;
 
 export function useLiveRefresh(
   channelName: string,
@@ -19,8 +22,9 @@ export function useLiveRefresh(
 
   useEffect(() => {
     const supabase = createClient();
-    let channel = supabase.channel(channelName);
+    let channel: RealtimeChannel | null = null;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
     const scheduleRefresh = () => {
       if (debounceTimer) {
@@ -30,25 +34,56 @@ export function useLiveRefresh(
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
         router.refresh();
-      }, 3000);
+      }, DEBOUNCE_MS);
     };
 
-    for (const table of tables) {
-      channel = channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        scheduleRefresh,
-      );
-    }
+    const removeChannel = async () => {
+      if (!channel) {
+        return;
+      }
 
-    channel.subscribe();
+      const current = channel;
+      channel = null;
+      await supabase.removeChannel(current);
+    };
+
+    const setupChannel = async (accessToken: string | undefined) => {
+      await removeChannel();
+      if (cancelled) {
+        return;
+      }
+
+      if (accessToken) {
+        await supabase.realtime.setAuth(accessToken);
+      }
+
+      let nextChannel = supabase.channel(channelName);
+      for (const table of tables) {
+        nextChannel = nextChannel.on(
+          "postgres_changes",
+          { event: "*", schema: "public", table },
+          scheduleRefresh,
+        );
+      }
+
+      channel = nextChannel.subscribe();
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void setupChannel(session?.access_token);
+    });
 
     return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
 
-      void supabase.removeChannel(channel);
+      void removeChannel();
     };
     // tablesKey tracks the subscribed table list.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tables encoded in tablesKey

@@ -19,7 +19,7 @@ export default async function SettingsPage() {
     <SettingsView
       displayName={profile?.display_name ?? "User"}
       photoUrl={profile?.photo_url ?? null}
-      notifyGoals={profile?.notify_goals ?? true}
+      notifyGoals={profile?.notify_goals ?? false}
       locale={(profile?.locale as Locale | undefined) ?? "en"}
     />
   );

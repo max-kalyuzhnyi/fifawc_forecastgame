@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { savePrediction } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -70,6 +71,8 @@ function PredictionSummary({
   initial: NonNullable<PredictionFormProps["initial"]>;
   onEdit: () => void;
 }) {
+  const t = useTranslations("predictions");
+
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-between gap-4">
       <div className="flex flex-col gap-1 text-center">
@@ -94,7 +97,7 @@ function PredictionSummary({
         onClick={onEdit}
         className="shrink-0 bg-white text-black hover:bg-white/90 aria-expanded:bg-white aria-expanded:text-black"
       >
-        I change my mind
+        {t("changeMind")}
       </Button>
     </div>
   );

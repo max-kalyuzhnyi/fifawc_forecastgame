@@ -1,7 +1,10 @@
 "use client";
 
 import { memo } from "react";
-import type { GroupStanding } from "@/entities/match/lib/standings";
+import type {
+  GroupStanding,
+  LiveScoreByTeam,
+} from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
@@ -22,6 +25,7 @@ interface MatchDrawerSlideProps {
   currentUserId: string | null;
   teamColors: Record<string, string>;
   groupStandingsByName: Record<string, GroupStanding>;
+  liveScoreByTeam: LiveScoreByTeam;
   isActive: boolean;
   isMounted: boolean;
   distanceFromActive: number;
@@ -41,6 +45,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   currentUserId,
   teamColors,
   groupStandingsByName,
+  liveScoreByTeam,
   isActive,
   isMounted,
   distanceFromActive,
@@ -78,6 +83,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
               ? groupStandingsByName[match.group_name]
               : undefined
           }
+          liveScoreByTeam={liveScoreByTeam}
           isActive={isActive}
           expanded={expanded}
           onRequestExpand={onRequestExpand}
