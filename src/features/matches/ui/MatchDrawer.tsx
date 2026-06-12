@@ -16,6 +16,7 @@ import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
+import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { MatchDrawerSlide } from "@/features/matches/ui/MatchDrawerSlide";
 import {
   Carousel,
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
-const PRELOAD_RADIUS = 2;
+const PRELOAD_RADIUS = 1;
 // First snap reveals header + prediction + tab bar; second is full-screen scroll.
 const COLLAPSED_SNAP = 0.72;
 const EXPANDED_SNAP = 1;
@@ -62,6 +63,7 @@ interface MatchDrawerProps {
   eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
+  playerPhotosByTeam: PlayerPhotosByTeam;
   groupStandingsByName: Record<string, GroupStanding>;
   liveScoreByTeam: LiveScoreByTeam;
   onMatchChange: (matchId: string) => void;
@@ -79,6 +81,7 @@ export function MatchDrawer({
   eventsByMatch,
   currentUserId,
   teamColors,
+  playerPhotosByTeam,
   groupStandingsByName,
   liveScoreByTeam,
   onMatchChange,
@@ -300,6 +303,7 @@ export function MatchDrawer({
                       matchEvents={eventsByMatch[match.id] ?? []}
                       currentUserId={currentUserId}
                       teamColors={teamColors}
+                      playerPhotosByTeam={playerPhotosByTeam}
                       groupStandingsByName={groupStandingsByName}
                       liveScoreByTeam={liveScoreByTeam}
                       isActive={index === snapIndex}

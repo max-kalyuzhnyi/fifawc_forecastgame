@@ -60,9 +60,7 @@ export function MatchVoters({ voters, compact }: MatchVotersProps) {
       </AvatarGroup>
       <span
         className={
-          compact
-            ? "text-[10px] text-muted-foreground"
-            : "text-[11px] text-muted-foreground"
+          compact ? "text-[10px] text-white/50" : "text-[11px] text-white/50"
         }
       >
         {voters.count} voted

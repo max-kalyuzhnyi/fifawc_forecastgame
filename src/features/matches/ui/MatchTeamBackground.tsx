@@ -10,7 +10,6 @@ interface MatchTeamBackgroundProps {
   awayTeamName: string;
   teamColors: Record<string, string>;
   className?: string;
-  animate?: boolean;
 }
 
 export function MatchTeamBackground({
@@ -18,7 +17,6 @@ export function MatchTeamBackground({
   awayTeamName,
   teamColors,
   className,
-  animate = true,
 }: MatchTeamBackgroundProps) {
   const home = getTeamColor(teamColors, homeTeamName);
   const away = getTeamColor(teamColors, awayTeamName);
@@ -37,10 +35,7 @@ export function MatchTeamBackground({
       {hasCustomColors ? (
         <>
           <div
-            className={cn(
-              "match-team-bg-gradient absolute inset-0",
-              !animate && "[animation-play-state:paused]",
-            )}
+            className="match-team-bg-gradient absolute inset-0"
             style={
               {
                 "--home-color": home,
@@ -49,7 +44,6 @@ export function MatchTeamBackground({
             }
           />
           <div className="match-team-bg-fade absolute inset-0" />
-          <div className="match-team-bg-noise absolute inset-0 opacity-[0.07]" />
         </>
       ) : null}
     </div>

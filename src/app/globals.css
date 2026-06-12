@@ -166,9 +166,7 @@
         z-index: -1;
         border-radius: inherit;
         corner-shape: inherit;
-        background: rgb(255 255 255 / 0.09);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        background: rgb(16 24 72 / 0.75);
         transform: translateZ(0);
     }
 
@@ -185,9 +183,7 @@
         z-index: -1;
         border-radius: inherit;
         corner-shape: inherit;
-        background: rgb(255 255 255 / 0.14);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: rgb(16 24 72 / 0.85);
         transform: translateZ(0);
     }
 
@@ -262,10 +258,6 @@
             rgb(0 0 0 / 0.38) 42%,
             rgb(0 0 0 / 0.72) 100%
         );
-    }
-
-    .match-team-bg-noise {
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     .app-page-enter {

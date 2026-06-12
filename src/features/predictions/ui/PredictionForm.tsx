@@ -74,7 +74,7 @@ function PredictionSummary({
   const t = useTranslations("predictions");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col justify-between gap-4">
+    <div className="flex w-full min-h-0 flex-1 flex-col justify-between gap-4">
       <div className="flex flex-col gap-1 text-center">
         <p className="text-3xl font-bold tabular-nums text-white">
           {formatMatchScore(initial.home_score, initial.away_score)}
@@ -198,7 +198,7 @@ export function PredictionForm({
   return (
     <form
       action={action}
-      className="flex min-h-0 flex-1 flex-col justify-between gap-4"
+      className="flex w-full min-h-0 flex-1 flex-col justify-between gap-4"
     >
       <input type="hidden" name="match_id" value={matchId} />
       <input type="hidden" name="home_score" value={homeScore} />

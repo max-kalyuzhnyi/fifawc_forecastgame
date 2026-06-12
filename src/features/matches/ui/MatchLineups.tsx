@@ -2,21 +2,33 @@
 
 import { useTranslations } from "next-intl";
 import type { TeamLineup } from "@/entities/match/model/types";
+import {
+  getPlayerPhotoUrl,
+  type PlayerPhotosByTeam,
+} from "@/features/matches/lib/playerPhotos";
+import { PlayerAvatar } from "@/shared/ui/PlayerAvatar";
 
 interface MatchLineupsProps {
   homeTeamName: string;
   awayTeamName: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
   homeLineup: TeamLineup | null;
   awayLineup: TeamLineup | null;
+  playerPhotosByTeam: PlayerPhotosByTeam;
 }
 
 function LineupColumn({
   teamName,
+  teamId,
   lineup,
+  playerPhotosByTeam,
   t,
 }: {
   teamName: string;
+  teamId: string | null;
   lineup: TeamLineup;
+  playerPhotosByTeam: PlayerPhotosByTeam;
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   return (
@@ -44,8 +56,17 @@ function LineupColumn({
             {lineup.lineup.map((player) => (
               <li
                 key={`${player.id}-${player.shirtNumber ?? player.name}`}
-                className="flex items-baseline gap-1.5 text-[11px] text-white/75"
+                className="flex items-center gap-1.5 text-[11px] text-white/75"
               >
+                <PlayerAvatar
+                  name={player.name}
+                  photoUrl={getPlayerPhotoUrl(
+                    playerPhotosByTeam,
+                    teamId,
+                    player.shirtNumber,
+                  )}
+                  size={20}
+                />
                 {player.shirtNumber != null && (
                   <span className="w-4 shrink-0 tabular-nums text-white/45">
                     {player.shirtNumber}
@@ -67,8 +88,17 @@ function LineupColumn({
             {lineup.bench.map((player) => (
               <li
                 key={`bench-${player.id}-${player.shirtNumber ?? player.name}`}
-                className="flex items-baseline gap-1.5 text-[11px] text-white/60"
+                className="flex items-center gap-1.5 text-[11px] text-white/60"
               >
+                <PlayerAvatar
+                  name={player.name}
+                  photoUrl={getPlayerPhotoUrl(
+                    playerPhotosByTeam,
+                    teamId,
+                    player.shirtNumber,
+                  )}
+                  size={20}
+                />
                 {player.shirtNumber != null && (
                   <span className="w-4 shrink-0 tabular-nums text-white/40">
                     {player.shirtNumber}
@@ -87,8 +117,11 @@ function LineupColumn({
 export function MatchLineups({
   homeTeamName,
   awayTeamName,
+  homeTeamId,
+  awayTeamId,
   homeLineup,
   awayLineup,
+  playerPhotosByTeam,
 }: MatchLineupsProps) {
   const t = useTranslations("matches");
 
@@ -101,7 +134,13 @@ export function MatchLineups({
   return (
     <div className="flex gap-4">
       {homeLineup ? (
-        <LineupColumn teamName={homeTeamName} lineup={homeLineup} t={t} />
+        <LineupColumn
+          teamName={homeTeamName}
+          teamId={homeTeamId}
+          lineup={homeLineup}
+          playerPhotosByTeam={playerPhotosByTeam}
+          t={t}
+        />
       ) : (
         <div className="min-w-0 flex-1">
           <p className="text-xs text-white/50">{t("tbd", { team: homeTeamName })}</p>
@@ -109,7 +148,13 @@ export function MatchLineups({
       )}
 
       {awayLineup ? (
-        <LineupColumn teamName={awayTeamName} lineup={awayLineup} t={t} />
+        <LineupColumn
+          teamName={awayTeamName}
+          teamId={awayTeamId}
+          lineup={awayLineup}
+          playerPhotosByTeam={playerPhotosByTeam}
+          t={t}
+        />
       ) : (
         <div className="min-w-0 flex-1 text-right">
           <p className="text-xs text-white/50">{t("tbd", { team: awayTeamName })}</p>

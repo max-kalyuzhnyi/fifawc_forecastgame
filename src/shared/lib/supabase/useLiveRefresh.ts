@@ -12,7 +12,7 @@ type LiveTable =
   | "predictions"
   | "match_scorers";
 
-const DEBOUNCE_MS = 1000;
+const REFRESH_DEBOUNCE_MS = 10_000;
 
 export function useLiveRefresh(
   channelName: string,
@@ -25,7 +25,23 @@ export function useLiveRefresh(
     const supabase = createClient();
     let channel: RealtimeChannel | null = null;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let pendingRefresh = false;
     let cancelled = false;
+
+    const runRefresh = () => {
+      pendingRefresh = false;
+
+      if (document.visibilityState === "hidden") {
+        pendingRefresh = true;
+        return;
+      }
+
+      if (isLiveRefreshPaused()) {
+        return;
+      }
+
+      router.refresh();
+    };
 
     const scheduleRefresh = () => {
       if (debounceTimer) {
@@ -34,12 +50,17 @@ export function useLiveRefresh(
 
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
-        if (isLiveRefreshPaused()) {
-          return;
-        }
-        router.refresh();
-      }, DEBOUNCE_MS);
+        runRefresh();
+      }, REFRESH_DEBOUNCE_MS);
     };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && pendingRefresh) {
+        runRefresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const removeChannel = async () => {
       if (!channel) {
@@ -87,6 +108,7 @@ export function useLiveRefresh(
         clearTimeout(debounceTimer);
       }
 
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       void removeChannel();
     };
     // tablesKey tracks the subscribed table list.

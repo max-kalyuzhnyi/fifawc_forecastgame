@@ -11,6 +11,7 @@ import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
+import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { GroupStandingsList } from "@/features/matches/ui/GroupStandingsList";
@@ -51,12 +52,15 @@ interface MatchesViewProps {
   eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
+  playerPhotosByTeam: PlayerPhotosByTeam;
 }
 
 const TAB_KEYS: MatchDayBucket[] = ["past", "upcoming3days", "future"];
 
 const FLAG_SIZE = 28;
 const MATCH_CARD_MIN_H = "min-h-[7rem]";
+const matchCardGridClassName =
+  "grid w-full grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] items-start gap-x-2";
 
 function getDefaultTab(matches: Match[]): MatchDayBucket {
   if (
@@ -137,8 +141,8 @@ function MatchCenterFocus({
 }) {
   if (finished) {
     return (
-      <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
-        <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
+        <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
           {formatMatchScore(homeScore, awayScore)}
         </p>
         {prediction ? (
@@ -175,14 +179,14 @@ function MatchCenterFocus({
       }).basePoints > 0;
 
     return (
-      <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
-        <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
+        <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
           {formatMatchScore(homeScore, awayScore)}
         </p>
         {prediction ? (
           <span
             className={cn(
-              "text-center text-[11px] font-semibold leading-none tabular-nums whitespace-nowrap",
+              "w-full truncate text-center text-[11px] font-semibold leading-none tabular-nums",
               pickOnTrack ? "text-emerald-300" : "text-red-300",
             )}
           >
@@ -209,10 +213,10 @@ function MatchCenterFocus({
   }
 
   return (
-    <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1.5 self-center">
+    <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
       {prediction ? (
         <>
-          <p className="min-w-[2.75rem] text-center text-[17px] font-bold leading-none tabular-nums">
+          <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
             {formatMatchScore(prediction.home_score, prediction.away_score)}
             {prediction.boost_multiplier > 1 && (
               <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -264,6 +268,7 @@ export function MatchesView({
   eventsByMatch,
   currentUserId,
   teamColors,
+  playerPhotosByTeam,
 }: MatchesViewProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
@@ -518,12 +523,15 @@ export function MatchesView({
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-2 gap-y-0.5">
-                          <div className="col-start-1 row-start-1 flex justify-center">
+                        <div className={matchCardGridClassName}>
+                          <div className="flex min-w-0 flex-col items-center gap-1.5">
                             <TeamFlag
                               name={match.home_team_name}
                               size={FLAG_SIZE}
                             />
+                            <p className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight">
+                              {match.home_team_name}
+                            </p>
                           </div>
 
                           <MatchCenterFocus
@@ -537,20 +545,15 @@ export function MatchesView({
                             t={t}
                           />
 
-                          <div className="col-start-3 row-start-1 flex justify-center">
+                          <div className="flex min-w-0 flex-col items-center gap-1.5">
                             <TeamFlag
                               name={match.away_team_name}
                               size={FLAG_SIZE}
                             />
+                            <p className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight">
+                              {match.away_team_name}
+                            </p>
                           </div>
-
-                          <p className="col-start-1 row-start-2 line-clamp-2 text-center text-[11px] font-medium leading-tight">
-                            {match.home_team_name}
-                          </p>
-
-                          <p className="col-start-3 row-start-2 line-clamp-2 text-center text-[11px] font-medium leading-tight">
-                            {match.away_team_name}
-                          </p>
                         </div>
                       </button>
                     );
@@ -580,6 +583,7 @@ export function MatchesView({
         teamColors={teamColors}
         groupStandingsByName={groupStandingsByName}
         liveScoreByTeam={liveScoreByTeam}
+        playerPhotosByTeam={playerPhotosByTeam}
         onMatchChange={handleMatchChange}
         onClose={closeMatch}
       />

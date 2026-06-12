@@ -4,6 +4,13 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const FD_API_BASE = "https://api.football-data.org/v4";
 const WC_COMPETITION = "WC";
 
+function fdHeaders(token: string): Record<string, string> {
+  return {
+    "X-Auth-Token": token,
+    "X-Unfold-Lineups": "true",
+  };
+}
+
 const FD_TO_OUR_TEAM_NAME: Record<string, string> = {
   "United States": "USA",
   "Korea Republic": "South Korea",
@@ -188,8 +195,10 @@ function goalEventType(type: string): string {
 
 function bookingEventType(card: string): string {
   switch (card) {
+    case "RED":
     case "RED_CARD":
       return "red_card";
+    case "YELLOW_RED":
     case "YELLOW_RED_CARD":
       return "yellow_red_card";
     default:
@@ -305,7 +314,7 @@ async function fetchFdMatches(
 ): Promise<{ matches: FdMatch[]; requestsLeft: number | null }> {
   const url = `${FD_API_BASE}/competitions/${WC_COMPETITION}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
   const response = await fetch(url, {
-    headers: { "X-Auth-Token": token },
+    headers: fdHeaders(token),
   });
 
   const requestsLeftHeader = response.headers.get("x-requests-available-minute");
@@ -331,7 +340,7 @@ async function fetchFdMatchDetail(
   matchId: number,
 ): Promise<FdMatch> {
   const response = await fetch(`${FD_API_BASE}/matches/${matchId}`, {
-    headers: { "X-Auth-Token": token },
+    headers: fdHeaders(token),
   });
 
   if (!response.ok) {

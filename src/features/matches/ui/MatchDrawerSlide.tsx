@@ -10,6 +10,7 @@ import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
+import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ interface MatchDrawerSlideProps {
   matchEvents?: MatchEvent[];
   currentUserId: string | null;
   teamColors: Record<string, string>;
+  playerPhotosByTeam: PlayerPhotosByTeam;
   groupStandingsByName: Record<string, GroupStanding>;
   liveScoreByTeam: LiveScoreByTeam;
   isActive: boolean;
@@ -44,6 +46,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   matchEvents = [],
   currentUserId,
   teamColors,
+  playerPhotosByTeam,
   groupStandingsByName,
   liveScoreByTeam,
   isActive,
@@ -78,13 +81,13 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
           matchEvents={matchEvents}
           currentUserId={currentUserId}
           teamColors={teamColors}
+          playerPhotosByTeam={playerPhotosByTeam}
           groupStanding={
             match.group_name
               ? groupStandingsByName[match.group_name]
               : undefined
           }
           liveScoreByTeam={liveScoreByTeam}
-          isActive={isActive}
           expanded={expanded}
           onRequestExpand={onRequestExpand}
         />

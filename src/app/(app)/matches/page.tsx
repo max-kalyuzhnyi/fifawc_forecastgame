@@ -9,6 +9,7 @@ import {
   buildScorersByMatch,
 } from "@/features/matches/lib/predictionsByMatch";
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
+import { buildPlayerPhotosMap } from "@/features/matches/lib/playerPhotos";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { MatchesView } from "@/features/matches/ui/MatchesView";
 import { createClient } from "@/shared/lib/supabase/server";
@@ -57,7 +58,7 @@ export default async function MatchesPage() {
     teamIds.length > 0
       ? supabase
           .from("players")
-          .select("id, name, team_id, position, shirt_number")
+          .select("id, name, team_id, position, shirt_number, photo_url")
           .in("team_id", teamIds)
       : Promise.resolve({ data: [] }),
     supabase.from("match_scorers").select("match_id, scorer_name"),
@@ -102,6 +103,13 @@ export default async function MatchesPage() {
 
   const scorersByMatch = buildScorersByMatch(matchScorers ?? []);
   const teamColors = buildTeamColorsMap(teams ?? []);
+  const playerPhotosByTeam = buildPlayerPhotosMap(
+    (players ?? []).map((player) => ({
+      team_id: player.team_id,
+      shirt_number: player.shirt_number,
+      photo_url: player.photo_url,
+    })),
+  );
 
   if (!matches || matches.length === 0) {
     return (
@@ -132,6 +140,7 @@ export default async function MatchesPage() {
         eventsByMatch={eventsByMatch}
         currentUserId={userId}
         teamColors={teamColors}
+        playerPhotosByTeam={playerPhotosByTeam}
       />
     </Suspense>
   );

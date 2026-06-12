@@ -17,6 +17,7 @@ import {
   type PredictionDetail,
 } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
+import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
 import { MatchEventsTimeline } from "@/features/matches/ui/MatchEventsTimeline";
@@ -57,15 +58,21 @@ interface MatchDetailContentProps {
   currentBoost?: BoostMultiplier;
   groupStanding?: GroupStanding;
   liveScoreByTeam?: LiveScoreByTeam;
-  isActive?: boolean;
+  playerPhotosByTeam?: PlayerPhotosByTeam;
   expanded?: boolean;
   onRequestExpand?: () => void;
 }
 
 const matchTabClassName =
-  "min-h-9 flex-1 text-xs text-white/60 hover:text-white data-active:bg-white/20 data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:bg-white/20 dark:data-active:text-white";
+  "min-h-9 flex-1 rounded-none border-0 bg-transparent px-0 text-xs font-medium text-white/50 shadow-none hover:text-white/80 data-active:bg-transparent data-active:text-white data-active:font-semibold data-active:shadow-none dark:text-white/50 dark:hover:text-white/80 dark:data-active:bg-transparent dark:data-active:text-white";
 
-function formatMatchSubtitle(match: Match, t: ReturnType<typeof useTranslations<"matches">>): string {
+const matchDetailGridClassName =
+  "grid w-full grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)] items-start gap-x-3";
+
+function formatMatchSubtitle(
+  match: Match,
+  t: ReturnType<typeof useTranslations<"matches">>,
+): string {
   if (match.round_key.startsWith("group_")) {
     return match.match_number != null
       ? t("groupStageMatch", { number: match.match_number })
@@ -73,7 +80,10 @@ function formatMatchSubtitle(match: Match, t: ReturnType<typeof useTranslations<
   }
 
   if (match.match_number != null) {
-    return t("roundMatch", { round: match.round_display, number: match.match_number });
+    return t("roundMatch", {
+      round: match.round_display,
+      number: match.match_number,
+    });
   }
 
   return match.round_display;
@@ -103,9 +113,9 @@ function MatchDetailCenterFocus({
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   return (
-    <div className="col-start-2 row-span-2 flex min-w-20 flex-col items-center justify-center gap-1 self-center">
+    <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 self-center">
       {prediction ? (
-        <p className="text-3xl font-bold leading-none tabular-nums text-white">
+        <p className="w-full truncate text-center text-3xl font-bold leading-none tabular-nums text-white">
           {formatMatchScore(prediction.home_score, prediction.away_score)}
           {prediction.boost_multiplier > 1 && (
             <span className="ml-1 text-base font-semibold text-white/60">
@@ -114,13 +124,17 @@ function MatchDetailCenterFocus({
           )}
         </p>
       ) : locked ? (
-        <p className="text-lg font-medium text-white/60">{t("missed")}</p>
+        <p className="w-full text-center text-lg font-medium text-white/60">
+          {t("missed")}
+        </p>
       ) : (
-        <p className="text-lg font-medium text-red-300">{t("noPick")}</p>
+        <p className="w-full text-center text-lg font-medium text-red-300">
+          {t("noPick")}
+        </p>
       )}
 
       {showScore && (
-        <p className="text-sm font-medium leading-none tabular-nums text-white/70">
+        <p className="w-full text-center text-sm font-medium leading-none tabular-nums text-white/70">
           {formatMatchScore(homeScore, awayScore)}
         </p>
       )}
@@ -158,7 +172,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   currentBoost: currentBoostProp,
   groupStanding,
   liveScoreByTeam,
-  isActive = true,
+  playerPhotosByTeam = {},
   expanded = false,
   onRequestExpand,
 }: MatchDetailContentProps) {
@@ -175,16 +189,21 @@ export const MatchDetailContent = memo(function MatchDetailContent({
     match.home_score !== null &&
     match.away_score !== null;
   const showScore = live || finished;
-  const liveMinute = formatLiveMinute(match.minute ?? null, match.injury_time ?? null);
-  const defaultMatchTab = groupStanding
-    ? "standings"
-    : live || finished
-      ? "updates"
-      : "lineups";
+  const liveMinute = formatLiveMinute(
+    match.minute ?? null,
+    match.injury_time ?? null,
+  );
+  const defaultMatchTab =
+    live || finished
+      ? "predictions"
+      : groupStanding
+        ? "standings"
+        : "lineups";
   const resolvedBoostUsed =
     boostUsed ?? getBoostUsed(predictionMap ?? {}, match.round_key);
   const currentBoost =
-    currentBoostProp ?? ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
+    currentBoostProp ??
+    ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
 
   return (
     <div
@@ -197,7 +216,6 @@ export const MatchDetailContent = memo(function MatchDetailContent({
         homeTeamName={match.home_team_name}
         awayTeamName={match.away_team_name}
         teamColors={teamColors}
-        animate={isActive}
       />
 
       <div
@@ -208,14 +226,17 @@ export const MatchDetailContent = memo(function MatchDetailContent({
             : "overflow-hidden pb-4 pt-2",
         )}
       >
-        <section className="flex shrink-0 flex-col gap-2 pb-4">
+        <section className="flex shrink-0 flex-col gap-2 pb-5">
           <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
             {formatMatchSubtitle(match, t)}
           </p>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] items-center gap-x-3 gap-y-1.5">
-            <div className="col-start-1 row-start-1 flex justify-center">
+          <div className={matchDetailGridClassName}>
+            <div className="flex min-w-0 flex-col items-center gap-1.5">
               <TeamFlag name={match.home_team_name} size={44} />
+              <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                {match.home_team_name}
+              </p>
             </div>
 
             <MatchDetailCenterFocus
@@ -231,17 +252,12 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               t={t}
             />
 
-            <div className="col-start-3 row-start-1 flex justify-center">
+            <div className="flex min-w-0 flex-col items-center gap-1.5">
               <TeamFlag name={match.away_team_name} size={44} />
+              <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                {match.away_team_name}
+              </p>
             </div>
-
-            <p className="col-start-1 row-start-2 line-clamp-2 text-center text-sm font-semibold leading-tight text-white">
-              {match.home_team_name}
-            </p>
-
-            <p className="col-start-3 row-start-2 line-clamp-2 text-center text-sm font-semibold leading-tight text-white">
-              {match.away_team_name}
-            </p>
           </div>
 
           <div className="flex flex-col items-center gap-1">
@@ -253,41 +269,38 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           </div>
         </section>
 
-        <section className="flex shrink-0 flex-col border-t border-white/10 pt-4">
-          <h2 className="mb-3 shrink-0 font-heading text-base font-medium text-white">
-            {locked ? t("predictions") : t("yourPrediction")}
-          </h2>
+        {!locked && (
+          <section className="flex shrink-0 flex-col border-t border-white/10 py-5">
+            <h2 className="mb-3 shrink-0 text-center font-heading text-base font-medium text-white">
+              {t("yourPrediction")}
+            </h2>
 
-          <div className="flex flex-col">
-            {locked ? (
-              <MatchPredictionsBoard
-                match={match}
-                predictions={matchPredictions}
-                actualScorers={matchScorers}
-                currentUserId={currentUserId}
-              />
-            ) : playersLoading ? (
-              <p className="text-sm text-white/70">{t("lineupsUnavailable")}</p>
-            ) : (
-              <PredictionForm
-                matchId={match.id}
-                homeTeamName={match.home_team_name}
-                awayTeamName={match.away_team_name}
-                homeTeamId={match.home_team_id}
-                awayTeamId={match.away_team_id}
-                players={players}
-                initial={
-                  prediction ? toPredictionFormInitial(prediction) : undefined
-                }
-                locked={false}
-                boostUsed={resolvedBoostUsed}
-                currentBoost={currentBoost}
-              />
-            )}
-          </div>
-        </section>
+            <div className="w-full">
+              {playersLoading ? (
+                <p className="text-center text-sm text-white/70">
+                  {t("lineupsUnavailable")}
+                </p>
+              ) : (
+                <PredictionForm
+                  matchId={match.id}
+                  homeTeamName={match.home_team_name}
+                  awayTeamName={match.away_team_name}
+                  homeTeamId={match.home_team_id}
+                  awayTeamId={match.away_team_id}
+                  players={players}
+                  initial={
+                    prediction ? toPredictionFormInitial(prediction) : undefined
+                  }
+                  locked={false}
+                  boostUsed={resolvedBoostUsed}
+                  currentBoost={currentBoost}
+                />
+              )}
+            </div>
+          </section>
+        )}
 
-        <section className="flex shrink-0 flex-col border-t border-white/10 pt-4">
+        <section className="flex shrink-0 flex-col border-t border-white/10 py-5">
           <Tabs
             defaultValue={defaultMatchTab}
             onValueChange={() => {
@@ -303,8 +316,11 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                   onRequestExpand?.();
                 }
               }}
-              className="flex h-auto w-full shrink-0 bg-white/10 p-1 group-data-horizontal/tabs:h-auto"
+              className="flex h-auto w-full shrink-0 justify-start gap-4 bg-transparent p-0 group-data-horizontal/tabs:h-auto"
             >
+              <TabsTrigger value="predictions" className={matchTabClassName}>
+                {t("predictions")}
+              </TabsTrigger>
               {groupStanding && (
                 <TabsTrigger value="standings" className={matchTabClassName}>
                   {t("standings")}
@@ -318,10 +334,26 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="predictions" className="mt-0">
+              {locked ? (
+                <MatchPredictionsBoard
+                  match={match}
+                  predictions={matchPredictions}
+                  actualScorers={matchScorers}
+                  currentUserId={currentUserId}
+                />
+              ) : (
+                <p className="text-sm text-white/50">
+                  {t("predictionsRevealAfter")}
+                </p>
+              )}
+            </TabsContent>
+
             {groupStanding && (
               <TabsContent value="standings" className="mt-0">
                 <GroupStandingsCard
                   group={groupStanding}
+                  variant="transparent"
                   highlightedTeams={[
                     match.home_team_name,
                     match.away_team_name,
@@ -335,8 +367,11 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               <MatchLineups
                 homeTeamName={match.home_team_name}
                 awayTeamName={match.away_team_name}
+                homeTeamId={match.home_team_id}
+                awayTeamId={match.away_team_id}
                 homeLineup={match.home_lineup ?? null}
                 awayLineup={match.away_lineup ?? null}
+                playerPhotosByTeam={playerPhotosByTeam}
               />
             </TabsContent>
 
@@ -345,6 +380,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                 events={matchEvents}
                 homeTeamName={match.home_team_name}
                 awayTeamName={match.away_team_name}
+                teamColors={teamColors}
               />
             </TabsContent>
           </Tabs>
