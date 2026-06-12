@@ -119,17 +119,15 @@ export function WheelPicker({
           {items.map((item, index) => {
             const distance = Math.abs(index - selectedIndex);
             const opacity = distance === 0 ? 1 : distance === 1 ? 0.45 : 0.2;
-            const scale = distance === 0 ? 1 : distance === 1 ? 0.85 : 0.7;
 
             return (
               <div
                 key={item}
-                className="flex shrink-0 grow-0 snap-center items-center justify-center tabular-nums transition-[opacity,transform] duration-150"
+                className="flex shrink-0 grow-0 snap-center items-center justify-center tabular-nums text-white transition-opacity duration-150"
                 style={{
                   height: itemHeight,
                   flexBasis: itemHeight,
                   opacity,
-                  transform: `scale(${scale})`,
                   fontSize: distance === 0 ? "1.5rem" : "1.125rem",
                   fontWeight: distance === 0 ? 600 : 400,
                 }}
@@ -182,7 +180,7 @@ export function ScoreWheelPicker({
         visibleItems={3}
         aria-label={homeLabel}
       />
-      <span className="shrink-0 px-0.5 text-xl font-light text-muted-foreground">
+      <span className="shrink-0 px-0.5 text-xl font-light text-white/70">
         :
       </span>
       <WheelPicker

@@ -189,7 +189,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   return (
     <div
       className={cn(
-        "match-drawer-card corner-squircle relative flex h-full w-full flex-col",
+        "match-drawer-card corner-squircle relative isolate flex h-full w-full flex-col",
         expanded && "rounded-none border-0 shadow-none",
       )}
     >

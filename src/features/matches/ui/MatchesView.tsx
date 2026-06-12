@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   buildGroupStandings,
@@ -36,6 +36,7 @@ import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePr
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
+import { setLiveRefreshPaused } from "@/shared/lib/liveRefreshPause";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import type { Locale } from "@/shared/types/database";
@@ -266,10 +267,12 @@ export function MatchesView({
 }: MatchesViewProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => searchParams.get("match"),
   );
+  const prevDrawerMatchIdRef = useRef<string | null>(null);
 
   const groupStandings = useMemo(() => buildGroupStandings(matches), [matches]);
   const groupStandingsByName = useMemo(
@@ -324,6 +327,18 @@ export function MatchesView({
       ? selectedMatchId
       : null;
   }, [filteredMatches, selectedMatchId]);
+
+  useEffect(() => {
+    setLiveRefreshPaused(Boolean(drawerMatchId));
+    return () => setLiveRefreshPaused(false);
+  }, [drawerMatchId]);
+
+  useEffect(() => {
+    if (prevDrawerMatchIdRef.current && !drawerMatchId) {
+      router.refresh();
+    }
+    prevDrawerMatchIdRef.current = drawerMatchId;
+  }, [drawerMatchId, router]);
 
   const groupedByDate = useMemo(() => {
     const groups = new Map<string, Match[]>();

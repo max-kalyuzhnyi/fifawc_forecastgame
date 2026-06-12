@@ -253,7 +253,9 @@ export function MatchDrawer({
     >
       <DrawerContent
         fullscreen
-        className="border-0 bg-transparent p-0 shadow-none before:hidden"
+        hideHandle
+        overlayClassName="z-[60] bg-black/55"
+        className="z-[60] border-0 bg-transparent p-0 shadow-none before:hidden"
       >
         <DrawerTitle className="sr-only">Match details</DrawerTitle>
 

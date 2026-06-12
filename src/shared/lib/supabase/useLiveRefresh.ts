@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/shared/lib/supabase/client";
+import { isLiveRefreshPaused } from "@/shared/lib/liveRefreshPause";
 
 type LiveTable =
   | "matches"
@@ -33,6 +34,9 @@ export function useLiveRefresh(
 
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
+        if (isLiveRefreshPaused()) {
+          return;
+        }
         router.refresh();
       }, DEBOUNCE_MS);
     };

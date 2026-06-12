@@ -47,15 +47,19 @@ function DrawerOverlay({
 
 function DrawerContent({
   className,
+  overlayClassName,
+  hideHandle = false,
   fullscreen = false,
   children,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  overlayClassName?: string
+  hideHandle?: boolean
   fullscreen?: boolean
 }) {
   return (
     <DrawerPortal data-slot="drawer-portal">
-      <DrawerOverlay />
+      <DrawerOverlay className={overlayClassName} />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
@@ -67,9 +71,11 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="absolute inset-x-0 top-0 z-30 hidden h-10 group-data-[vaul-drawer-direction=bottom]/drawer-content:flex group-data-[vaul-drawer-direction=bottom]/drawer-content:items-start group-data-[vaul-drawer-direction=bottom]/drawer-content:justify-center group-data-[vaul-drawer-direction=bottom]/drawer-content:pt-3">
-          <div className="h-1.5 w-24 shrink-0 rounded-full bg-white/80 shadow-sm" />
-        </div>
+        {!hideHandle ? (
+          <div className="absolute inset-x-0 top-0 z-30 hidden h-10 group-data-[vaul-drawer-direction=bottom]/drawer-content:flex group-data-[vaul-drawer-direction=bottom]/drawer-content:items-start group-data-[vaul-drawer-direction=bottom]/drawer-content:justify-center group-data-[vaul-drawer-direction=bottom]/drawer-content:pt-3">
+            <div className="h-1.5 w-24 shrink-0 rounded-full bg-white/80 shadow-sm" />
+          </div>
+        ) : null}
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

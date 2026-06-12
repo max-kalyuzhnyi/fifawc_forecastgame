@@ -32,7 +32,7 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
 
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40"
       aria-label={t("main")}
     >
       <div className="glass-strong corner-squircle pointer-events-auto mx-auto max-w-md rounded-t-[min(var(--radius-3xl),28px)] border-b-0">
