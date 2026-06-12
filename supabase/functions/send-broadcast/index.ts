@@ -1,8 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const PHOTO_URL =
-  "https://qgawmjczgfbhwsdpsqly.supabase.co/storage/v1/object/public/avatars/broadcast/wc-update.png";
+function broadcastPhotoUrl(supabaseUrl: string): string {
+  return `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/avatars/broadcast/wc-update.png`;
+}
 const BUTTON_TEXT = "⚡️ Make your picks";
 const CAPTION = `🏆 WC starts in 1 hour!
 
@@ -47,6 +48,7 @@ function buildSearchPatterns(needle: string): string[] {
 async function sendTelegramPhoto(
   botToken: string,
   chatId: number,
+  photoUrl: string,
   caption: string,
   miniAppUrl: string,
 ): Promise<{ ok: boolean; error?: string }> {
@@ -57,7 +59,7 @@ async function sendTelegramPhoto(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        photo: PHOTO_URL,
+        photo: photoUrl,
         caption,
         reply_markup: buildReplyMarkup(miniAppUrl),
       }),
@@ -154,6 +156,7 @@ Deno.serve(async (req) => {
     });
   }
 
+  const photoUrl = broadcastPhotoUrl(supabaseUrl);
   let sent = 0;
   let failed = 0;
   const failures: Array<{
@@ -166,6 +169,7 @@ Deno.serve(async (req) => {
     const result = await sendTelegramPhoto(
       botToken,
       recipient.telegram_id,
+      photoUrl,
       CAPTION,
       miniAppUrl,
     );

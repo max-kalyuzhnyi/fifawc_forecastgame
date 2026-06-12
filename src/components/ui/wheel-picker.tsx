@@ -36,6 +36,7 @@ export function WheelPicker({
   const valueIndex = Math.max(0, Math.min(value - min, items.length - 1));
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const isSyncingRef = React.useRef(false);
+  const scrollRafRef = React.useRef<number | null>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(valueIndex);
 
   const onChangeRef = React.useRef(onChange);
@@ -70,21 +71,36 @@ export function WheelPicker({
   }, [valueIndex, syncScrollToValue]);
 
   const handleScroll = React.useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || isSyncingRef.current) return;
+    if (isSyncingRef.current) return;
+    if (scrollRafRef.current !== null) return;
 
-    const nextIndex = Math.max(
-      0,
-      Math.min(Math.round(el.scrollTop / itemHeight), items.length - 1),
-    );
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
 
-    setSelectedIndex(nextIndex);
+      const el = scrollRef.current;
+      if (!el || isSyncingRef.current) return;
 
-    const nextValue = min + nextIndex;
-    if (nextValue !== value) {
-      onChangeRef.current(nextValue);
-    }
+      const nextIndex = Math.max(
+        0,
+        Math.min(Math.round(el.scrollTop / itemHeight), items.length - 1),
+      );
+
+      setSelectedIndex(nextIndex);
+
+      const nextValue = min + nextIndex;
+      if (nextValue !== value) {
+        onChangeRef.current(nextValue);
+      }
+    });
   }, [items.length, min, value, itemHeight]);
+
+  React.useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
 
   const containerHeight = itemHeight * visibleItems;
 

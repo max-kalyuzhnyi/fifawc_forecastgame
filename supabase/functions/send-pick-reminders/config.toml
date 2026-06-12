@@ -1,0 +1,2 @@
+[functions.send-pick-reminders]
+verify_jwt = false

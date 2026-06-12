@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { formatErrorMessage } from "../_shared/error-message.ts";
 import {
   buildGoalMessage,
   getGoalNotificationButton,
@@ -171,7 +172,6 @@ Deno.serve(async (req) => {
     const { data: recipients, error: recipientsError } = await supabase
       .from("profiles")
       .select("id, telegram_id, locale")
-      .in("role", ["participant", "admin"])
       .eq("notify_goals", true)
       .not("telegram_id", "is", null);
 
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
     console.error(error);
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: formatErrorMessage(error),
       }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );

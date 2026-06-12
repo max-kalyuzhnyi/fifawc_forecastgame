@@ -19,7 +19,8 @@
     "map:fd": "tsx scripts/map-football-data.ts",
     "extract:team-colors": "tsx scripts/extract-team-colors.ts",
     "broadcast:send": "tsx scripts/send-broadcast.ts",
-    "deploy:functions": "supabase functions deploy sync-live-matches send-goal-notifications send-broadcast --no-verify-jwt --project-ref qgawmjczgfbhwsdpsqly"
+    "deploy:functions": "supabase functions deploy sync-live-matches send-goal-notifications send-pick-reminders send-broadcast --no-verify-jwt --project-ref dlwpiikzuwpvbvnjupmn",
+    "deploy:functions:staging": "supabase functions deploy sync-live-matches send-goal-notifications send-pick-reminders send-broadcast --no-verify-jwt --project-ref qgawmjczgfbhwsdpsqly"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.2.0",

@@ -90,6 +90,7 @@ export interface Database {
           fd_last_updated: string | null;
           home_lineup: Record<string, unknown> | null;
           away_lineup: Record<string, unknown> | null;
+          pick_reminder_sent_at: string | null;
           created_at: string;
           updated_at: string;
         };
