@@ -31,7 +31,6 @@ interface PlayerMeta {
   userId: string;
   label: string;
   displayName: string;
-  photoUrl: string | null;
   color: string;
   isCurrentUser: boolean;
 }
@@ -58,7 +57,6 @@ function renderEndAvatar(
   const radius = meta.isCurrentUser ? 14 : 10;
   const ring = meta.isCurrentUser ? 2.5 : 1.5;
   const inner = radius - ring + 0.5;
-  const clipId = `lb-avatar-${meta.userId}`;
 
   return function EndAvatarDot(props: EndAvatarDotProps): ReactElement {
     const { cx, cy, index } = props;
@@ -78,36 +76,17 @@ function renderEndAvatar(
           stroke={meta.color}
           strokeWidth={ring}
         />
-        {meta.photoUrl ? (
-          <>
-            <defs>
-              <clipPath id={clipId}>
-                <circle cx={cx} cy={cy} r={inner} />
-              </clipPath>
-            </defs>
-            <image
-              href={meta.photoUrl}
-              x={cx - inner}
-              y={cy - inner}
-              width={inner * 2}
-              height={inner * 2}
-              clipPath={`url(#${clipId})`}
-              preserveAspectRatio="xMidYMid slice"
-            />
-          </>
-        ) : (
-          <text
-            x={cx}
-            y={cy}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize={inner * 0.85}
-            fontWeight={600}
-            fill={meta.color}
-          >
-            {getInitials(meta.displayName)}
-          </text>
-        )}
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={inner * 0.85}
+          fontWeight={600}
+          fill={meta.color}
+        >
+          {getInitials(meta.displayName)}
+        </text>
       </g>
     );
   };
@@ -141,7 +120,6 @@ export function LeaderboardPositionChart({
               ? entry.display_name
               : tMatches("playerRank", { rank: entry.rank }),
           displayName: entry.display_name,
-          photoUrl: canSeePlayerNames || isCurrentUser ? entry.photo_url : null,
           color: buildPlayerColor(index, isCurrentUser),
           isCurrentUser,
         };
@@ -203,7 +181,7 @@ export function LeaderboardPositionChart({
         {isPreview ? t("previewHint") : t("chartDescription")}
       </p>
 
-      <div className="overflow-x-auto overscroll-x-contain">
+      <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
         <div style={{ minWidth: chartMinWidth }}>
           <ChartContainer
             config={chartConfig}
@@ -277,9 +255,7 @@ export function LeaderboardPositionChart({
                   dot={renderEndAvatar(meta, lastIndex)}
                   activeDot={{ r: meta.isCurrentUser ? 5 : 3.5 }}
                   connectNulls
-                  isAnimationActive
-                  animationDuration={650}
-                  animationEasing="ease-out"
+                  isAnimationActive={false}
                 />
               ))}
             </LineChart>

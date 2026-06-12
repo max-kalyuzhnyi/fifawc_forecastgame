@@ -17,7 +17,7 @@ function LeaderboardRowSkeleton() {
 export function LeaderboardPanelSkeleton() {
   return (
     <div className="flex flex-col">
-      <div className="sports-panel corner-squircle sports-panel-max-h flex flex-col">
+      <div className="sports-panel corner-squircle flex flex-col">
         <div className="shrink-0 border-b border-white/[0.08] px-4 py-3">
           <Skeleton className="h-4 w-28 rounded-md" />
           <Skeleton className="mt-2 h-3 w-full max-w-xs rounded-md" />

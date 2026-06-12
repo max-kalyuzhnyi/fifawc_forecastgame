@@ -21,7 +21,7 @@ export function LeaderboardTabs({
   const t = useTranslations("leaderboard");
 
   return (
-    <Tabs defaultValue="overall" className="flex min-h-0 flex-1 flex-col">
+    <Tabs defaultValue="overall" className="flex flex-col">
       <div className="shrink-0 border-b border-white/[0.08] px-3 py-2">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overall">{t("tabOverall")}</TabsTrigger>
@@ -32,7 +32,7 @@ export function LeaderboardTabs({
 
       <TabsContent
         value="overall"
-        className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        className="mt-0"
       >
         <LeaderboardOverallTable
           entries={analytics.overall}
@@ -42,7 +42,7 @@ export function LeaderboardTabs({
 
       <TabsContent
         value="stages"
-        className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        className="mt-0"
       >
         <LeaderboardStageTable
           stages={analytics.stages}
@@ -55,7 +55,7 @@ export function LeaderboardTabs({
 
       <TabsContent
         value="chart"
-        className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        className="mt-0"
       >
         <LeaderboardPositionChart
           analytics={analytics}
