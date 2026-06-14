@@ -24,7 +24,6 @@ const FD_TO_OUR_TEAM_NAME: Record<string, string> = {
   "Czechia": "Czech Republic",
   "Cape Verde Islands": "Cape Verde",
   "Congo DR": "DR Congo",
-  "Curaçao": "Curacao",
 };
 
 type MatchStatus = "scheduled" | "live" | "finished";

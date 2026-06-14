@@ -12,6 +12,7 @@ export function useLiveMatchUpdates(
     const supabase = createClient();
     let channel: RealtimeChannel | null = null;
     let cancelled = false;
+    let setupSeq = 0;
 
     const removeChannel = async () => {
       if (!channel) {
@@ -24,13 +25,18 @@ export function useLiveMatchUpdates(
     };
 
     const setupChannel = async (accessToken: string | undefined) => {
+      const id = ++setupSeq;
       await removeChannel();
-      if (cancelled) {
+      if (cancelled || id !== setupSeq) {
         return;
       }
 
       if (accessToken) {
         await supabase.realtime.setAuth(accessToken);
+      }
+
+      if (cancelled || id !== setupSeq) {
+        return;
       }
 
       channel = supabase

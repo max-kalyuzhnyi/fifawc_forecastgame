@@ -12,6 +12,29 @@ interface LeaderboardOverallTableProps {
   canSeePlayerNames: boolean;
 }
 
+function LeaderboardPointsCell({
+  totalPoints,
+  livePointsDelta,
+}: {
+  totalPoints: number;
+  livePointsDelta: number;
+}) {
+  const projectedTotal = totalPoints + livePointsDelta;
+
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      {livePointsDelta > 0 && (
+        <span className="rounded-md bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold leading-none tabular-nums text-emerald-300">
+          +{livePointsDelta}
+        </span>
+      )}
+      <span className="text-[17px] font-bold leading-none tabular-nums text-foreground">
+        {projectedTotal}
+      </span>
+    </div>
+  );
+}
+
 export function LeaderboardOverallTable({
   entries,
   canSeePlayerNames,
@@ -49,9 +72,10 @@ export function LeaderboardOverallTable({
             className="grid grid-cols-[2rem_1fr] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
           >
             <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
-            <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
-              {entry.total_points}
-            </p>
+            <LeaderboardPointsCell
+              totalPoints={entry.total_points}
+              livePointsDelta={entry.live_points_delta}
+            />
           </div>
         ))}
       </>
@@ -60,7 +84,7 @@ export function LeaderboardOverallTable({
 
   return (
     <>
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)_4rem] items-center gap-x-3 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)_5rem] items-center gap-x-3 px-3 py-2 text-[11px] font-medium text-muted-foreground">
         <span className="text-center">#</span>
         <span>{t("player")}</span>
         <span className="text-right">{t("points")}</span>
@@ -69,7 +93,7 @@ export function LeaderboardOverallTable({
       {entries.map((entry) => (
         <div
           key={entry.user_id}
-          className="grid grid-cols-[2rem_minmax(0,1fr)_4rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
+          className="grid grid-cols-[2rem_minmax(0,1fr)_5rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
         >
           <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
           <div className="flex min-w-0 items-center gap-2">
@@ -85,9 +109,10 @@ export function LeaderboardOverallTable({
               {entry.display_name}
             </p>
           </div>
-          <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
-            {entry.total_points}
-          </p>
+          <LeaderboardPointsCell
+            totalPoints={entry.total_points}
+            livePointsDelta={entry.live_points_delta}
+          />
         </div>
       ))}
     </>

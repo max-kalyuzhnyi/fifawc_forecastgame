@@ -46,6 +46,7 @@ export interface LeaderboardPlayer {
 
 export interface LeaderboardOverallEntry extends LeaderboardPlayer {
   total_points: number;
+  live_points_delta: number;
   predictions_count: number;
   rank: number;
 }
@@ -67,6 +68,7 @@ export interface LeaderboardAnalytics {
   overall: LeaderboardOverallEntry[];
   perStage: Record<string, LeaderboardStageEntry[]>;
   positionSeries: Record<string, PositionSeriesPoint[]>;
+  hasLiveMatches: boolean;
 }
 
 interface PlayerStats {
@@ -74,6 +76,7 @@ interface PlayerStats {
   display_name: string;
   photo_url: string | null;
   totalPoints: number;
+  livePoints: number;
   totalPicks: number;
   stagePoints: Map<string, number>;
   stagePicks: Map<string, number>;
@@ -82,6 +85,14 @@ interface PlayerStats {
 function isScoredMatch(match: MatchForAnalytics): boolean {
   return (
     match.status === "finished" &&
+    match.home_score !== null &&
+    match.away_score !== null
+  );
+}
+
+export function isLiveMatch(match: MatchForAnalytics): boolean {
+  return (
+    match.status === "live" &&
     match.home_score !== null &&
     match.away_score !== null
   );
@@ -115,6 +126,10 @@ export function buildLeaderboardAnalytics(input: {
   const scoredMatchIds = new Set(
     matches.filter(isScoredMatch).map((match) => match.id),
   );
+  const liveMatchIds = new Set(
+    matches.filter(isLiveMatch).map((match) => match.id),
+  );
+  const hasLiveMatches = liveMatchIds.size > 0;
 
   const stagesWithResults = new Set<string>();
   for (const match of matches) {
@@ -132,6 +147,7 @@ export function buildLeaderboardAnalytics(input: {
       display_name: profile.display_name,
       photo_url: profile.photo_url,
       totalPoints: 0,
+      livePoints: 0,
       totalPicks: 0,
       stagePoints: new Map(),
       stagePicks: new Map(),
@@ -145,7 +161,11 @@ export function buildLeaderboardAnalytics(input: {
     player.totalPicks += 1;
 
     const match = matchMap.get(prediction.match_id);
-    if (!match || !scoredMatchIds.has(prediction.match_id)) continue;
+    if (!match) continue;
+
+    const isScored = scoredMatchIds.has(prediction.match_id);
+    const isLive = liveMatchIds.has(prediction.match_id);
+    if (!isScored && !isLive) continue;
 
     const points = calculatePredictionPoints({
       predictedHome: prediction.home_score,
@@ -157,17 +177,21 @@ export function buildLeaderboardAnalytics(input: {
       boostMultiplier: prediction.boost_multiplier,
     }).totalPoints;
 
-    player.totalPoints += points;
+    if (isScored) {
+      player.totalPoints += points;
 
-    const stageKey = match.round_key;
-    player.stagePoints.set(
-      stageKey,
-      (player.stagePoints.get(stageKey) ?? 0) + points,
-    );
-    player.stagePicks.set(
-      stageKey,
-      (player.stagePicks.get(stageKey) ?? 0) + 1,
-    );
+      const stageKey = match.round_key;
+      player.stagePoints.set(
+        stageKey,
+        (player.stagePoints.get(stageKey) ?? 0) + points,
+      );
+      player.stagePicks.set(
+        stageKey,
+        (player.stagePicks.get(stageKey) ?? 0) + 1,
+      );
+    } else {
+      player.livePoints += points;
+    }
   }
 
   const players = [...playerMap.values()];
@@ -179,18 +203,19 @@ export function buildLeaderboardAnalytics(input: {
         display_name: player.display_name,
         photo_url: player.photo_url,
         total_points: player.totalPoints,
+        live_points_delta: player.livePoints,
         predictions_count: player.totalPicks,
         rank: 0,
       }))
       .sort((a, b) =>
         compareRanked(
           {
-            points: a.total_points,
+            points: a.total_points + a.live_points_delta,
             picks: a.predictions_count,
             display_name: a.display_name,
           },
           {
-            points: b.total_points,
+            points: b.total_points + b.live_points_delta,
             picks: b.predictions_count,
             display_name: b.display_name,
           },
@@ -303,5 +328,6 @@ export function buildLeaderboardAnalytics(input: {
     overall,
     perStage,
     positionSeries,
+    hasLiveMatches,
   };
 }

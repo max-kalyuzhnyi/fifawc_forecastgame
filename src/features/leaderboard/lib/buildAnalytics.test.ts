@@ -119,4 +119,70 @@ describe("buildLeaderboardAnalytics", () => {
       { stageKey: "group_2", cumulativePoints: 3, position: 1 },
     ]);
   });
+
+  it("includes live match points as delta and sorts by projected total", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "m1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 1,
+          away_score: 0,
+        },
+        {
+          id: "m2",
+          round_key: "group_1",
+          status: "live",
+          home_score: 2,
+          away_score: 1,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "m1",
+          home_score: 1,
+          away_score: 0,
+          scorer_name: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-b",
+          match_id: "m1",
+          home_score: 0,
+          away_score: 1,
+          scorer_name: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-b",
+          match_id: "m2",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: null,
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: {},
+    });
+
+    expect(analytics.hasLiveMatches).toBe(true);
+
+    const userA = analytics.overall.find((entry) => entry.user_id === "user-a");
+    const userB = analytics.overall.find((entry) => entry.user_id === "user-b");
+
+    expect(userA).toMatchObject({
+      total_points: 3,
+      live_points_delta: 0,
+      rank: 2,
+    });
+    expect(userB).toMatchObject({
+      total_points: 0,
+      live_points_delta: 3,
+      rank: 1,
+    });
+    expect(analytics.perStage.group_1?.find((entry) => entry.user_id === "user-b")?.points).toBe(0);
+  });
 });

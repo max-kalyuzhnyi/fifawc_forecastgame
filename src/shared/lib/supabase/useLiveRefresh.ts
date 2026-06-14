@@ -27,6 +27,7 @@ export function useLiveRefresh(
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let pendingRefresh = false;
     let cancelled = false;
+    let setupSeq = 0;
 
     const runRefresh = () => {
       pendingRefresh = false;
@@ -73,13 +74,18 @@ export function useLiveRefresh(
     };
 
     const setupChannel = async (accessToken: string | undefined) => {
+      const id = ++setupSeq;
       await removeChannel();
-      if (cancelled) {
+      if (cancelled || id !== setupSeq) {
         return;
       }
 
       if (accessToken) {
         await supabase.realtime.setAuth(accessToken);
+      }
+
+      if (cancelled || id !== setupSeq) {
+        return;
       }
 
       let nextChannel = supabase.channel(channelName);
