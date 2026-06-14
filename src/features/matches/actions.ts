@@ -19,6 +19,7 @@ export interface MatchPlayerOption {
   team_id: string;
   position: "GK" | "DF" | "MF" | "FW" | null;
   shirt_number: number | null;
+  photo_url: string | null;
 }
 
 export async function loadMatchModel(
@@ -96,7 +97,7 @@ export async function loadMatchPlayers(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("players")
-    .select("id, name, team_id, position, shirt_number")
+    .select("id, name, team_id, position, shirt_number, photo_url")
     .in("team_id", teamIds);
 
   if (error) {

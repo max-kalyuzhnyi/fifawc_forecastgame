@@ -10,7 +10,12 @@ const predictionSchema = z.object({
   home_score: z.coerce.number().int().min(0).max(10),
   away_score: z.coerce.number().int().min(0).max(10),
   scorer_player_id: z.string().uuid().optional().or(z.literal("")),
-  boost_multiplier: z.coerce.number().int().refine((v) => [1, 2, 3].includes(v)),
+  boost_multiplier: z.coerce.number().int().refine((v) => [1, 2].includes(v)),
+  boost_day: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .or(z.literal("")),
 });
 
 export async function savePrediction(
@@ -26,6 +31,7 @@ export async function savePrediction(
     away_score: formData.get("away_score"),
     scorer_player_id: formData.get("scorer_player_id") || undefined,
     boost_multiplier: formData.get("boost_multiplier"),
+    boost_day: formData.get("boost_day") || undefined,
   });
 
   if (!parsed.success) {
@@ -34,10 +40,16 @@ export async function savePrediction(
 
   const supabase = await createClient();
   const { match_id, home_score, away_score, boost_multiplier } = parsed.data;
+  const boost_day =
+    boost_multiplier === 2 ? parsed.data.boost_day || null : null;
+
+  if (boost_multiplier === 2 && !boost_day) {
+    return { error: "Boost day is required when using x2" };
+  }
+
   let scorer_player_id = parsed.data.scorer_player_id || null;
   let scorer_name: string | null = null;
 
-  // Resolve player name from selected player id when dropdown used
   if (scorer_player_id) {
     const { data: player } = await supabase
       .from("players")
@@ -60,20 +72,17 @@ export async function savePrediction(
     return { error: "Predictions are locked after kickoff" };
   }
 
-  // Enforce one x2/x3 per round when changing boost
-  if (boost_multiplier === 2 || boost_multiplier === 3) {
+  if (boost_multiplier === 2 && boost_day) {
     const { data: existingBoost } = await supabase
       .from("predictions")
       .select("id, match_id")
       .eq("user_id", userId)
-      .eq("round_key", match.round_key)
-      .eq("boost_multiplier", boost_multiplier)
+      .eq("boost_day", boost_day)
+      .eq("boost_multiplier", 2)
       .maybeSingle();
 
     if (existingBoost && existingBoost.match_id !== match_id) {
-      return {
-        error: `You already used your x${boost_multiplier} boost this round on another match`,
-      };
+      return { error: "Boost already used today on another match" };
     }
   }
 
@@ -87,6 +96,7 @@ export async function savePrediction(
       scorer_player_id,
       scorer_name,
       boost_multiplier,
+      boost_day,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,match_id" },

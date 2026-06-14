@@ -24,7 +24,7 @@ function getResult(home: number, away: number): "home" | "away" | "draw" {
   return "draw";
 }
 
-// 3 exact, 2 goal diff, 1 result; +3 scorer; then boost multiplier
+// 3 exact, 2 goal diff, 1 result; +2 scorer; then boost multiplier
 export function calculatePredictionPoints(input: ScoreInput): ScoreBreakdown {
   const { predictedHome, predictedAway, actualHome, actualAway } = input;
 
@@ -48,7 +48,7 @@ export function calculatePredictionPoints(input: ScoreInput): ScoreBreakdown {
     const matched = input.actualScorers.some(
       (s) => normalizeScorerName(s) === normalized,
     );
-    if (matched) scorerBonus = 3;
+    if (matched) scorerBonus = 2;
   }
 
   const subtotal = basePoints + scorerBonus;

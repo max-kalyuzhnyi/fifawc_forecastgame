@@ -153,13 +153,30 @@
   "predictions": {
     "draw": "Ничья",
     "save": "Сохранить прогноз",
+    "update": "Обновить прогноз",
     "saving": "Сохранение…",
     "changeMind": "Изменить прогноз",
+    "myPick": "Мой прогноз",
     "locked": "Прогнозы закрыты.",
     "yourPick": "Ваш прогноз: {pick}",
     "guestMessage": "Вы можете смотреть матчи и рейтинг. Голосование откроется после одобрения администратором.",
     "suggestions": "Подсказки модели",
-    "poweredByOnside": "На основе Onside"
+    "poweredByOnside": "На основе Onside",
+    "selectScorer": "Выбрать бомбардира",
+    "noScorer": "Никто",
+    "scorer": "Бомбардир",
+    "scorerBonusHint": "+2 очка, если выбранный игрок забьёт гол",
+    "boost": "Буст",
+    "boostNone": "Нет",
+    "boostX2": "🔥 x2",
+    "boostPerDay": "Один буст в день",
+    "close": "Закрыть",
+    "position": {
+      "GK": "Вратарь",
+      "DF": "Защитник",
+      "MF": "Полузащитник",
+      "FW": "Нападающий"
+    }
   },
   "leaderboard": {
     "title": "Рейтинг",

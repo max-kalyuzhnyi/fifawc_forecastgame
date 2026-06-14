@@ -12,7 +12,7 @@ import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import {
-  getBoostUsed,
+  getBoostUsedForDay,
   toPredictionFormInitial,
   type BoostUsed,
   type PredictionDetail,
@@ -32,6 +32,7 @@ import { PredictionForm } from "@/features/predictions/ui/PredictionForm";
 import {
   formatMatchKickoffDate,
   formatMatchTime,
+  getDateGroupKey,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
@@ -65,6 +66,7 @@ interface MatchDetailContentProps {
   expanded?: boolean;
   onRequestExpand?: () => void;
   isUpsetWatch?: boolean;
+  onPredictionSaved?: (prediction: PredictionDetail) => void;
 }
 
 const matchTabClassName =
@@ -145,11 +147,11 @@ function MatchDetailCenterFocus({
               </span>
             )}
           </span>
-        ) : (
+        ) : !locked ? (
           <span className="text-center text-xs font-medium leading-none text-white/55">
-            {locked ? t("missed") : t("noPick")}
+            {t("noPick")}
           </span>
-        )}
+        ) : null}
         {live ? (
           <LiveMinuteIndicator
             liveMinute={liveMinute}
@@ -183,15 +185,11 @@ function MatchDetailCenterFocus({
             {t("myPick")}
           </span>
         </>
-      ) : locked ? (
-        <p className="w-full text-center text-lg font-medium text-white/60">
-          {t("missed")}
-        </p>
-      ) : (
+      ) : !locked ? (
         <p className="w-full text-center text-lg font-medium text-red-300">
           {t("noPick")}
         </p>
-      )}
+      ) : null}
       <p className="text-center text-[11px] text-white/70">
         {formatMatchTime(kickoffAt, locale)}
         <span className="mx-1 text-white/35">·</span>
@@ -221,6 +219,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   expanded = false,
   onRequestExpand,
   isUpsetWatch = false,
+  onPredictionSaved,
 }: MatchDetailContentProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
@@ -242,7 +241,12 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   const defaultMatchTab =
     live || finished ? "predictions" : "statistics";
   const resolvedBoostUsed =
-    boostUsed ?? getBoostUsed(predictionMap ?? {}, match.round_key);
+    boostUsed ??
+    getBoostUsedForDay(
+      predictionMap ?? {},
+      getDateGroupKey(match.kickoff_at),
+      match.id,
+    );
   const currentBoost =
     currentBoostProp ??
     ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
@@ -359,6 +363,8 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               ) : (
                 <PredictionForm
                   matchId={match.id}
+                  kickoffAt={match.kickoff_at}
+                  roundKey={match.round_key}
                   homeTeamName={match.home_team_name}
                   awayTeamName={match.away_team_name}
                   homeTeamId={match.home_team_id}
@@ -370,6 +376,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                   locked={false}
                   boostUsed={resolvedBoostUsed}
                   currentBoost={currentBoost}
+                  onPredictionSaved={onPredictionSaved}
                 />
               )}
             </div>

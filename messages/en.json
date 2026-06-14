@@ -153,13 +153,30 @@
   "predictions": {
     "draw": "Draw",
     "save": "Save prediction",
+    "update": "Update prediction",
     "saving": "Saving…",
     "changeMind": "Change prediction",
+    "myPick": "My pick",
     "locked": "Predictions are locked.",
     "yourPick": "Your pick: {pick}",
     "guestMessage": "You can browse matches and the leaderboard. Voting opens after an admin approves your account.",
     "suggestions": "Quick picks",
-    "poweredByOnside": "Powered by Onside"
+    "poweredByOnside": "Powered by Onside",
+    "selectScorer": "Select goalscorer",
+    "noScorer": "None",
+    "scorer": "Scorer",
+    "scorerBonusHint": "+2 pts if your picked player scores",
+    "boost": "Boost",
+    "boostNone": "None",
+    "boostX2": "🔥 x2",
+    "boostPerDay": "One boost per day",
+    "close": "Close",
+    "position": {
+      "GK": "Goalkeeper",
+      "DF": "Defender",
+      "MF": "Midfielder",
+      "FW": "Forward"
+    }
   },
   "leaderboard": {
     "title": "Leaderboard",

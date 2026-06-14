@@ -50,11 +50,11 @@ describe("calculatePredictionPoints", () => {
       actualAway: 1,
       predictedScorer: "Mbappe",
       actualScorers: ["mbappe"],
-      boostMultiplier: 3,
+      boostMultiplier: 2,
     });
     expect(result.basePoints).toBe(3);
-    expect(result.scorerBonus).toBe(3);
-    expect(result.totalPoints).toBe(18);
+    expect(result.scorerBonus).toBe(2);
+    expect(result.totalPoints).toBe(10);
   });
 
   it("applies x2 boost to zero points", () => {

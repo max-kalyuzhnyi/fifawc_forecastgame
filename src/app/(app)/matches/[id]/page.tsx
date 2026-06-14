@@ -14,7 +14,9 @@ import {
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { buildPlayersByMatch } from "@/features/matches/lib/playersByMatch";
+import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
+import { loadUserPredictionMap } from "@/features/predictions/lib/loadUserPredictionMap";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getUpsets } from "@/shared/lib/onside/client";
 import {
@@ -44,7 +46,7 @@ export default async function MatchDetailPage({
   const typedMatch = match as Match;
 
   const [
-    { data: userPredictions },
+    userPredictionMap,
     { data: allPredictions },
     { data: profiles },
     { data: players },
@@ -54,13 +56,8 @@ export default async function MatchDetailPage({
     { data: liveMatches },
   ] = await Promise.all([
     userId
-      ? supabase
-          .from("predictions")
-          .select(
-            "match_id, round_key, home_score, away_score, boost_multiplier, scorer_player_id, scorer_name",
-          )
-          .eq("user_id", userId)
-      : Promise.resolve({ data: [] }),
+      ? loadUserPredictionMap(supabase, userId)
+      : Promise.resolve({} as Record<string, PredictionDetail>),
     supabase
       .from("predictions")
       .select(
@@ -70,7 +67,7 @@ export default async function MatchDetailPage({
     supabase.from("profiles").select("id, display_name, photo_url"),
     supabase
       .from("players")
-      .select("id, name, team_id, position, shirt_number")
+      .select("id, name, team_id, position, shirt_number, photo_url")
       .in(
         "team_id",
         [typedMatch.home_team_id, typedMatch.away_team_id].filter(
@@ -94,19 +91,7 @@ export default async function MatchDetailPage({
     (group) => group.groupName === typedMatch.group_name,
   );
 
-  const predictionMap = Object.fromEntries(
-    (userPredictions ?? []).map((p) => [
-      p.match_id,
-      {
-        round_key: p.round_key,
-        home_score: p.home_score,
-        away_score: p.away_score,
-        boost_multiplier: p.boost_multiplier,
-        scorer_player_id: p.scorer_player_id,
-        scorer_name: p.scorer_name,
-      },
-    ]),
-  );
+  const predictionMap = userPredictionMap;
 
   const voterMap = buildVoterMap(allPredictions ?? [], profiles ?? []);
   const voters = voterMap.get(id) ?? { count: 0, voters: [] };

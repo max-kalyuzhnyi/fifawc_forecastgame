@@ -69,6 +69,7 @@ interface MatchDrawerProps {
   upsetMatchIds?: string[];
   onMatchChange: (matchId: string) => void;
   onClose: () => void;
+  onPredictionSaved?: (matchId: string, prediction: PredictionDetail) => void;
 }
 
 export function MatchDrawer({
@@ -88,6 +89,7 @@ export function MatchDrawer({
   upsetMatchIds = [],
   onMatchChange,
   onClose,
+  onPredictionSaved,
 }: MatchDrawerProps) {
   const open = Boolean(matchId);
   const [contentMounted, setContentMounted] = useState(() => Boolean(matchId));
@@ -96,6 +98,7 @@ export function MatchDrawer({
   const [frozenExpanded, setFrozenExpanded] = useState(false);
   const isClosingRef = useRef(false);
   const dragStartedExpandedRef = useRef(false);
+  const maxExpandedDragRef = useRef(0);
   const snapRef = useRef(snap);
   const expanded = snap === EXPANDED_SNAP;
   const visualExpanded = expanded || frozenExpanded;
@@ -122,6 +125,7 @@ export function MatchDrawer({
       setFrozenExpanded(false);
       isClosingRef.current = false;
       dragStartedExpandedRef.current = false;
+      maxExpandedDragRef.current = 0;
     }
   }, [open]);
 
@@ -199,6 +203,10 @@ export function MatchDrawer({
     (_event: PointerEvent<HTMLDivElement>, percentageDragged: number) => {
       if (percentageDragged > 0 && snapRef.current === EXPANDED_SNAP) {
         dragStartedExpandedRef.current = true;
+        maxExpandedDragRef.current = Math.max(
+          maxExpandedDragRef.current,
+          percentageDragged,
+        );
       }
     },
     [],
@@ -210,11 +218,12 @@ export function MatchDrawer({
         if (!willStayOpen) {
           isClosingRef.current = true;
           setFrozenExpanded(true);
-        } else {
+        } else if (maxExpandedDragRef.current > 0.08) {
           setSnap(COLLAPSED_SNAP);
         }
       }
       dragStartedExpandedRef.current = false;
+      maxExpandedDragRef.current = 0;
     },
     [],
   );
@@ -235,6 +244,7 @@ export function MatchDrawer({
   const handleAnimationEnd = useCallback(() => {
     isClosingRef.current = false;
     dragStartedExpandedRef.current = false;
+    maxExpandedDragRef.current = 0;
     setFrozenExpanded(false);
     setSnap(COLLAPSED_SNAP);
   }, []);
@@ -314,6 +324,7 @@ export function MatchDrawer({
                       distanceFromActive={Math.abs(index - snapIndex)}
                       expanded={visualExpanded}
                       onRequestExpand={handleRequestExpand}
+                      onPredictionSaved={onPredictionSaved}
                     />
                   </CarouselItem>
                 ))}

@@ -5,24 +5,26 @@ export interface PredictionDetail {
   home_score: number;
   away_score: number;
   boost_multiplier: number;
+  boost_day: string | null;
   scorer_player_id: string | null;
   scorer_name: string | null;
 }
 
-export type BoostUsed = { x2: boolean; x3: boolean };
+export type BoostUsed = { x2: boolean };
 
-export function getBoostUsed(
+export function getBoostUsedForDay(
   predictionMap: Record<string, PredictionDetail>,
-  roundKey: string,
+  boostDay: string,
+  currentMatchId: string,
 ): BoostUsed {
-  const roundPredictions = Object.values(predictionMap).filter(
-    (prediction) => prediction.round_key === roundKey,
+  const usedOnAnotherMatch = Object.entries(predictionMap).some(
+    ([matchId, prediction]) =>
+      matchId !== currentMatchId &&
+      prediction.boost_multiplier === 2 &&
+      prediction.boost_day === boostDay,
   );
 
-  return {
-    x2: roundPredictions.some((prediction) => prediction.boost_multiplier === 2),
-    x3: roundPredictions.some((prediction) => prediction.boost_multiplier === 3),
-  };
+  return { x2: usedOnAnotherMatch };
 }
 
 export function toPredictionFormInitial(prediction: PredictionDetail) {

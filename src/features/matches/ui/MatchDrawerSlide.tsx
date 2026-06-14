@@ -35,6 +35,7 @@ interface MatchDrawerSlideProps {
   distanceFromActive: number;
   expanded: boolean;
   onRequestExpand: () => void;
+  onPredictionSaved?: (matchId: string, prediction: PredictionDetail) => void;
 }
 
 export const MatchDrawerSlide = memo(function MatchDrawerSlide({
@@ -57,6 +58,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   distanceFromActive,
   expanded,
   onRequestExpand,
+  onPredictionSaved,
 }: MatchDrawerSlideProps) {
   const isNeighbor = distanceFromActive === 1;
 
@@ -94,6 +96,11 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
           isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
           expanded={expanded}
           onRequestExpand={onRequestExpand}
+          onPredictionSaved={
+            onPredictionSaved
+              ? (prediction) => onPredictionSaved(match.id, prediction)
+              : undefined
+          }
         />
       ) : null}
     </div>

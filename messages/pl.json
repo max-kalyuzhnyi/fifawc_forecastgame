@@ -153,13 +153,30 @@
   "predictions": {
     "draw": "Remis",
     "save": "Zapisz typ",
+    "update": "Zaktualizuj typ",
     "saving": "Zapisywanie…",
     "changeMind": "Zmień typ",
+    "myPick": "Mój typ",
     "locked": "Typy są zamknięte.",
     "yourPick": "Twój typ: {pick}",
     "guestMessage": "Możesz przeglądać mecze i ranking. Głosowanie otworzy się po zatwierdzeniu konta przez admina.",
     "suggestions": "Szybkie typy",
-    "poweredByOnside": "Na podstawie Onside"
+    "poweredByOnside": "Na podstawie Onside",
+    "selectScorer": "Wybierz strzelca",
+    "noScorer": "Brak",
+    "scorer": "Strzelec",
+    "scorerBonusHint": "+2 pkt, jeśli wybrany zawodnik strzeli gola",
+    "boost": "Boost",
+    "boostNone": "Brak",
+    "boostX2": "🔥 x2",
+    "boostPerDay": "Jeden boost dziennie",
+    "close": "Zamknij",
+    "position": {
+      "GK": "Bramkarz",
+      "DF": "Obrońca",
+      "MF": "Pomocnik",
+      "FW": "Napastnik"
+    }
   },
   "leaderboard": {
     "title": "Ranking",

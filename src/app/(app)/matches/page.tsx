@@ -11,6 +11,8 @@ import {
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { buildPlayerPhotosMap } from "@/features/matches/lib/playerPhotos";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
+import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
+import { loadUserPredictionMap } from "@/features/predictions/lib/loadUserPredictionMap";
 import { MatchesView } from "@/features/matches/ui/MatchesView";
 import { getUpsets } from "@/shared/lib/onside/client";
 import { buildUpsetMatchIds } from "@/shared/lib/onside/upsets";
@@ -35,7 +37,7 @@ export default async function MatchesPage() {
   const teamIds = getMatchTeamIds((matches ?? []) as Match[]);
 
   const [
-    { data: predictions },
+    predictions,
     { data: allPredictions },
     { data: profiles },
     { data: players },
@@ -44,13 +46,8 @@ export default async function MatchesPage() {
     { data: matchEvents },
   ] = await Promise.all([
     userId
-      ? supabase
-          .from("predictions")
-          .select(
-            "match_id, round_key, home_score, away_score, boost_multiplier, scorer_player_id, scorer_name",
-          )
-          .eq("user_id", userId)
-      : Promise.resolve({ data: [] }),
+      ? loadUserPredictionMap(supabase, userId)
+      : Promise.resolve({} as Record<string, PredictionDetail>),
     supabase
       .from("predictions")
       .select(
@@ -75,19 +72,7 @@ export default async function MatchesPage() {
     eventsByMatch[event.match_id] = list;
   }
 
-  const predictionMap = Object.fromEntries(
-    (predictions ?? []).map((p) => [
-      p.match_id,
-      {
-        round_key: p.round_key,
-        home_score: p.home_score,
-        away_score: p.away_score,
-        boost_multiplier: p.boost_multiplier,
-        scorer_player_id: p.scorer_player_id,
-        scorer_name: p.scorer_name,
-      },
-    ]),
-  );
+  const predictionMap = predictions;
 
   const voterMap = Object.fromEntries(
     buildVoterMap(allPredictions ?? [], profiles ?? []),

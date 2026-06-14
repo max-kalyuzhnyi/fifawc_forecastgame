@@ -7,8 +7,8 @@ Private forecasting competition for FIFA World Cup 2026 — Telegram Mini App.
 - **3 pts** — exact score
 - **2 pts** — correct goal difference
 - **1 pt** — correct result (win/draw)
-- **+3 pts** — correct goalscorer pick
-- **x2 / x3 boost** — one of each per round (group round 1/2/3 + each knockout round)
+- **+2 pts** — correct goalscorer pick
+- **x2 boost** — one per calendar day (local time)
 
 ## Stack
 

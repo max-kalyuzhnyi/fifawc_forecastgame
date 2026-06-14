@@ -1,4 +1,4 @@
-export type BoostMultiplier = 1 | 2 | 3;
+export type BoostMultiplier = 1 | 2;
 
 export interface Prediction {
   id: string;

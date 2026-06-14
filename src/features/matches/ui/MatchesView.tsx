@@ -184,11 +184,11 @@ function MatchCenterFocus({
               ? t("ptsPositive", { count: points })
               : t("pts", { count: points ?? 0 })}
           </span>
-        ) : (
+        ) : !locked ? (
           <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
-            {locked ? t("missed") : t("noPick")}
+            {t("noPick")}
           </span>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -226,16 +226,11 @@ function MatchCenterFocus({
               </span>
             )}
           </span>
-        ) : (
-          <span
-            className={cn(
-              "text-center text-[11px] font-medium leading-none",
-              locked ? "text-muted-foreground" : "text-red-300",
-            )}
-          >
-            {locked ? t("missed") : t("noPick")}
+        ) : !locked ? (
+          <span className="text-center text-[11px] font-medium leading-none text-red-300">
+            {t("noPick")}
           </span>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -256,15 +251,11 @@ function MatchCenterFocus({
             {t("myPick")}
           </span>
         </>
-      ) : locked ? (
-        <p className="text-center text-[13px] font-medium text-muted-foreground">
-          {t("missed")}
-        </p>
-      ) : (
+      ) : !locked ? (
         <p className="text-center text-[13px] font-medium text-red-300">
           {t("noPick")}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -432,6 +423,13 @@ export function MatchesView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [matches, setMatches] = useState(serverMatches);
+  const [predictionOverrides, setPredictionOverrides] = useState<
+    Record<string, PredictionDetail>
+  >({});
+  const mergedPredictionMap = useMemo(
+    () => ({ ...predictionMap, ...predictionOverrides }),
+    [predictionMap, predictionOverrides],
+  );
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => searchParams.get("match"),
   );
@@ -547,6 +545,33 @@ export function MatchesView({
     prevDrawerMatchIdRef.current = drawerMatchId;
   }, [drawerMatchId, router]);
 
+  useEffect(() => {
+    setPredictionOverrides((prev) => {
+      if (Object.keys(prev).length === 0) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      let changed = false;
+
+      for (const matchId of Object.keys(next)) {
+        if (predictionMap[matchId]) {
+          delete next[matchId];
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [predictionMap]);
+
+  const handlePredictionSaved = useCallback(
+    (matchId: string, prediction: PredictionDetail) => {
+      setPredictionOverrides((prev) => ({ ...prev, [matchId]: prediction }));
+    },
+    [],
+  );
+
   const groupedByDate = useMemo(() => {
     const groups = new Map<string, Match[]>();
 
@@ -657,7 +682,7 @@ export function MatchesView({
                   <MatchCard
                     key={match.id}
                     match={match}
-                    prediction={predictionMap[match.id]}
+                    prediction={mergedPredictionMap[match.id]}
                     voters={
                       voterMap[match.id] ?? {
                         count: 0,
@@ -714,7 +739,7 @@ export function MatchesView({
                     <MatchCard
                       key={match.id}
                       match={match}
-                      prediction={predictionMap[match.id]}
+                      prediction={mergedPredictionMap[match.id]}
                       voters={
                         voterMap[match.id] ?? {
                           count: 0,
@@ -747,7 +772,7 @@ export function MatchesView({
         matches={drawerMatches}
         matchId={drawerMatchId}
         voterMap={voterMap}
-        predictionMap={predictionMap}
+        predictionMap={mergedPredictionMap}
         playersByMatch={playersByMatch}
         predictionsByMatch={predictionsByMatch}
         scorersByMatch={scorersByMatch}
@@ -760,6 +785,7 @@ export function MatchesView({
         upsetMatchIds={upsetMatchIds}
         onMatchChange={handleMatchChange}
         onClose={closeMatch}
+        onPredictionSaved={handlePredictionSaved}
       />
     </div>
   );

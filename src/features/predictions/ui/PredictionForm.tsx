@@ -1,13 +1,16 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import {
   loadScoreSuggestions,
   type ScoreSuggestion,
 } from "@/features/matches/actions";
+import type { BoostUsed, PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { savePrediction } from "../actions";
+import { ScorerPickerDrawer } from "./ScorerPickerDrawer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,22 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
 import { cn } from "@/lib/utils";
+import { getDateGroupKey } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
-import { TeamName } from "@/shared/ui/TeamFlag";
+import { PlayerAvatar } from "@/shared/ui/PlayerAvatar";
 
 interface PlayerOption {
   id: string;
@@ -39,10 +34,12 @@ interface PlayerOption {
   team_id: string;
   position: "GK" | "DF" | "MF" | "FW" | null;
   shirt_number: number | null;
+  photo_url?: string | null;
 }
 
 interface PredictionFormProps {
   matchId: string;
+  kickoffAt: string;
   homeTeamName: string;
   awayTeamName: string;
   homeTeamId: string | null;
@@ -56,17 +53,18 @@ interface PredictionFormProps {
     boost_multiplier: BoostMultiplier;
   };
   locked: boolean;
-  boostUsed: { x2: boolean; x3: boolean };
+  boostUsed: BoostUsed;
   currentBoost: BoostMultiplier;
+  roundKey: string;
+  onPredictionSaved?: (prediction: PredictionDetail) => void;
 }
 
-// TODO: показать поля выбора бомбардира и буста после релиза
-const SHOW_GOALSCORER_AND_BOOST = false;
-
-function formatBoostLabel(mult: BoostMultiplier): string {
-  if (mult === 1) return "None";
-  if (mult === 2) return "🔥🔥 x2";
-  return "🔥🔥🔥 x3";
+function formatBoostLabel(
+  mult: BoostMultiplier,
+  t: ReturnType<typeof useTranslations<"predictions">>,
+): string {
+  if (mult === 1) return t("boostNone");
+  return t("boostX2");
 }
 
 function getSuggestionLabel(
@@ -146,27 +144,49 @@ function ScoreSuggestionChips({
 
 function PredictionSummary({
   initial,
+  players,
   onEdit,
 }: {
   initial: NonNullable<PredictionFormProps["initial"]>;
+  players: PlayerOption[];
   onEdit: () => void;
 }) {
   const t = useTranslations("predictions");
+  const selectedPlayer = players.find(
+    (player) => player.id === initial.scorer_player_id,
+  );
 
   return (
     <div className="flex w-full min-h-0 flex-1 flex-col justify-between gap-4">
-      <div className="flex flex-col gap-1 text-center">
+      <div className="flex flex-col items-center gap-2 text-center">
         <p className="text-3xl font-bold tabular-nums text-white">
           {formatMatchScore(initial.home_score, initial.away_score)}
         </p>
-        {initial.scorer_name && (
+        <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white/55">
+          {t("myPick")}
+        </span>
+        {selectedPlayer ? (
+          <div className="flex items-center justify-center gap-2">
+            <PlayerAvatar
+              name={selectedPlayer.name}
+              photoUrl={selectedPlayer.photo_url}
+              size={28}
+            />
+            {selectedPlayer.shirt_number != null ? (
+              <span className="text-sm font-semibold tabular-nums text-white/60">
+                {selectedPlayer.shirt_number}
+              </span>
+            ) : null}
+            <span className="text-sm text-white/80">{selectedPlayer.name}</span>
+          </div>
+        ) : initial.scorer_name ? (
           <p className="text-sm text-white/70">
-            Scorer: {initial.scorer_name}
+            {t("scorer")}: {initial.scorer_name}
           </p>
-        )}
+        ) : null}
         {initial.boost_multiplier > 1 && (
           <p className="text-sm text-white/70">
-            Boost: {formatBoostLabel(initial.boost_multiplier)}
+            {t("boost")}: {formatBoostLabel(initial.boost_multiplier, t)}
           </p>
         )}
       </div>
@@ -185,6 +205,7 @@ function PredictionSummary({
 
 export function PredictionForm({
   matchId,
+  kickoffAt,
   homeTeamName,
   awayTeamName,
   homeTeamId,
@@ -194,7 +215,15 @@ export function PredictionForm({
   locked,
   boostUsed,
   currentBoost,
+  roundKey,
+  onPredictionSaved,
 }: PredictionFormProps) {
+  const t = useTranslations("predictions");
+  const router = useRouter();
+  const boostDay = getDateGroupKey(kickoffAt);
+  const initialKey = initial
+    ? `${initial.home_score}:${initial.away_score}:${initial.scorer_player_id ?? ""}:${initial.boost_multiplier}`
+    : "";
   const [mode, setMode] = useState<"readonly" | "edit">(
     initial ? "readonly" : "edit",
   );
@@ -206,6 +235,29 @@ export function PredictionForm({
       const result = await savePrediction(prev, formData);
       if (result.success) {
         setMode("readonly");
+
+        const savedHome = Number(formData.get("home_score"));
+        const savedAway = Number(formData.get("away_score"));
+        const savedScorerId = String(formData.get("scorer_player_id") || "");
+        const boostMultiplier = Number(
+          formData.get("boost_multiplier"),
+        ) as BoostMultiplier;
+        const savedBoostDay = String(formData.get("boost_day") || "");
+        const selectedPlayer = players.find(
+          (player) => player.id === savedScorerId,
+        );
+
+        onPredictionSaved?.({
+          round_key: roundKey,
+          home_score: savedHome,
+          away_score: savedAway,
+          scorer_player_id: savedScorerId || null,
+          scorer_name: selectedPlayer?.name ?? null,
+          boost_multiplier: boostMultiplier,
+          boost_day: boostMultiplier === 2 ? savedBoostDay : null,
+        });
+
+        router.refresh();
       }
       return result;
     },
@@ -222,6 +274,23 @@ export function PredictionForm({
   );
 
   useEffect(() => {
+    if (initial) {
+      setHomeScore(initial.home_score);
+      setAwayScore(initial.away_score);
+      setScorerPlayerId(initial.scorer_player_id ?? "");
+      setBoost(String(initial.boost_multiplier ?? 1));
+      setMode("readonly");
+      return;
+    }
+
+    setHomeScore(0);
+    setAwayScore(0);
+    setScorerPlayerId("");
+    setBoost("1");
+    setMode("edit");
+  }, [matchId, initialKey]);
+
+  useEffect(() => {
     let cancelled = false;
 
     loadScoreSuggestions(homeTeamName, awayTeamName).then((data) => {
@@ -236,17 +305,19 @@ export function PredictionForm({
   }, [homeTeamName, awayTeamName]);
 
   const homePlayers = sortPlayersForScorerSelect(
-    players.filter((p) => p.team_id === homeTeamId),
+    players.filter((player) => player.team_id === homeTeamId),
   );
   const awayPlayers = sortPlayersForScorerSelect(
-    players.filter((p) => p.team_id === awayTeamId),
+    players.filter((player) => player.team_id === awayTeamId),
   );
 
   const showX2 = !boostUsed.x2 || currentBoost === 2;
-  const showX3 = !boostUsed.x3 || currentBoost === 3;
-  const showBoostBlock = showX2 || showX3;
-  const boostTabTriggerClassName =
-    "h-full flex-1 text-sm text-white/60 hover:text-white data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:text-white";
+  const boostTabTriggerClassName = cn(
+    "h-full flex-1 !rounded-[10px] text-sm font-medium text-white/60 transition-colors",
+    "hover:text-white/80",
+    "data-active:!border data-active:!border-white/40 data-active:bg-white/20",
+    "data-active:font-semibold data-active:text-white",
+  );
 
   const savedSnapshot = useMemo(() => {
     if (!state?.success) return null;
@@ -264,16 +335,27 @@ export function PredictionForm({
 
   const summaryData = savedSnapshot ?? initial;
 
+  const handleEdit = () => {
+    if (summaryData) {
+      setHomeScore(summaryData.home_score);
+      setAwayScore(summaryData.away_score);
+      setScorerPlayerId(summaryData.scorer_player_id ?? "");
+      setBoost(String(summaryData.boost_multiplier ?? 1));
+    }
+    setMode("edit");
+  };
+
   if (locked) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Predictions locked</CardTitle>
+          <CardTitle>{t("locked")}</CardTitle>
           {initial && (
             <CardDescription>
-              Your pick:{" "}
-              {formatMatchScore(initial.home_score, initial.away_score)}
-              {initial.scorer_name && ` · Scorer: ${initial.scorer_name}`}
+              {t("yourPick", {
+                pick: formatMatchScore(initial.home_score, initial.away_score),
+              })}
+              {initial.scorer_name && ` · ${t("scorer")}: ${initial.scorer_name}`}
               {initial.boost_multiplier > 1 &&
                 ` · x${initial.boost_multiplier}`}
             </CardDescription>
@@ -287,7 +369,8 @@ export function PredictionForm({
     return (
       <PredictionSummary
         initial={summaryData}
-        onEdit={() => setMode("edit")}
+        players={players}
+        onEdit={handleEdit}
       />
     );
   }
@@ -295,6 +378,7 @@ export function PredictionForm({
   return (
     <form
       action={action}
+      data-vaul-no-drag
       className="flex w-full min-h-0 flex-1 flex-col justify-between gap-4"
     >
       <input type="hidden" name="match_id" value={matchId} />
@@ -302,6 +386,7 @@ export function PredictionForm({
       <input type="hidden" name="away_score" value={awayScore} />
       <input type="hidden" name="scorer_player_id" value={scorerPlayerId} />
       <input type="hidden" name="boost_multiplier" value={boost} />
+      <input type="hidden" name="boost_day" value={boostDay} />
 
       <FieldGroup className="min-h-0 flex-1">
         {suggestions && suggestions.length > 0 ? (
@@ -331,99 +416,52 @@ export function PredictionForm({
           />
         </Field>
 
-        {SHOW_GOALSCORER_AND_BOOST && (
         <Field>
-          <Select
-            value={scorerPlayerId || "none"}
-            onValueChange={(value) =>
-              setScorerPlayerId(value === "none" ? "" : value)
-            }
-          >
-            <SelectTrigger
-              className="h-12 w-full text-base"
-              aria-label="Goalscorer"
-            >
-              <SelectValue placeholder="Choose player who score" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="none">None</SelectItem>
-              </SelectGroup>
-              {homePlayers.length > 0 && (
-                <SelectGroup>
-                  <SelectLabel>
-                    <TeamName name={homeTeamName} />
-                  </SelectLabel>
-                  {homePlayers.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      <span className="flex items-center gap-2">
-                        {player.shirt_number != null && (
-                          <span className="text-muted-foreground tabular-nums">
-                            {player.shirt_number}
-                          </span>
-                        )}
-                        <span>{player.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              )}
-              {awayPlayers.length > 0 && (
-                <SelectGroup>
-                  <SelectLabel>
-                    <TeamName name={awayTeamName} />
-                  </SelectLabel>
-                  {awayPlayers.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      <span className="flex items-center gap-2">
-                        {player.shirt_number != null && (
-                          <span className="text-muted-foreground tabular-nums">
-                            {player.shirt_number}
-                          </span>
-                        )}
-                        <span>{player.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              )}
-            </SelectContent>
-          </Select>
+          <FieldLabel className="text-xs font-medium text-white/70">
+            {t("scorer")}
+          </FieldLabel>
+          <ScorerPickerDrawer
+            homeTeamName={homeTeamName}
+            awayTeamName={awayTeamName}
+            homePlayers={homePlayers}
+            awayPlayers={awayPlayers}
+            selectedPlayerId={scorerPlayerId}
+            onSelect={setScorerPlayerId}
+          />
+          <FieldDescription className="text-white/60">
+            {t("scorerBonusHint")}
+          </FieldDescription>
         </Field>
-        )}
 
-        {SHOW_GOALSCORER_AND_BOOST && showBoostBlock && (
-          <Field>
-            <Tabs
-              value={boost}
-              onValueChange={(value) => {
-                if (value) setBoost(value);
-              }}
+        <Field>
+          <FieldLabel className="text-xs font-medium text-white/70">
+            {t("boost")}
+          </FieldLabel>
+          <Tabs
+            value={boost}
+            onValueChange={(value) => {
+              if (value) setBoost(value);
+            }}
+          >
+            <TabsList
+              className="h-11 w-full gap-1 rounded-xl bg-white/10 p-1 group-data-horizontal/tabs:h-11"
+              indicatorVariant="none"
+              data-vaul-no-drag
             >
-              <TabsList
-                className="h-11 w-full bg-white/10 p-1 group-data-horizontal/tabs:h-11"
-                indicatorClassName="bg-white/20"
-              >
-                <TabsTrigger value="1" className={boostTabTriggerClassName}>
-                  None
+              <TabsTrigger value="1" className={boostTabTriggerClassName}>
+                {t("boostNone")}
+              </TabsTrigger>
+              {showX2 ? (
+                <TabsTrigger value="2" className={boostTabTriggerClassName}>
+                  {t("boostX2")}
                 </TabsTrigger>
-                {showX2 && (
-                  <TabsTrigger value="2" className={boostTabTriggerClassName}>
-                    🔥🔥 x2
-                  </TabsTrigger>
-                )}
-                {showX3 && (
-                  <TabsTrigger value="3" className={boostTabTriggerClassName}>
-                    🔥🔥🔥 x3
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </Tabs>
-            <FieldDescription className="text-white/60">
-              One x2 and one x3 boost per round.
-            </FieldDescription>
-          </Field>
-        )}
+              ) : null}
+            </TabsList>
+          </Tabs>
+          <FieldDescription className="text-white/60">
+            {t("boostPerDay")}
+          </FieldDescription>
+        </Field>
 
         {state?.error && (
           <Alert variant="destructive">
@@ -438,7 +476,7 @@ export function PredictionForm({
         size="xl"
         className="w-full shrink-0 bg-white text-black hover:bg-white/90"
       >
-        {pending ? "Saving…" : "Save prediction"}
+        {pending ? t("saving") : initial ? t("update") : t("save")}
       </Button>
     </form>
   );

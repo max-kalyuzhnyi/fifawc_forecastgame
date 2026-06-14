@@ -179,6 +179,7 @@ export interface Database {
           scorer_player_id: string | null;
           scorer_name: string | null;
           boost_multiplier: number;
+          boost_day: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -192,6 +193,7 @@ export interface Database {
           scorer_player_id?: string | null;
           scorer_name?: string | null;
           boost_multiplier?: number;
+          boost_day?: string | null;
           created_at?: string;
           updated_at?: string;
         };
