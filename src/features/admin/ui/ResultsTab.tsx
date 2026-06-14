@@ -58,6 +58,7 @@ export function ResultsTab({ teams, matches, scorersByMatch }: ResultsTabProps) 
                   initialHome={match.home_score}
                   initialAway={match.away_score}
                   initialScorers={(scorersByMatch[match.id] ?? []).join(", ")}
+                  initialHighlights={match.highlights_youtube_id}
                   initialStatus={
                     match.status as "scheduled" | "live" | "finished"
                   }

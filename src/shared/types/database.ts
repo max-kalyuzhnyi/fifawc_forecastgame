@@ -90,6 +90,7 @@ export interface Database {
           fd_last_updated: string | null;
           home_lineup: Record<string, unknown> | null;
           away_lineup: Record<string, unknown> | null;
+          highlights_youtube_id: string | null;
           pick_reminder_sent_at: string | null;
           created_at: string;
           updated_at: string;
@@ -150,6 +151,7 @@ export interface Database {
           shirt_number: number | null;
           photo_url: string | null;
           wiki_title: string | null;
+          api_football_id: number | null;
           created_at: string;
         };
         Insert: {
@@ -160,6 +162,7 @@ export interface Database {
           shirt_number?: number | null;
           photo_url?: string | null;
           wiki_title?: string | null;
+          api_football_id?: number | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;

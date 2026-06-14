@@ -26,7 +26,7 @@ export default async function AdminPage() {
     supabase
       .from("matches")
       .select(
-        "id, home_team_name, away_team_name, kickoff_at, home_score, away_score, status, round_display, group_name",
+        "id, home_team_name, away_team_name, kickoff_at, home_score, away_score, status, highlights_youtube_id, round_display, group_name",
       )
       .order("kickoff_at", { ascending: true }),
     supabase.from("teams").select("id, name, primary_color").order("name"),

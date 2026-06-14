@@ -17,6 +17,7 @@ import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { GroupStandingsList } from "@/features/matches/ui/GroupStandingsList";
 import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
+import { MatchHighlightsThumb } from "@/features/matches/ui/MatchHighlights";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,19 +105,24 @@ function MatchTimeBadge({
   kickoffAt,
   locale,
   live,
+  finished,
   liveMinute,
   t,
 }: {
   kickoffAt: string;
   locale: Locale;
   live: boolean;
+  finished: boolean;
   liveMinute: string | null;
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
   return (
     <Badge
       variant="secondary"
-      className="h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums"
+      className={cn(
+        "h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground",
+        !live && !finished && "tabular-nums",
+      )}
     >
       {live ? (
         <LiveMinuteIndicator
@@ -124,6 +130,8 @@ function MatchTimeBadge({
           liveLabel={t("live")}
           className="text-red-300"
         />
+      ) : finished ? (
+        t("finished")
       ) : (
         formatMatchTime(kickoffAt, locale)
       )}
@@ -233,10 +241,10 @@ function MatchCenterFocus({
     <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
       {prediction ? (
         <>
-          <p className={scoreClassName}>
+          <p className={cn(scoreClassName, "text-foreground/50")}>
             {formatMatchScore(prediction.home_score, prediction.away_score)}
             {prediction.boost_multiplier > 1 && (
-              <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
+              <span className="ml-0.5 text-[11px] font-semibold text-foreground/35">
                 x{prediction.boost_multiplier}
               </span>
             )}
@@ -346,6 +354,7 @@ function MatchCard({
             kickoffAt={match.kickoff_at}
             locale={locale}
             live={live}
+            finished={finished}
             liveMinute={formatLiveMinute(
               match.minute ?? null,
               match.injury_time ?? null,
@@ -361,17 +370,22 @@ function MatchCard({
           <p className={teamNameClassName}>{match.home_team_name}</p>
         </div>
 
-        <MatchCenterFocus
-          prediction={prediction}
-          locked={locked}
-          live={live}
-          finished={finished}
-          homeScore={match.home_score ?? 0}
-          awayScore={match.away_score ?? 0}
-          points={points}
-          featured={featured}
-          t={t}
-        />
+        <div className="flex min-w-0 flex-col items-center gap-2.5 self-center">
+          <MatchCenterFocus
+            prediction={prediction}
+            locked={locked}
+            live={live}
+            finished={finished}
+            homeScore={match.home_score ?? 0}
+            awayScore={match.away_score ?? 0}
+            points={points}
+            featured={featured}
+            t={t}
+          />
+          {finished && match.highlights_youtube_id && (
+            <MatchHighlightsThumb videoId={match.highlights_youtube_id} />
+          )}
+        </div>
 
         <div className="flex min-w-0 flex-col items-center gap-1.5">
           <TeamFlag name={match.away_team_name} size={flagSize} />

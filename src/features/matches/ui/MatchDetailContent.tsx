@@ -22,6 +22,7 @@ import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
 import { MatchEventsTimeline } from "@/features/matches/ui/MatchEventsTimeline";
+import { MatchHighlights } from "@/features/matches/ui/MatchHighlights";
 import { MatchLineups } from "@/features/matches/ui/MatchLineups";
 import { MatchPredictionsBoard } from "@/features/matches/ui/MatchPredictionsBoard";
 import { MatchTeamBackground } from "@/features/matches/ui/MatchTeamBackground";
@@ -168,10 +169,10 @@ function MatchDetailCenterFocus({
     <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 self-center">
       {prediction ? (
         <>
-          <p className="w-full truncate text-center text-3xl font-bold leading-none tabular-nums text-white">
+          <p className="w-full truncate text-center text-3xl font-bold leading-none tabular-nums text-white/50">
             {formatMatchScore(prediction.home_score, prediction.away_score)}
             {prediction.boost_multiplier > 1 && (
-              <span className="ml-1 text-base font-semibold text-white/60">
+              <span className="ml-1 text-base font-semibold text-white/35">
                 x{prediction.boost_multiplier}
               </span>
             )}
@@ -336,6 +337,10 @@ export const MatchDetailContent = memo(function MatchDetailContent({
 
             <MatchVoters voters={voters} />
           </div>
+
+          {finished && match.highlights_youtube_id && (
+            <MatchHighlights videoId={match.highlights_youtube_id} />
+          )}
         </section>
 
         {!locked && (

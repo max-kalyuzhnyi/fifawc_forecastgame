@@ -22,6 +22,7 @@ interface MatchResultFormProps {
   initialHome?: number | null;
   initialAway?: number | null;
   initialScorers?: string;
+  initialHighlights?: string | null;
   initialStatus?: "scheduled" | "live" | "finished";
 }
 
@@ -32,6 +33,7 @@ export function MatchResultForm({
   initialHome,
   initialAway,
   initialScorers = "",
+  initialHighlights = "",
   initialStatus = "scheduled",
 }: MatchResultFormProps) {
   const [state, action, pending] = useActionState(saveMatchResult, null);
@@ -92,6 +94,20 @@ export function MatchResultForm({
               />
               <FieldDescription>
                 Scorers are saved only when submitting the final result.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <Input
+                id={`highlights-${matchId}`}
+                name="highlights"
+                type="text"
+                placeholder="Highlights YouTube URL or video ID"
+                aria-label="Highlights"
+                defaultValue={initialHighlights ?? ""}
+              />
+              <FieldDescription>
+                Paste a FIFA highlights link to override auto-sync. Leave empty to
+                clear.
               </FieldDescription>
             </Field>
             {state?.error && (

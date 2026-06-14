@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getCurrentUserId, isAdmin } from "@/shared/lib/auth";
+import { parseYoutubeVideoId } from "@/shared/lib/youtube";
 
 const resultSchema = z.object({
   match_id: z.string().uuid(),
   home_score: z.coerce.number().int().min(0),
   away_score: z.coerce.number().int().min(0),
   scorers: z.string().optional(),
+  highlights: z.string().optional(),
   result_type: z.enum(["live", "finished"]),
 });
 
@@ -29,6 +31,7 @@ export async function saveMatchResult(
     home_score: formData.get("home_score"),
     away_score: formData.get("away_score"),
     scorers: formData.get("scorers"),
+    highlights: formData.get("highlights"),
     result_type: formData.get("result_type"),
   });
 
@@ -40,12 +43,24 @@ export async function saveMatchResult(
   const { match_id, home_score, away_score, result_type } = parsed.data;
   const isFinal = result_type === "finished";
 
+  const highlightsRaw = parsed.data.highlights?.trim() ?? "";
+  const highlightsYoutubeId = highlightsRaw
+    ? parseYoutubeVideoId(highlightsRaw)
+    : highlightsRaw === ""
+      ? null
+      : undefined;
+
+  if (highlightsYoutubeId === undefined) {
+    return { error: "Invalid YouTube highlights URL or video ID" };
+  }
+
   const { error: matchError } = await supabase
     .from("matches")
     .update({
       home_score,
       away_score,
       status: isFinal ? "finished" : "live",
+      highlights_youtube_id: highlightsYoutubeId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", match_id);

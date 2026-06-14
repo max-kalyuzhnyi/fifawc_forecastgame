@@ -48,6 +48,7 @@ export interface Match {
   fd_last_updated?: string | null;
   home_lineup?: TeamLineup | null;
   away_lineup?: TeamLineup | null;
+  highlights_youtube_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }

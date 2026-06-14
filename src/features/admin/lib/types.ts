@@ -17,6 +17,7 @@ export interface AdminMatch {
   home_score: number | null;
   away_score: number | null;
   status: string;
+  highlights_youtube_id: string | null;
   round_display: string;
   group_name: string | null;
 }
