@@ -19,7 +19,6 @@ import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchHighlightsThumb } from "@/features/matches/ui/MatchHighlights";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
-import { UpsetWatchBadge } from "@/features/matches/ui/UpsetWatchBadge";
 import { isMatchUpsetWatch } from "@/shared/lib/onside/upsets";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,6 +32,7 @@ import {
   formatMatchTime,
   getDateGroupKey,
   getMatchDayBucket,
+  getRelativeDayOffset,
   type MatchDayBucket,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
@@ -80,12 +80,12 @@ function isLiveMatch(match: Match): boolean {
 function getDefaultTab(matches: Match[]): MatchDayBucket {
   if (
     matches.some(
-      (match) => getMatchDayBucket(match.kickoff_at) === "upcoming3days",
+      (match) => getMatchDayBucket(match) === "upcoming3days",
     )
   ) {
     return "upcoming3days";
   }
-  if (matches.some((match) => getMatchDayBucket(match.kickoff_at) === "future")) {
+  if (matches.some((match) => getMatchDayBucket(match) === "future")) {
     return "future";
   }
   return "past";
@@ -354,12 +354,18 @@ function MatchCard({
           <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
             {formatMatchSubtitle(match, t)}
           </p>
-          {isUpsetWatch && !finished ? (
-            <UpsetWatchBadge label={t("upsetWatch")} />
-          ) : null}
         </div>
 
-        <div className="flex min-w-0 items-center justify-end">
+        <div className="flex min-w-0 items-center justify-end gap-1">
+          {isUpsetWatch && !finished ? (
+            <span
+              aria-label={t("upsetWatch")}
+              className="text-sm leading-none"
+              role="img"
+            >
+              🔥
+            </span>
+          ) : null}
           {!finished && (
             <MatchTimeBadge
               kickoffAt={match.kickoff_at}
@@ -486,7 +492,7 @@ export function MatchesView({
       return;
     }
 
-    const bucket = getMatchDayBucket(match.kickoff_at);
+    const bucket = getMatchDayBucket(match);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- align tab with deep-linked match
     setActiveTab(bucket);
   }, [matches, selectedMatchId]);
@@ -508,7 +514,7 @@ export function MatchesView({
     () =>
       matches.filter(
         (match) =>
-          getMatchDayBucket(match.kickoff_at) === activeTab &&
+          getMatchDayBucket(match) === activeTab &&
           !liveMatchIds.has(match.id),
       ),
     [matches, activeTab, liveMatchIds],
@@ -578,7 +584,7 @@ export function MatchesView({
       !match ||
       (isLiveMatch(match)
         ? false
-        : getMatchDayBucket(match.kickoff_at) !== tab)
+        : getMatchDayBucket(match) !== tab)
     ) {
       setSelectedMatchId(null);
     }
@@ -681,12 +687,20 @@ export function MatchesView({
                     setCollapsed((prev) => toggleCollapsed(prev, dateKey))
                   }
                   className={cn(
-                    "flex w-full items-center justify-center gap-0.5 border-t border-white/[0.08] px-3 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-white/[0.03]",
+                    "flex w-full items-center justify-center gap-0.5 border-t border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-white/[0.08]",
                     groupIndex === 0 && liveMatches.length === 0 && "border-t-0",
                   )}
                   aria-expanded={!isCollapsed}
                 >
-                  <span>{formatMatchDateHeader(dayMatches[0].kickoff_at, locale)}</span>
+                  <span>
+                    {(() => {
+                      const kickoffAt = dayMatches[0].kickoff_at;
+                      const offset = getRelativeDayOffset(kickoffAt);
+                      if (offset === 0) return t("today");
+                      if (offset === 1) return t("tomorrow");
+                      return formatMatchDateHeader(kickoffAt, locale);
+                    })()}
+                  </span>
                   {groupIndex > 0 && (
                     <HugeiconsIcon
                       icon={isCollapsed ? ArrowDown01Icon : ArrowUp01Icon}

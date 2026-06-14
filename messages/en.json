@@ -57,6 +57,8 @@
     "tabPast": "Past",
     "tabUpcoming3days": "Next 3 days",
     "tabFuture": "Future",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
     "emptyTitle": "No matches",
     "emptyPast": "Nothing in past games.",
     "emptyUpcoming3days": "Nothing in the next 3 days.",

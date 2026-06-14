@@ -1,3 +1,4 @@
+import type { MatchStatus } from "@/entities/match/model/types";
 import type { Locale } from "@/shared/types/database";
 import { defaultLocale, toIntlLocale } from "@/i18n/config";
 
@@ -59,13 +60,21 @@ export function getLocalDayStart(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+export function getRelativeDayOffset(iso: string, now = new Date()): number {
+  const day = getLocalDayStart(new Date(iso)).getTime();
+  const today = getLocalDayStart(now).getTime();
+  return Math.round((day - today) / 86_400_000);
+}
+
 export type MatchDayBucket = "past" | "upcoming3days" | "future";
 
 export function getMatchDayBucket(
-  iso: string,
+  match: { kickoff_at: string; status: MatchStatus },
   now = new Date(),
 ): MatchDayBucket {
-  const kickoff = new Date(iso);
+  if (match.status === "finished") return "past";
+
+  const kickoff = new Date(match.kickoff_at);
   const today = getLocalDayStart(now);
   const upcomingEnd = new Date(today);
   upcomingEnd.setDate(upcomingEnd.getDate() + 3);

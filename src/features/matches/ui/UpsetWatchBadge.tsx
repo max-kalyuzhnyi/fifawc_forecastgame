@@ -17,6 +17,7 @@ export function UpsetWatchBadge({ label, className }: UpsetWatchBadgeProps) {
         className,
       )}
     >
+      <span aria-hidden>🔥</span>
       {label}
     </Badge>
   );
