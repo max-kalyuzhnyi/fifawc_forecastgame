@@ -152,11 +152,11 @@ function PlayerToken({
         />
         <EventBadges badge={badge} />
       </div>
-      <div className="mt-0.5 w-full rounded bg-[#0d1224] px-0.5 py-px">
+      <div className="mt-0.5 w-full px-0.5">
         <p className="truncate text-center text-[9px] font-medium leading-tight text-white">
           {formatPlayerShortName(player.name)}
         </p>
-        <p className="text-center text-[11px] font-medium tabular-nums leading-tight text-white/80">
+        <p className="text-center text-[11px] font-medium tabular-nums leading-tight text-white/90">
           {isGK ? (
             <>
               {gkLabel}

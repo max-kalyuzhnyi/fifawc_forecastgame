@@ -1,38 +1,58 @@
 import type { Locale } from "@/shared/types/database";
 import { defaultLocale, toIntlLocale } from "@/i18n/config";
 
+// Node's ICU and the browser's ICU can disagree on whether a comma is inserted
+// in some date formats (e.g. "Sun, 14 Jun" vs "Sun 14 Jun"), which triggers
+// React hydration mismatches. Dropping the comma from literal separators makes
+// the output deterministic across runtimes while preserving other separators
+// (e.g. the ":" in time formats).
+function formatDeterministic(
+  iso: string,
+  locale: Locale,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const parts = new Intl.DateTimeFormat(toIntlLocale(locale), options).formatToParts(
+    new Date(iso),
+  );
+  return parts
+    .map((part) => (part.type === "literal" ? part.value.replace(/,/g, "") : part.value))
+    .join("")
+    .replace(/[^\S\n]{2,}/g, " ")
+    .trim();
+}
+
 export function formatKickoff(iso: string, locale: Locale = defaultLocale): string {
-  return new Intl.DateTimeFormat(toIntlLocale(locale), {
+  return formatDeterministic(iso, locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
     timeZoneName: "short",
-  }).format(new Date(iso));
+  });
 }
 
 export function formatMatchTime(iso: string, locale: Locale = defaultLocale): string {
-  return new Intl.DateTimeFormat(toIntlLocale(locale), {
+  return formatDeterministic(iso, locale, {
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 export function formatMatchDateHeader(iso: string, locale: Locale = defaultLocale): string {
-  return new Intl.DateTimeFormat(toIntlLocale(locale), {
+  return formatDeterministic(iso, locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
-  }).format(new Date(iso));
+  });
 }
 
 export function formatMatchKickoffDate(iso: string, locale: Locale = defaultLocale): string {
-  return new Intl.DateTimeFormat(toIntlLocale(locale), {
+  return formatDeterministic(iso, locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
-  }).format(new Date(iso));
+  });
 }
 
 export function getLocalDayStart(date: Date): Date {
