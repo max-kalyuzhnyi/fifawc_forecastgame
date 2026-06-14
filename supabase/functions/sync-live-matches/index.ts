@@ -8,6 +8,9 @@ function fdHeaders(token: string): Record<string, string> {
   return {
     "X-Auth-Token": token,
     "X-Unfold-Lineups": "true",
+    "X-Unfold-Goals": "true",
+    "X-Unfold-Bookings": "true",
+    "X-Unfold-Subs": "true",
   };
 }
 

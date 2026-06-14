@@ -15,26 +15,23 @@ Private forecasting competition for FIFA World Cup 2026 — Telegram Mini App.
 - Next.js 16 (App Router) + TypeScript + Tailwind
 - Telegram Mini App auth + Supabase Postgres + RLS
 
-## Two Supabase projects (do not mix)
+## Supabase project
 
-This repo talks to **two separate Supabase projects** — different databases, different users, different edge function deploys.
+Single project for app, Vercel, edge functions, and cron:
 
-| | **Production** | **Staging / local dev** |
-|---|---|---|
-| Supabase ref | `dlwpiikzuwpvbvnjupmn` (wcbot) | `qgawmjczgfbhwsdpsqly` (fifawc) |
-| Used by | Vercel production, `npm run deploy:functions` | `.env.local` for local dev, `npm run deploy:functions:staging` |
-| Users | Real players (~13) | Dev / test copy (~26) |
+| | |
+|---|---|
+| URL | `https://qgawmjczgfbhwsdpsqly.supabase.co` |
+| Ref | `qgawmjczgfbhwsdpsqly` |
 
-**Rule:** Vercel env vars, cron, vault secrets, and `deploy:functions` → **production only**.  
-Staging is for experiments; deploying reminders there does **not** notify production users.
+Vercel `NEXT_PUBLIC_SUPABASE_*`, `.env.local`, and `npm run deploy:functions` must all point at this project.
 
 ## Setup
 
 ### 1. Supabase
 
-1. Use the **staging** project (`qgawmjczgfbhwsdpsqly`) for local dev, or production if you know what you're doing.
-2. Copy `.env.example` → `.env.local` and fill in Supabase keys for the project you chose.
-3. Run migrations in order via Supabase SQL editor:
+1. Copy `.env.example` → `.env.local` and fill in keys from the project dashboard.
+2. Run migrations in order via Supabase SQL editor:
    - `supabase/migrations/001_initial_schema.sql`
    - `supabase/migrations/002_telegram_auth.sql`
 4. Import the schedule:
@@ -75,10 +72,19 @@ Open the bot in Telegram and launch the Mini App — browser-only access shows a
 - `npm run dev` — development server
 - `npm run import:schedule` — fetch OpenFootball WC 2026 fixtures
 - `npm test` — unit tests for scoring logic
-- `npm run deploy:functions` — deploy edge functions to **production** (`dlwpiikzuwpvbvnjupmn`)
-- `npm run deploy:functions:staging` — deploy to **staging** (`qgawmjczgfbhwsdpsqly`)
+- `npm run deploy:functions` — deploy edge functions to `qgawmjczgfbhwsdpsqly`
 
-## Edge functions & cron (production only)
+## Broadcast
+
+Use `broadcast:send:prod` (pulls Vercel production env + patches service role via Supabase CLI):
+
+```bash
+npm run broadcast:send:prod -- --telegram-id YOUR_TELEGRAM_ID
+npm run broadcast:send:prod -- --all
+npm run broadcast:send:prod -- --all --confirm
+```
+
+## Edge functions & cron
 
 Telegram notifications run via Supabase Edge Functions triggered by `pg_cron`:
 
@@ -90,16 +96,16 @@ Telegram notifications run via Supabase Edge Functions triggered by `pg_cron`:
 
 ### Deploy pick reminders
 
-**Production Supabase project:** `dlwpiikzuwpvbvnjupmn` (same as Vercel `NEXT_PUBLIC_SUPABASE_URL`).
+**Supabase project:** `qgawmjczgfbhwsdpsqly` (same as Vercel `NEXT_PUBLIC_SUPABASE_URL`).
 
 1. Deploy edge functions:
    ```bash
    npm run deploy:functions
    ```
-2. Set edge function secrets on **production** project (Supabase Dashboard → Edge Functions → Secrets):
+2. Set edge function secrets (Supabase Dashboard → Edge Functions → Secrets):
    - `CRON_SECRET` — same value as in Vault `cron_secret`
-   - `TELEGRAM_BOT_TOKEN` — same bot token as Vercel production
-   - `MINI_APP_URL` — production Mini App URL
-3. Add Vault secret (Dashboard → Project Settings → Vault):
-   - `pick_reminders_edge_url` = `https://dlwpiikzuwpvbvnjupmn.supabase.co/functions/v1/send-pick-reminders`
+   - `TELEGRAM_BOT_TOKEN` — same bot token as Vercel
+   - `MINI_APP_URL` — Mini App URL (`https://fifawcforecastgame.vercel.app`)
+3. Vault secret (Dashboard → Project Settings → Vault):
+   - `pick_reminders_edge_url` = `https://qgawmjczgfbhwsdpsqly.supabase.co/functions/v1/send-pick-reminders`
 4. Apply migration `supabase/migrations/011_pick_reminders.sql` via SQL editor or `supabase db push`.

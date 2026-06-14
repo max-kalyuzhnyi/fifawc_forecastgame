@@ -38,12 +38,13 @@ import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
 import { setLiveRefreshPaused } from "@/shared/lib/liveRefreshPause";
+import { useLiveMatchUpdates } from "@/shared/lib/supabase/useLiveMatchUpdates";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import type { Locale } from "@/shared/types/database";
 
 interface MatchesViewProps {
-  matches: Match[];
+  serverMatches: Match[];
   voterMap: Record<string, MatchVoterInfo>;
   predictionMap: Record<string, PredictionDetail>;
   playersByMatch: Record<string, MatchPlayerOption[]>;
@@ -58,9 +59,19 @@ interface MatchesViewProps {
 const TAB_KEYS: MatchDayBucket[] = ["past", "upcoming3days", "future"];
 
 const FLAG_SIZE = 28;
+const FEATURED_FLAG_SIZE = 40;
 const MATCH_CARD_MIN_H = "min-h-[7rem]";
+const FEATURED_MATCH_CARD_MIN_H = "min-h-[8rem]";
 const matchCardGridClassName =
   "grid w-full grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] items-start gap-x-2";
+
+function isLiveMatch(match: Match): boolean {
+  return (
+    match.status === "live" &&
+    match.home_score !== null &&
+    match.away_score !== null
+  );
+}
 
 function getDefaultTab(matches: Match[]): MatchDayBucket {
   if (
@@ -128,6 +139,7 @@ function MatchCenterFocus({
   homeScore,
   awayScore,
   points,
+  featured = false,
   t,
 }: {
   prediction: PredictionDetail | undefined;
@@ -137,12 +149,17 @@ function MatchCenterFocus({
   homeScore: number;
   awayScore: number;
   points: number | null;
+  featured?: boolean;
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
+  const scoreClassName = featured
+    ? "w-full text-center text-[20px] font-bold leading-none tabular-nums"
+    : "w-full text-center text-[17px] font-bold leading-none tabular-nums";
+
   if (finished) {
     return (
       <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
-        <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
+        <p className={scoreClassName}>
           {formatMatchScore(homeScore, awayScore)}
         </p>
         {prediction ? (
@@ -180,7 +197,7 @@ function MatchCenterFocus({
 
     return (
       <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
-        <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
+        <p className={scoreClassName}>
           {formatMatchScore(homeScore, awayScore)}
         </p>
         {prediction ? (
@@ -216,7 +233,7 @@ function MatchCenterFocus({
     <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
       {prediction ? (
         <>
-          <p className="w-full text-center text-[17px] font-bold leading-none tabular-nums">
+          <p className={scoreClassName}>
             {formatMatchScore(prediction.home_score, prediction.away_score)}
             {prediction.boost_multiplier > 1 && (
               <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -258,8 +275,115 @@ function formatMatchSubtitle(
   return match.round_display;
 }
 
+function MatchCard({
+  match,
+  prediction,
+  voters,
+  scorers,
+  isSelected,
+  featured = false,
+  locale,
+  t,
+  onOpen,
+}: {
+  match: Match;
+  prediction: PredictionDetail | undefined;
+  voters: MatchVoterInfo;
+  scorers: string[];
+  isSelected: boolean;
+  featured?: boolean;
+  locale: Locale;
+  t: ReturnType<typeof useTranslations<"matches">>;
+  onOpen: (matchId: string) => void;
+}) {
+  const locked = new Date(match.kickoff_at) <= new Date();
+  const live = isLiveMatch(match);
+  const finished =
+    match.status === "finished" &&
+    match.home_score !== null &&
+    match.away_score !== null;
+  const points =
+    finished && prediction
+      ? calculatePredictionPoints({
+          predictedHome: prediction.home_score,
+          predictedAway: prediction.away_score,
+          actualHome: match.home_score!,
+          actualAway: match.away_score!,
+          predictedScorer: prediction.scorer_name,
+          actualScorers: scorers,
+          boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+        }).totalPoints
+      : null;
+
+  const flagSize = featured ? FEATURED_FLAG_SIZE : FLAG_SIZE;
+  const teamNameClassName = featured
+    ? "line-clamp-2 w-full text-center text-[13px] font-medium leading-tight"
+    : "line-clamp-2 w-full text-center text-[11px] font-medium leading-tight";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(match.id)}
+      aria-pressed={isSelected}
+      className={cn(
+        "flex w-full flex-col justify-center px-3 py-2 text-left transition-colors hover:bg-white/[0.03]",
+        featured ? FEATURED_MATCH_CARD_MIN_H : MATCH_CARD_MIN_H,
+        "border-t border-white/[0.08]",
+        isSelected && "bg-white/[0.05]",
+      )}
+    >
+      <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2">
+        <div className="flex min-w-0 items-center justify-start">
+          <MatchVoters voters={voters} compact />
+        </div>
+
+        <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
+          {formatMatchSubtitle(match, t)}
+        </p>
+
+        <div className="flex min-w-0 items-center justify-end">
+          <MatchTimeBadge
+            kickoffAt={match.kickoff_at}
+            locale={locale}
+            live={live}
+            liveMinute={formatLiveMinute(
+              match.minute ?? null,
+              match.injury_time ?? null,
+            )}
+            t={t}
+          />
+        </div>
+      </div>
+
+      <div className={matchCardGridClassName}>
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
+          <TeamFlag name={match.home_team_name} size={flagSize} />
+          <p className={teamNameClassName}>{match.home_team_name}</p>
+        </div>
+
+        <MatchCenterFocus
+          prediction={prediction}
+          locked={locked}
+          live={live}
+          finished={finished}
+          homeScore={match.home_score ?? 0}
+          awayScore={match.away_score ?? 0}
+          points={points}
+          featured={featured}
+          t={t}
+        />
+
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
+          <TeamFlag name={match.away_team_name} size={flagSize} />
+          <p className={teamNameClassName}>{match.away_team_name}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function MatchesView({
-  matches,
+  serverMatches,
   voterMap,
   predictionMap,
   playersByMatch,
@@ -274,10 +398,35 @@ export function MatchesView({
   const t = useTranslations("matches");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [matches, setMatches] = useState(serverMatches);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(
     () => searchParams.get("match"),
   );
   const prevDrawerMatchIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setMatches(serverMatches);
+  }, [serverMatches]);
+
+  const handleLiveMatchUpdate = useCallback((row: Match) => {
+    setMatches((prev) =>
+      prev.map((match) =>
+        match.id === row.id
+          ? {
+              ...match,
+              status: row.status,
+              home_score: row.home_score,
+              away_score: row.away_score,
+              minute: row.minute,
+              injury_time: row.injury_time,
+              fd_status: row.fd_status,
+            }
+          : match,
+      ),
+    );
+  }, []);
+
+  useLiveMatchUpdates(handleLiveMatchUpdate);
 
   const groupStandings = useMemo(() => buildGroupStandings(matches), [matches]);
   const groupStandingsByName = useMemo(
@@ -306,7 +455,7 @@ export function MatchesView({
     }
 
     const match = matches.find((item) => item.id === selectedMatchId);
-    if (!match) {
+    if (!match || isLiveMatch(match)) {
       return;
     }
 
@@ -315,12 +464,32 @@ export function MatchesView({
     setActiveTab(bucket);
   }, [matches, selectedMatchId]);
 
+  const liveMatches = useMemo(
+    () =>
+      matches
+        .filter(isLiveMatch)
+        .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at)),
+    [matches],
+  );
+
+  const liveMatchIds = useMemo(
+    () => new Set(liveMatches.map((match) => match.id)),
+    [liveMatches],
+  );
+
   const filteredMatches = useMemo(
     () =>
       matches.filter(
-        (match) => getMatchDayBucket(match.kickoff_at) === activeTab,
+        (match) =>
+          getMatchDayBucket(match.kickoff_at) === activeTab &&
+          !liveMatchIds.has(match.id),
       ),
-    [matches, activeTab],
+    [matches, activeTab, liveMatchIds],
+  );
+
+  const drawerMatches = useMemo(
+    () => [...liveMatches, ...filteredMatches],
+    [liveMatches, filteredMatches],
   );
 
   const drawerMatchId = useMemo(() => {
@@ -328,10 +497,10 @@ export function MatchesView({
       return null;
     }
 
-    return filteredMatches.some((match) => match.id === selectedMatchId)
+    return drawerMatches.some((match) => match.id === selectedMatchId)
       ? selectedMatchId
       : null;
-  }, [filteredMatches, selectedMatchId]);
+  }, [drawerMatches, selectedMatchId]);
 
   useEffect(() => {
     setLiveRefreshPaused(Boolean(drawerMatchId));
@@ -378,7 +547,12 @@ export function MatchesView({
     }
 
     const match = matches.find((item) => item.id === selectedMatchId);
-    if (!match || getMatchDayBucket(match.kickoff_at) !== tab) {
+    if (
+      !match ||
+      (isLiveMatch(match)
+        ? false
+        : getMatchDayBucket(match.kickoff_at) !== tab)
+    ) {
       setSelectedMatchId(null);
     }
   };
@@ -408,7 +582,7 @@ export function MatchesView({
                 aria-selected={isActive}
                 onClick={() => handleTabChange(tabKey)}
                 className={cn(
-                  "flex-1 px-0.5 py-1 text-center text-[15px] leading-none whitespace-nowrap transition-colors",
+                  "flex-1 px-0.5 py-1 text-center text-[15px] leading-none whitespace-nowrap transition-[color,transform] duration-200 active:scale-[0.97] motion-reduce:transition-none",
                   isActive
                     ? "font-semibold text-foreground"
                     : "font-normal text-white/40 hover:text-white/55",
@@ -421,7 +595,11 @@ export function MatchesView({
         </div>
 
         <div className="overflow-y-auto overscroll-contain">
-        {groupedByDate.length === 0 ? (
+        <div
+          key={activeTab}
+          className="tab-panel-enter motion-reduce:animate-none"
+        >
+        {liveMatches.length === 0 && groupedByDate.length === 0 ? (
           <Empty className="border-0 py-8">
             <EmptyHeader>
               <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
@@ -431,7 +609,40 @@ export function MatchesView({
             </EmptyHeader>
           </Empty>
         ) : (
-          groupedByDate.map(([dateKey, dayMatches], groupIndex) => {
+          <>
+            {liveMatches.length > 0 && (
+              <section>
+                <div className="flex w-full items-center justify-center gap-1.5 border-b border-white/[0.08] px-3 py-2.5 text-[13px] font-semibold text-foreground">
+                  <span
+                    className="size-1.5 shrink-0 rounded-full bg-red-400 animate-pulse"
+                    aria-hidden
+                  />
+                  <span>{t("liveNow")}</span>
+                </div>
+
+                {liveMatches.map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    prediction={predictionMap[match.id]}
+                    voters={
+                      voterMap[match.id] ?? {
+                        count: 0,
+                        voters: [],
+                      }
+                    }
+                    scorers={scorersByMatch[match.id] ?? []}
+                    isSelected={selectedMatchId === match.id}
+                    featured
+                    locale={locale}
+                    t={t}
+                    onOpen={openMatch}
+                  />
+                ))}
+              </section>
+            )}
+
+            {groupedByDate.map(([dateKey, dayMatches], groupIndex) => {
             const isCollapsed = collapsed.has(dateKey);
 
             return (
@@ -443,7 +654,7 @@ export function MatchesView({
                   }
                   className={cn(
                     "flex w-full items-center justify-center gap-0.5 border-t border-white/[0.08] px-3 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-white/[0.03]",
-                    groupIndex === 0 && "border-t-0",
+                    groupIndex === 0 && liveMatches.length === 0 && "border-t-0",
                   )}
                   aria-expanded={!isCollapsed}
                 >
@@ -457,111 +668,30 @@ export function MatchesView({
                 </button>
 
                 {!isCollapsed &&
-                  dayMatches.map((match) => {
-                    const prediction = predictionMap[match.id];
-                    const voters = voterMap[match.id] ?? {
-                      count: 0,
-                      voters: [],
-                    };
-                    const locked = new Date(match.kickoff_at) <= new Date();
-                    const live =
-                      match.status === "live" &&
-                      match.home_score !== null &&
-                      match.away_score !== null;
-                    const finished =
-                      match.status === "finished" &&
-                      match.home_score !== null &&
-                      match.away_score !== null;
-                    const isSelected = selectedMatchId === match.id;
-                    const points =
-                      finished && prediction
-                        ? calculatePredictionPoints({
-                            predictedHome: prediction.home_score,
-                            predictedAway: prediction.away_score,
-                            actualHome: match.home_score!,
-                            actualAway: match.away_score!,
-                            predictedScorer: prediction.scorer_name,
-                            actualScorers: scorersByMatch[match.id] ?? [],
-                            boostMultiplier:
-                              prediction.boost_multiplier as BoostMultiplier,
-                          }).totalPoints
-                        : null;
-
-                    return (
-                      <button
-                        key={match.id}
-                        type="button"
-                        onClick={() => openMatch(match.id)}
-                        aria-pressed={isSelected}
-                        className={cn(
-                          "flex w-full flex-col justify-center px-3 py-2 text-left transition-colors hover:bg-white/[0.03]",
-                          MATCH_CARD_MIN_H,
-                          "border-t border-white/[0.08]",
-                          isSelected && "bg-white/[0.05]",
-                        )}
-                      >
-                        <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2">
-                          <div className="flex min-w-0 items-center justify-start">
-                            <MatchVoters voters={voters} compact />
-                          </div>
-
-                          <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
-                            {formatMatchSubtitle(match, t)}
-                          </p>
-
-                          <div className="flex min-w-0 items-center justify-end">
-                            <MatchTimeBadge
-                              kickoffAt={match.kickoff_at}
-                              locale={locale}
-                              live={live}
-                              liveMinute={formatLiveMinute(
-                                match.minute ?? null,
-                                match.injury_time ?? null,
-                              )}
-                              t={t}
-                            />
-                          </div>
-                        </div>
-
-                        <div className={matchCardGridClassName}>
-                          <div className="flex min-w-0 flex-col items-center gap-1.5">
-                            <TeamFlag
-                              name={match.home_team_name}
-                              size={FLAG_SIZE}
-                            />
-                            <p className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight">
-                              {match.home_team_name}
-                            </p>
-                          </div>
-
-                          <MatchCenterFocus
-                            prediction={prediction}
-                            locked={locked}
-                            live={live}
-                            finished={finished}
-                            homeScore={match.home_score ?? 0}
-                            awayScore={match.away_score ?? 0}
-                            points={points}
-                            t={t}
-                          />
-
-                          <div className="flex min-w-0 flex-col items-center gap-1.5">
-                            <TeamFlag
-                              name={match.away_team_name}
-                              size={FLAG_SIZE}
-                            />
-                            <p className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight">
-                              {match.away_team_name}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  dayMatches.map((match) => (
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      prediction={predictionMap[match.id]}
+                      voters={
+                        voterMap[match.id] ?? {
+                          count: 0,
+                          voters: [],
+                        }
+                      }
+                      scorers={scorersByMatch[match.id] ?? []}
+                      isSelected={selectedMatchId === match.id}
+                      locale={locale}
+                      t={t}
+                      onOpen={openMatch}
+                    />
+                  ))}
               </section>
             );
-          })
+          })}
+          </>
         )}
+        </div>
         </div>
       </div>
 
@@ -571,7 +701,7 @@ export function MatchesView({
       />
 
       <MatchDrawer
-        matches={filteredMatches}
+        matches={drawerMatches}
         matchId={drawerMatchId}
         voterMap={voterMap}
         predictionMap={predictionMap}

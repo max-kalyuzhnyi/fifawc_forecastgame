@@ -17,6 +17,7 @@ function loadEnvFiles(): void {
 
 loadEnvFiles();
 
+const PRODUCTION_SUPABASE_HOST = "qgawmjczgfbhwsdpsqly.supabase.co";
 const DEFAULT_MINI_APP_URL = "https://fifawcforecastgame.vercel.app";
 const IMAGE_PATH = join(import.meta.dirname, "assets/wc-update-broadcast.png");
 const BUTTON_TEXT = "⚡️ Make your picks";
@@ -77,6 +78,22 @@ function getEnv(name: string): string {
     throw new Error(`Missing required env var: ${name}`);
   }
   return value;
+}
+
+function assertProductionSupabaseUrl(supabaseUrl: string): void {
+  let host: string;
+  try {
+    host = new URL(supabaseUrl).host;
+  } catch {
+    throw new Error(`Invalid NEXT_PUBLIC_SUPABASE_URL: ${supabaseUrl}`);
+  }
+
+  if (host !== PRODUCTION_SUPABASE_HOST) {
+    throw new Error(
+      `Рассылка только в production. Получен ${host}. ` +
+        "Запусти npm run broadcast:send:prod",
+    );
+  }
 }
 
 interface TelegramBotIdentity {
@@ -222,15 +239,18 @@ async function fetchRecipients(
 
 function printUsage(): void {
   console.log(`Usage:
-  npm run broadcast:send -- --to iarromanov
-  npm run broadcast:send -- --telegram-id 123456789
-  npm run broadcast:send -- --all
-  npm run broadcast:send -- --all --confirm
-  npm run broadcast:send -- --all --confirm --delay-ms 150
+  npm run broadcast:send:prod -- --to iarromanov
+  npm run broadcast:send:prod -- --telegram-id 123456789
+  npm run broadcast:send:prod -- --all
+  npm run broadcast:send:prod -- --all --confirm
+  npm run broadcast:send:prod -- --all --confirm --delay-ms 150
+
+Production only (${PRODUCTION_SUPABASE_HOST}). Use broadcast:send:prod to pull
+Vercel production env automatically.
 
 Env:
   TELEGRAM_BOT_TOKEN          FIFA WC Predictor bot (same as Vercel production)
-  NEXT_PUBLIC_SUPABASE_URL    production: dlwpiikzuwpvbvnjupmn.supabase.co
+  NEXT_PUBLIC_SUPABASE_URL    production: ${PRODUCTION_SUPABASE_HOST}
   SUPABASE_SERVICE_ROLE_KEY   matching service role key
   EXPECTED_BOT_USERNAME       optional safety check, e.g. fifawc_forecast_bot
   BROADCAST_ENV_FILE          optional path to env file`);
@@ -246,6 +266,7 @@ async function main() {
 
   const botToken = getEnv("TELEGRAM_BOT_TOKEN");
   const supabaseUrl = getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  assertProductionSupabaseUrl(supabaseUrl);
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
   const miniAppUrl = process.env.MINI_APP_URL ?? DEFAULT_MINI_APP_URL;
   const expectedBot = process.env.EXPECTED_BOT_USERNAME?.replace(/^@/, "");

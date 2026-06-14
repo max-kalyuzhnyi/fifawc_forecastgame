@@ -7,6 +7,7 @@ import type {
   LiveScoreByTeam,
 } from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
+import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { MatchPlayerOption } from "@/features/matches/actions";
@@ -94,8 +95,11 @@ function MatchDetailCenterFocus({
   locked,
   showScore,
   live,
+  finished,
   homeScore,
   awayScore,
+  points,
+  pickOnTrack,
   kickoffAt,
   liveMinute,
   locale,
@@ -105,24 +109,77 @@ function MatchDetailCenterFocus({
   locked: boolean;
   showScore: boolean;
   live: boolean;
+  finished: boolean;
   homeScore: number;
   awayScore: number;
+  points: number | null;
+  pickOnTrack: boolean;
   kickoffAt: string;
   liveMinute: string | null;
   locale: Locale;
   t: ReturnType<typeof useTranslations<"matches">>;
 }) {
+  if (showScore) {
+    const hit = finished ? points !== null && points > 0 : pickOnTrack;
+
+    return (
+      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 self-center">
+        <p className="w-full text-center text-3xl font-bold leading-none tabular-nums text-white">
+          {formatMatchScore(homeScore, awayScore)}
+        </p>
+        {prediction ? (
+          <span
+            className={cn(
+              "w-full truncate text-center text-xs font-semibold leading-none tabular-nums",
+              hit ? "text-emerald-300" : "text-white/55",
+            )}
+          >
+            {t("myPick")}{" "}
+            {formatMatchScore(prediction.home_score, prediction.away_score)}
+            {prediction.boost_multiplier > 1 && (
+              <span className="ml-0.5 font-medium opacity-80">
+                x{prediction.boost_multiplier}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="text-center text-xs font-medium leading-none text-white/55">
+            {locked ? t("missed") : t("noPick")}
+          </span>
+        )}
+        {live ? (
+          <LiveMinuteIndicator
+            liveMinute={liveMinute}
+            liveLabel={t("live")}
+            className="text-[11px] font-medium text-red-300"
+          />
+        ) : (
+          <p className="text-center text-[11px] text-white/70">
+            {formatMatchTime(kickoffAt, locale)}
+            <span className="mx-1 text-white/35">·</span>
+            {formatMatchKickoffDate(kickoffAt, locale)}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 self-center">
       {prediction ? (
-        <p className="w-full truncate text-center text-3xl font-bold leading-none tabular-nums text-white">
-          {formatMatchScore(prediction.home_score, prediction.away_score)}
-          {prediction.boost_multiplier > 1 && (
-            <span className="ml-1 text-base font-semibold text-white/60">
-              x{prediction.boost_multiplier}
-            </span>
-          )}
-        </p>
+        <>
+          <p className="w-full truncate text-center text-3xl font-bold leading-none tabular-nums text-white">
+            {formatMatchScore(prediction.home_score, prediction.away_score)}
+            {prediction.boost_multiplier > 1 && (
+              <span className="ml-1 text-base font-semibold text-white/60">
+                x{prediction.boost_multiplier}
+              </span>
+            )}
+          </p>
+          <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white/55">
+            {t("myPick")}
+          </span>
+        </>
       ) : locked ? (
         <p className="w-full text-center text-lg font-medium text-white/60">
           {t("missed")}
@@ -132,26 +189,11 @@ function MatchDetailCenterFocus({
           {t("noPick")}
         </p>
       )}
-
-      {showScore && (
-        <p className="w-full text-center text-sm font-medium leading-none tabular-nums text-white/70">
-          {formatMatchScore(homeScore, awayScore)}
-        </p>
-      )}
-
-      {live ? (
-        <LiveMinuteIndicator
-          liveMinute={liveMinute}
-          liveLabel={t("live")}
-          className="text-[11px] font-medium text-red-300"
-        />
-      ) : (
-        <p className="text-center text-[11px] text-white/70">
-          {formatMatchTime(kickoffAt, locale)}
-          <span className="mx-1 text-white/35">·</span>
-          {formatMatchKickoffDate(kickoffAt, locale)}
-        </p>
-      )}
+      <p className="text-center text-[11px] text-white/70">
+        {formatMatchTime(kickoffAt, locale)}
+        <span className="mx-1 text-white/35">·</span>
+        {formatMatchKickoffDate(kickoffAt, locale)}
+      </p>
     </div>
   );
 }
@@ -204,6 +246,30 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   const currentBoost =
     currentBoostProp ??
     ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
+  const predictionPoints =
+    finished && prediction && showScore
+      ? calculatePredictionPoints({
+          predictedHome: prediction.home_score,
+          predictedAway: prediction.away_score,
+          actualHome: match.home_score!,
+          actualAway: match.away_score!,
+          predictedScorer: prediction.scorer_name,
+          actualScorers: matchScorers,
+          boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+        }).totalPoints
+      : null;
+  const pickOnTrack =
+    live && prediction && showScore
+      ? calculatePredictionPoints({
+          predictedHome: prediction.home_score,
+          predictedAway: prediction.away_score,
+          actualHome: match.home_score!,
+          actualAway: match.away_score!,
+          predictedScorer: prediction.scorer_name,
+          actualScorers: matchScorers,
+          boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+        }).basePoints > 0
+      : false;
 
   return (
     <div
@@ -244,8 +310,11 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               locked={locked}
               showScore={showScore}
               live={live}
+              finished={finished}
               homeScore={match.home_score ?? 0}
               awayScore={match.away_score ?? 0}
+              points={predictionPoints}
+              pickOnTrack={pickOnTrack}
               kickoffAt={match.kickoff_at}
               liveMinute={liveMinute}
               locale={locale}
@@ -316,6 +385,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                   onRequestExpand?.();
                 }
               }}
+              indicatorVariant="underline"
               className="flex h-auto w-full shrink-0 justify-start gap-4 bg-transparent p-0 group-data-horizontal/tabs:h-auto"
             >
               <TabsTrigger value="predictions" className={matchTabClassName}>
@@ -372,6 +442,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                 homeLineup={match.home_lineup ?? null}
                 awayLineup={match.away_lineup ?? null}
                 playerPhotosByTeam={playerPhotosByTeam}
+                matchEvents={matchEvents ?? []}
               />
             </TabsContent>
 

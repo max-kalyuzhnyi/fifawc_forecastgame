@@ -149,7 +149,7 @@ export function PredictionForm({
   const showX3 = !boostUsed.x3 || currentBoost === 3;
   const showBoostBlock = showX2 || showX3;
   const boostTabTriggerClassName =
-    "h-full flex-1 text-sm text-white/60 hover:text-white data-active:bg-white/20 data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:bg-white/20 dark:data-active:text-white";
+    "h-full flex-1 text-sm text-white/60 hover:text-white data-active:text-white dark:text-white/60 dark:hover:text-white dark:data-active:text-white";
 
   const savedSnapshot = useMemo(() => {
     if (!state?.success) return null;
@@ -287,7 +287,10 @@ export function PredictionForm({
                 if (value) setBoost(value);
               }}
             >
-              <TabsList className="h-11 w-full bg-white/10 p-1 group-data-horizontal/tabs:h-11">
+              <TabsList
+                className="h-11 w-full bg-white/10 p-1 group-data-horizontal/tabs:h-11"
+                indicatorClassName="bg-white/20"
+              >
                 <TabsTrigger value="1" className={boostTabTriggerClassName}>
                   None
                 </TabsTrigger>

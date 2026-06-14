@@ -171,4 +171,78 @@ describe("buildGroupStandings", () => {
       ),
     ).toBe(false);
   });
+
+  it("includes live matches with score as provisional standings", () => {
+    const matches = [
+      makeMatch({
+        id: "1",
+        external_key: "1",
+        home_team_name: "Scotland",
+        away_team_name: "Haiti",
+        status: "finished",
+        home_score: 2,
+        away_score: 0,
+      }),
+      makeMatch({
+        id: "2",
+        external_key: "2",
+        home_team_name: "Brazil",
+        away_team_name: "Morocco",
+        status: "live",
+        home_score: 1,
+        away_score: 0,
+      }),
+      makeMatch({
+        id: "3",
+        external_key: "3",
+        home_team_name: "Scotland",
+        away_team_name: "Brazil",
+      }),
+      makeMatch({
+        id: "4",
+        external_key: "4",
+        home_team_name: "Morocco",
+        away_team_name: "Haiti",
+      }),
+    ];
+
+    const [groupA] = buildGroupStandings(matches);
+
+    expect(groupA.rows.map((row) => row.teamName)).toEqual([
+      "Scotland",
+      "Brazil",
+      "Morocco",
+      "Haiti",
+    ]);
+
+    expect(groupA.rows[0]).toMatchObject({
+      teamName: "Scotland",
+      played: 1,
+      won: 1,
+      drawn: 0,
+      lost: 0,
+      goalDifference: 2,
+      points: 3,
+    });
+
+    expect(groupA.rows[1]).toMatchObject({
+      teamName: "Brazil",
+      played: 1,
+      won: 1,
+      drawn: 0,
+      lost: 0,
+      goalDifference: 1,
+      points: 3,
+    });
+
+    expect(groupA.rows[2]).toMatchObject({
+      teamName: "Morocco",
+      played: 1,
+      won: 0,
+      drawn: 0,
+      lost: 1,
+      goalDifference: -1,
+      points: 0,
+    });
+  });
 });

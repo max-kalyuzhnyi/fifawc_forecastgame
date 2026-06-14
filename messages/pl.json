@@ -67,6 +67,7 @@
     "pts": "{count} pkt",
     "ptsPositive": "+{count} pkt",
     "live": "Live",
+    "liveNow": "Na żywo",
     "liveMinute": "Live {minute}",
     "groupStage": "Faza grupowa",
     "groupStageMatch": "Faza grupowa · Mecz {number}",
@@ -91,6 +92,8 @@
     "coach": "Trener: {name}",
     "startingXi": "Podstawowy skład",
     "bench": "Ławka",
+    "subs": "Rezerwowi",
+    "gk": "BR",
     "team": "Drużyna",
     "standingsStats": {
       "GP": "M",
@@ -205,7 +208,24 @@
     },
     "tabs": {
       "picks": "Typy",
-      "users": "Użytkownicy"
+      "users": "Użytkownicy",
+      "teams": "Drużyny",
+      "results": "Wyniki"
+    },
+    "users": {
+      "description": "{count, plural, one {# użytkownik} few {# użytkowników} many {# użytkowników} other {# użytkowników}}",
+      "picksCount": "{count, plural, =0 {Brak typów} one {# typ} few {# typy} many {# typów} other {# typów}}",
+      "noPicks": "Brak typów.",
+      "scorer": "Strzelec",
+      "close": "Zamknij"
+    },
+    "teams": {
+      "noTeams": "Brak drużyn.",
+      "squad": "Skład",
+      "playersCount": "{count, plural, =0 {Brak zawodników} one {# zawodnik} few {# zawodników} many {# zawodników} other {# zawodników}}",
+      "noPlayers": "Brak zawodników w składzie.",
+      "positionNumber": "{position} · #{number}",
+      "numberOnly": "#{number}"
     },
     "picks": {
       "title": "Typy na najbliższy mecz",
@@ -213,6 +233,8 @@
       "noUpcoming": "Brak nadchodzących meczów.",
       "nextMatch": "Następny mecz",
       "pendingTitle": "Bez typu ({count})",
+      "withPickTitle": "Z typem ({count})",
+      "noPicksYet": "Brak typów.",
       "allDone": "Wszyscy już obstawili."
     },
     "ping": {

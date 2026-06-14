@@ -59,9 +59,9 @@ function isGroupMatch(match: Match): boolean {
   return match.round_key.startsWith("group_") && match.group_name != null;
 }
 
-function isFinishedWithScore(match: Match): boolean {
+function hasUsableScore(match: Match): boolean {
   return (
-    match.status === "finished" &&
+    (match.status === "finished" || match.status === "live") &&
     match.home_score !== null &&
     match.away_score !== null
   );
@@ -176,7 +176,7 @@ export function buildGroupStandings(matches: Match[]): GroupStanding[] {
       );
     }
 
-    if (isFinishedWithScore(match)) {
+    if (hasUsableScore(match)) {
       applyMatchResult(
         statsByTeam,
         match.home_team_name,

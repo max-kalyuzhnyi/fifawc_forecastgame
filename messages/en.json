@@ -67,6 +67,7 @@
     "pts": "{count} pts",
     "ptsPositive": "+{count} pts",
     "live": "Live",
+    "liveNow": "Live now",
     "liveMinute": "Live {minute}",
     "groupStage": "Group Stage",
     "groupStageMatch": "Group Stage · Match {number}",
@@ -91,6 +92,8 @@
     "coach": "Coach: {name}",
     "startingXi": "Starting XI",
     "bench": "Bench",
+    "subs": "Subs",
+    "gk": "GK",
     "team": "Team",
     "standingsStats": {
       "GP": "GP",
@@ -205,7 +208,24 @@
     },
     "tabs": {
       "picks": "Picks",
-      "users": "Users"
+      "users": "Users",
+      "teams": "Teams",
+      "results": "Results"
+    },
+    "users": {
+      "description": "{count, plural, one {# user} other {# users}}",
+      "picksCount": "{count, plural, =0 {No picks} one {# pick} other {# picks}}",
+      "noPicks": "No picks yet.",
+      "scorer": "Scorer",
+      "close": "Close"
+    },
+    "teams": {
+      "noTeams": "No teams yet.",
+      "squad": "Squad",
+      "playersCount": "{count, plural, =0 {No players} one {# player} other {# players}}",
+      "noPlayers": "No players in this squad.",
+      "positionNumber": "{position} · #{number}",
+      "numberOnly": "#{number}"
     },
     "picks": {
       "title": "Next match picks",
@@ -213,6 +233,8 @@
       "noUpcoming": "No upcoming matches.",
       "nextMatch": "Next match",
       "pendingTitle": "No pick yet ({count})",
+      "withPickTitle": "With pick ({count})",
+      "noPicksYet": "No picks yet.",
       "allDone": "Everyone has submitted a pick."
     },
     "ping": {

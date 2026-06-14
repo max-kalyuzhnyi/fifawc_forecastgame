@@ -7,6 +7,7 @@ import { getInitials } from "@/features/matches/lib/voterInfo";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface MatchPredictionsBoardProps {
   match: Match;
@@ -65,27 +66,30 @@ export function MatchPredictionsBoard({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-1">
       {ranked.map(({ entry, points }) => {
         const isCurrentUser = entry.user_id === currentUserId;
 
         return (
           <li
             key={entry.user_id}
-            className="flex items-center gap-3 rounded-2xl bg-white/5 px-3 py-2.5"
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl px-2.5 py-1.5",
+              isCurrentUser ? "bg-white/[0.06]" : "bg-white/[0.03]",
+            )}
           >
-            <Avatar className="size-8 shrink-0">
+            <Avatar className="size-7 shrink-0">
               {entry.photo_url && (
                 <AvatarImage src={entry.photo_url} alt={entry.display_name} />
               )}
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-[10px]">
                 {getInitials(entry.display_name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-medium">
+                <p className="truncate text-[13px] font-medium">
                   {entry.display_name}
                 </p>
                 {isCurrentUser && (
@@ -97,12 +101,12 @@ export function MatchPredictionsBoard({
                   </Badge>
                 )}
               </div>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-[11px] text-white/45">
                 {formatPrediction(entry)}
               </p>
             </div>
 
-            <p className="shrink-0 text-base font-bold tabular-nums">
+            <p className="shrink-0 text-sm font-bold tabular-nums">
               {points !== null ? points : "—"}
             </p>
           </li>

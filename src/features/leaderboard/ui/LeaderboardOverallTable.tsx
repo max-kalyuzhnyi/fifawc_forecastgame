@@ -60,17 +60,16 @@ export function LeaderboardOverallTable({
 
   return (
     <>
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)_4rem_3rem] items-center gap-x-3 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)_4rem] items-center gap-x-3 px-3 py-2 text-[11px] font-medium text-muted-foreground">
         <span className="text-center">#</span>
         <span>{t("player")}</span>
         <span className="text-right">{t("points")}</span>
-        <span className="text-right">{t("picks")}</span>
       </div>
 
       {entries.map((entry) => (
         <div
           key={entry.user_id}
-          className="grid grid-cols-[2rem_minmax(0,1fr)_4rem_3rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
+          className="grid grid-cols-[2rem_minmax(0,1fr)_4rem] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
         >
           <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
           <div className="flex min-w-0 items-center gap-2">
@@ -88,9 +87,6 @@ export function LeaderboardOverallTable({
           </div>
           <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
             {entry.total_points}
-          </p>
-          <p className="text-right text-[12px] tabular-nums text-muted-foreground">
-            {entry.predictions_count}
           </p>
         </div>
       ))}

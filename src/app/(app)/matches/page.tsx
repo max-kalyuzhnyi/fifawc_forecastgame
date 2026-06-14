@@ -131,7 +131,7 @@ export default async function MatchesPage() {
   return (
     <Suspense>
       <MatchesView
-        matches={matches as Match[]}
+        serverMatches={matches as Match[]}
         voterMap={voterMap}
         predictionMap={predictionMap}
         playersByMatch={playersByMatch}

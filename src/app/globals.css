@@ -276,8 +276,25 @@
         }
     }
 
+    .tab-panel-enter {
+        animation: tab-panel-enter 0.2s cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
+
+    @keyframes tab-panel-enter {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-        .app-page-enter {
+        .app-page-enter,
+        .tab-panel-enter {
             animation: none;
         }
     }
