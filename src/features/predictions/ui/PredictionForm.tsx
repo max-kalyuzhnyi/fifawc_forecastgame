@@ -1,8 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
+import {
+  loadScoreSuggestions,
+  type ScoreSuggestion,
+} from "@/features/matches/actions";
 import { savePrediction } from "../actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -24,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
+import { cn } from "@/lib/utils";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
 import { TeamName } from "@/shared/ui/TeamFlag";
@@ -62,6 +67,81 @@ function formatBoostLabel(mult: BoostMultiplier): string {
   if (mult === 1) return "None";
   if (mult === 2) return "🔥🔥 x2";
   return "🔥🔥🔥 x3";
+}
+
+function getSuggestionLabel(
+  suggestion: ScoreSuggestion,
+  homeTeamName: string,
+  awayTeamName: string,
+  drawLabel: string,
+): string {
+  if (suggestion.outcome === "home") {
+    return homeTeamName;
+  }
+
+  if (suggestion.outcome === "away") {
+    return awayTeamName;
+  }
+
+  return drawLabel;
+}
+
+function ScoreSuggestionChips({
+  suggestions,
+  homeTeamName,
+  awayTeamName,
+  homeScore,
+  awayScore,
+  onSelect,
+}: {
+  suggestions: ScoreSuggestion[];
+  homeTeamName: string;
+  awayTeamName: string;
+  homeScore: number;
+  awayScore: number;
+  onSelect: (home: number, away: number) => void;
+}) {
+  const t = useTranslations("predictions");
+
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <p className="text-xs font-medium text-white/70">{t("suggestions")}</p>
+      <div className="grid w-full grid-cols-3 gap-2">
+        {suggestions.map((suggestion) => {
+          const isActive =
+            homeScore === suggestion.home && awayScore === suggestion.away;
+          const label = getSuggestionLabel(
+            suggestion,
+            homeTeamName,
+            awayTeamName,
+            t("draw"),
+          );
+
+          return (
+            <button
+              key={suggestion.outcome}
+              type="button"
+              onClick={() => onSelect(suggestion.home, suggestion.away)}
+              className={cn(
+                "flex min-w-0 w-full flex-col items-center rounded-xl border px-2 py-2 text-center transition-colors",
+                isActive
+                  ? "border-white bg-white/15 text-white"
+                  : "border-white/15 bg-white/5 text-white/85 hover:border-white/25 hover:bg-white/10",
+              )}
+            >
+              <span className="w-full truncate text-xs font-medium">{label}</span>
+              <span className="text-sm font-semibold tabular-nums">
+                {formatMatchScore(suggestion.home, suggestion.away)}
+              </span>
+              <span className="text-[10px] text-white/50">
+                {suggestion.outcomeProbability}%
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function PredictionSummary({
@@ -137,6 +217,23 @@ export function PredictionForm({
     initial?.scorer_player_id ?? "",
   );
   const [boost, setBoost] = useState(String(initial?.boost_multiplier ?? 1));
+  const [suggestions, setSuggestions] = useState<ScoreSuggestion[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadScoreSuggestions(homeTeamName, awayTeamName).then((data) => {
+      if (!cancelled) {
+        setSuggestions(data);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [homeTeamName, awayTeamName]);
 
   const homePlayers = sortPlayersForScorerSelect(
     players.filter((p) => p.team_id === homeTeamId),
@@ -207,6 +304,22 @@ export function PredictionForm({
       <input type="hidden" name="boost_multiplier" value={boost} />
 
       <FieldGroup className="min-h-0 flex-1">
+        {suggestions && suggestions.length > 0 ? (
+          <Field>
+            <ScoreSuggestionChips
+              suggestions={suggestions}
+              homeTeamName={homeTeamName}
+              awayTeamName={awayTeamName}
+              homeScore={homeScore}
+              awayScore={awayScore}
+              onSelect={(home, away) => {
+                setHomeScore(home);
+                setAwayScore(away);
+              }}
+            />
+          </Field>
+        ) : null}
+
         <Field>
           <ScoreWheelPicker
             homeScore={homeScore}

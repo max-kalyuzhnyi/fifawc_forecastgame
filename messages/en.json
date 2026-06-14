@@ -107,7 +107,27 @@
       "L": "L",
       "GD": "GD",
       "PTS": "PTS"
-    }
+    },
+    "statistics": "Statistics",
+    "modelPrediction": "AI model prediction",
+    "winProbability": "Win probability",
+    "favourite": "Favourite",
+    "fifaRank": "FIFA rank",
+    "confederation": "Confederation",
+    "group": "Group",
+    "headToHead": "Team comparison",
+    "upsetWatch": "Upset watch",
+    "plFootprint": "PL players",
+    "poweredByOnside": "Powered by Onside",
+    "modelUnavailable": "Model data unavailable for this match.",
+    "draw": "Draw",
+    "strength": "Model strength",
+    "groupRoad": "Group road",
+    "matchdayShort": "MD {n}",
+    "win": "Win",
+    "loss": "Loss",
+    "homeShort": "vs",
+    "awayShort": "@"
   },
   "match": {
     "outcome": {
@@ -135,7 +155,9 @@
     "changeMind": "Change prediction",
     "locked": "Predictions are locked.",
     "yourPick": "Your pick: {pick}",
-    "guestMessage": "You can browse matches and the leaderboard. Voting opens after an admin approves your account."
+    "guestMessage": "You can browse matches and the leaderboard. Voting opens after an admin approves your account.",
+    "suggestions": "Quick picks",
+    "poweredByOnside": "Powered by Onside"
   },
   "leaderboard": {
     "title": "Leaderboard",

@@ -12,6 +12,8 @@ import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { buildPlayerPhotosMap } from "@/features/matches/lib/playerPhotos";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { MatchesView } from "@/features/matches/ui/MatchesView";
+import { getUpsets } from "@/shared/lib/onside/client";
+import { buildUpsetMatchIds } from "@/shared/lib/onside/upsets";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import {
@@ -111,6 +113,11 @@ export default async function MatchesPage() {
     })),
   );
 
+  const upsetsResponse = await getUpsets();
+  const upsetMatchIds = upsetsResponse
+    ? [...buildUpsetMatchIds((matches ?? []) as Match[], upsetsResponse.upsets)]
+    : [];
+
   if (!matches || matches.length === 0) {
     return (
       <Empty className="glass corner-squircle mt-4 rounded-3xl border-0">
@@ -141,6 +148,7 @@ export default async function MatchesPage() {
         currentUserId={userId}
         teamColors={teamColors}
         playerPhotosByTeam={playerPhotosByTeam}
+        upsetMatchIds={upsetMatchIds}
       />
     </Suspense>
   );

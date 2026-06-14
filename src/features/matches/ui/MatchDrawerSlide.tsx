@@ -12,6 +12,7 @@ import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
+import { isMatchUpsetWatch } from "@/shared/lib/onside/upsets";
 import { cn } from "@/lib/utils";
 
 interface MatchDrawerSlideProps {
@@ -28,6 +29,7 @@ interface MatchDrawerSlideProps {
   playerPhotosByTeam: PlayerPhotosByTeam;
   groupStandingsByName: Record<string, GroupStanding>;
   liveScoreByTeam: LiveScoreByTeam;
+  upsetMatchIds?: string[];
   isActive: boolean;
   isMounted: boolean;
   distanceFromActive: number;
@@ -49,6 +51,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   playerPhotosByTeam,
   groupStandingsByName,
   liveScoreByTeam,
+  upsetMatchIds = [],
   isActive,
   isMounted,
   distanceFromActive,
@@ -88,6 +91,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
               : undefined
           }
           liveScoreByTeam={liveScoreByTeam}
+          isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
           expanded={expanded}
           onRequestExpand={onRequestExpand}
         />

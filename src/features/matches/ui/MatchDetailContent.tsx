@@ -20,7 +20,8 @@ import {
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
-import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
+import { MatchStatisticsTab } from "@/features/matches/ui/MatchStatisticsTab";
+import { UpsetWatchBadge } from "@/features/matches/ui/UpsetWatchBadge";
 import { MatchEventsTimeline } from "@/features/matches/ui/MatchEventsTimeline";
 import { MatchHighlights } from "@/features/matches/ui/MatchHighlights";
 import { MatchLineups } from "@/features/matches/ui/MatchLineups";
@@ -63,6 +64,7 @@ interface MatchDetailContentProps {
   playerPhotosByTeam?: PlayerPhotosByTeam;
   expanded?: boolean;
   onRequestExpand?: () => void;
+  isUpsetWatch?: boolean;
 }
 
 const matchTabClassName =
@@ -218,6 +220,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   playerPhotosByTeam = {},
   expanded = false,
   onRequestExpand,
+  isUpsetWatch = false,
 }: MatchDetailContentProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
@@ -237,11 +240,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
     match.injury_time ?? null,
   );
   const defaultMatchTab =
-    live || finished
-      ? "predictions"
-      : groupStanding
-        ? "standings"
-        : "lineups";
+    live || finished ? "predictions" : "statistics";
   const resolvedBoostUsed =
     boostUsed ?? getBoostUsed(predictionMap ?? {}, match.round_key);
   const currentBoost =
@@ -294,9 +293,12 @@ export const MatchDetailContent = memo(function MatchDetailContent({
         )}
       >
         <section className="flex shrink-0 flex-col gap-2 pb-5">
-          <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
-            {formatMatchSubtitle(match, t)}
-          </p>
+          <div className="flex flex-col items-center gap-1.5">
+            <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
+              {formatMatchSubtitle(match, t)}
+            </p>
+            {isUpsetWatch ? <UpsetWatchBadge label={t("upsetWatch")} /> : null}
+          </div>
 
           <div className={matchDetailGridClassName}>
             <div className="flex min-w-0 flex-col items-center gap-1.5">
@@ -396,11 +398,9 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               <TabsTrigger value="predictions" className={matchTabClassName}>
                 {t("predictions")}
               </TabsTrigger>
-              {groupStanding && (
-                <TabsTrigger value="standings" className={matchTabClassName}>
-                  {t("standings")}
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="statistics" className={matchTabClassName}>
+                {t("statistics")}
+              </TabsTrigger>
               <TabsTrigger value="lineups" className={matchTabClassName}>
                 {t("lineups")}
               </TabsTrigger>
@@ -424,19 +424,15 @@ export const MatchDetailContent = memo(function MatchDetailContent({
               )}
             </TabsContent>
 
-            {groupStanding && (
-              <TabsContent value="standings" className="mt-0">
-                <GroupStandingsCard
-                  group={groupStanding}
-                  variant="transparent"
-                  highlightedTeams={[
-                    match.home_team_name,
-                    match.away_team_name,
-                  ]}
-                  liveScoreByTeam={liveScoreByTeam}
-                />
-              </TabsContent>
-            )}
+
+            <TabsContent value="statistics" className="mt-0">
+              <MatchStatisticsTab
+                match={match}
+                groupStanding={groupStanding}
+                liveScoreByTeam={liveScoreByTeam}
+                isUpsetWatch={isUpsetWatch}
+              />
+            </TabsContent>
 
             <TabsContent value="lineups" className="mt-0">
               <MatchLineups

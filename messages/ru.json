@@ -107,7 +107,27 @@
       "L": "П",
       "GD": "РМ",
       "PTS": "О"
-    }
+    },
+    "statistics": "Статистика",
+    "modelPrediction": "Прогноз модели ИИ",
+    "winProbability": "Вероятность исхода",
+    "favourite": "Фаворит",
+    "fifaRank": "Рейтинг FIFA",
+    "confederation": "Конфедерация",
+    "group": "Группа",
+    "headToHead": "Сравнение сборных",
+    "upsetWatch": "Риск сенсации",
+    "plFootprint": "Игроки АПЛ",
+    "poweredByOnside": "Powered by Onside",
+    "modelUnavailable": "Данные модели недоступны для этого матча.",
+    "draw": "Ничья",
+    "strength": "Сила по модели",
+    "groupRoad": "Путь в группе",
+    "matchdayShort": "Тур {n}",
+    "win": "Победа",
+    "loss": "Поражение",
+    "homeShort": "vs",
+    "awayShort": "@"
   },
   "match": {
     "outcome": {
@@ -135,7 +155,9 @@
     "changeMind": "Изменить прогноз",
     "locked": "Прогнозы закрыты.",
     "yourPick": "Ваш прогноз: {pick}",
-    "guestMessage": "Вы можете смотреть матчи и рейтинг. Голосование откроется после одобрения администратором."
+    "guestMessage": "Вы можете смотреть матчи и рейтинг. Голосование откроется после одобрения администратором.",
+    "suggestions": "Подсказки модели",
+    "poweredByOnside": "На основе Onside"
   },
   "leaderboard": {
     "title": "Рейтинг",

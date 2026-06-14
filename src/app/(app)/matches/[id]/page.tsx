@@ -16,6 +16,11 @@ import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { buildPlayersByMatch } from "@/features/matches/lib/playersByMatch";
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { createClient } from "@/shared/lib/supabase/server";
+import { getUpsets } from "@/shared/lib/onside/client";
+import {
+  buildUpsetMatchIds,
+  isMatchUpsetWatch,
+} from "@/shared/lib/onside/upsets";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { Button } from "@/components/ui/button";
 
@@ -114,6 +119,11 @@ export default async function MatchDetailPage({
   const teamColors = buildTeamColorsMap(teams ?? []);
   const liveScoreByTeam = buildLiveScoreByTeam((liveMatches ?? []) as Match[]);
 
+  const upsetsResponse = await getUpsets();
+  const upsetMatchIds = upsetsResponse
+    ? [...buildUpsetMatchIds([typedMatch], upsetsResponse.upsets)]
+    : [];
+
   return (
     <div className="flex flex-col gap-4">
       <Button variant="ghost" size="icon-sm" className="w-fit" asChild>
@@ -136,6 +146,7 @@ export default async function MatchDetailPage({
         currentUserId={userId}
         teamColors={teamColors}
         expanded
+        isUpsetWatch={isMatchUpsetWatch(typedMatch, upsetMatchIds)}
       />
     </div>
   );

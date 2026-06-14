@@ -19,6 +19,8 @@ import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
 import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchHighlightsThumb } from "@/features/matches/ui/MatchHighlights";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
+import { UpsetWatchBadge } from "@/features/matches/ui/UpsetWatchBadge";
+import { isMatchUpsetWatch } from "@/shared/lib/onside/upsets";
 import { Badge } from "@/components/ui/badge";
 import {
   Empty,
@@ -55,6 +57,7 @@ interface MatchesViewProps {
   currentUserId: string | null;
   teamColors: Record<string, string>;
   playerPhotosByTeam: PlayerPhotosByTeam;
+  upsetMatchIds?: string[];
 }
 
 const TAB_KEYS: MatchDayBucket[] = ["past", "upcoming3days", "future"];
@@ -290,6 +293,7 @@ function MatchCard({
   scorers,
   isSelected,
   featured = false,
+  isUpsetWatch = false,
   locale,
   t,
   onOpen,
@@ -300,6 +304,7 @@ function MatchCard({
   scorers: string[];
   isSelected: boolean;
   featured?: boolean;
+  isUpsetWatch?: boolean;
   locale: Locale;
   t: ReturnType<typeof useTranslations<"matches">>;
   onOpen: (matchId: string) => void;
@@ -342,25 +347,32 @@ function MatchCard({
     >
       <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2">
         <div className="flex min-w-0 items-center justify-start">
-          <MatchVoters voters={voters} compact />
+          {!finished && <MatchVoters voters={voters} compact />}
         </div>
 
-        <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
-          {formatMatchSubtitle(match, t)}
-        </p>
+        <div className="flex min-w-0 flex-col items-center gap-1">
+          <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
+            {formatMatchSubtitle(match, t)}
+          </p>
+          {isUpsetWatch && !finished ? (
+            <UpsetWatchBadge label={t("upsetWatch")} />
+          ) : null}
+        </div>
 
         <div className="flex min-w-0 items-center justify-end">
-          <MatchTimeBadge
-            kickoffAt={match.kickoff_at}
-            locale={locale}
-            live={live}
-            finished={finished}
-            liveMinute={formatLiveMinute(
-              match.minute ?? null,
-              match.injury_time ?? null,
-            )}
-            t={t}
-          />
+          {!finished && (
+            <MatchTimeBadge
+              kickoffAt={match.kickoff_at}
+              locale={locale}
+              live={live}
+              finished={finished}
+              liveMinute={formatLiveMinute(
+                match.minute ?? null,
+                match.injury_time ?? null,
+              )}
+              t={t}
+            />
+          )}
         </div>
       </div>
 
@@ -407,6 +419,7 @@ export function MatchesView({
   currentUserId,
   teamColors,
   playerPhotosByTeam,
+  upsetMatchIds = [],
 }: MatchesViewProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
@@ -648,6 +661,7 @@ export function MatchesView({
                     scorers={scorersByMatch[match.id] ?? []}
                     isSelected={selectedMatchId === match.id}
                     featured
+                    isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
                     locale={locale}
                     t={t}
                     onOpen={openMatch}
@@ -695,6 +709,7 @@ export function MatchesView({
                       }
                       scorers={scorersByMatch[match.id] ?? []}
                       isSelected={selectedMatchId === match.id}
+                      isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
                       locale={locale}
                       t={t}
                       onOpen={openMatch}
@@ -728,6 +743,7 @@ export function MatchesView({
         groupStandingsByName={groupStandingsByName}
         liveScoreByTeam={liveScoreByTeam}
         playerPhotosByTeam={playerPhotosByTeam}
+        upsetMatchIds={upsetMatchIds}
         onMatchChange={handleMatchChange}
         onClose={closeMatch}
       />

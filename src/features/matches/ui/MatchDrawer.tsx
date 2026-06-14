@@ -66,6 +66,7 @@ interface MatchDrawerProps {
   playerPhotosByTeam: PlayerPhotosByTeam;
   groupStandingsByName: Record<string, GroupStanding>;
   liveScoreByTeam: LiveScoreByTeam;
+  upsetMatchIds?: string[];
   onMatchChange: (matchId: string) => void;
   onClose: () => void;
 }
@@ -84,6 +85,7 @@ export function MatchDrawer({
   playerPhotosByTeam,
   groupStandingsByName,
   liveScoreByTeam,
+  upsetMatchIds = [],
   onMatchChange,
   onClose,
 }: MatchDrawerProps) {
@@ -306,6 +308,7 @@ export function MatchDrawer({
                       playerPhotosByTeam={playerPhotosByTeam}
                       groupStandingsByName={groupStandingsByName}
                       liveScoreByTeam={liveScoreByTeam}
+                      upsetMatchIds={upsetMatchIds}
                       isActive={index === snapIndex}
                       isMounted={mountedIndices.has(index)}
                       distanceFromActive={Math.abs(index - snapIndex)}

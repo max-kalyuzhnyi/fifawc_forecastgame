@@ -107,7 +107,27 @@
       "L": "P",
       "GD": "BZ",
       "PTS": "Pkt"
-    }
+    },
+    "statistics": "Statystyki",
+    "modelPrediction": "Prognoza modelu AI",
+    "winProbability": "Prawdopodobieństwo wyniku",
+    "favourite": "Faworyt",
+    "fifaRank": "Ranking FIFA",
+    "confederation": "Konfederacja",
+    "group": "Grupa",
+    "headToHead": "Porównanie drużyn",
+    "upsetWatch": "Ryzyko niespodzianki",
+    "plFootprint": "Zawodnicy PL",
+    "poweredByOnside": "Powered by Onside",
+    "modelUnavailable": "Dane modelu niedostępne dla tego meczu.",
+    "draw": "Remis",
+    "strength": "Siła modelu",
+    "groupRoad": "Droga w grupie",
+    "matchdayShort": "K{n}",
+    "win": "Wygrana",
+    "loss": "Porażka",
+    "homeShort": "vs",
+    "awayShort": "@"
   },
   "match": {
     "outcome": {
@@ -135,7 +155,9 @@
     "changeMind": "Zmień typ",
     "locked": "Typy są zamknięte.",
     "yourPick": "Twój typ: {pick}",
-    "guestMessage": "Możesz przeglądać mecze i ranking. Głosowanie otworzy się po zatwierdzeniu konta przez admina."
+    "guestMessage": "Możesz przeglądać mecze i ranking. Głosowanie otworzy się po zatwierdzeniu konta przez admina.",
+    "suggestions": "Szybkie typy",
+    "poweredByOnside": "Na podstawie Onside"
   },
   "leaderboard": {
     "title": "Ranking",
