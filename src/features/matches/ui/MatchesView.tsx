@@ -508,15 +508,20 @@ export function MatchesView({
     [liveMatches],
   );
 
-  const filteredMatches = useMemo(
-    () =>
-      matches.filter(
-        (match) =>
-          getMatchDayBucket(match) === activeTab &&
-          !liveMatchIds.has(match.id),
-      ),
-    [matches, activeTab, liveMatchIds],
-  );
+  const filteredMatches = useMemo(() => {
+    const list = matches.filter(
+      (match) =>
+        getMatchDayBucket(match) === activeTab &&
+        !liveMatchIds.has(match.id),
+    );
+
+    const compareKickoff = (a: Match, b: Match) =>
+      activeTab === "past"
+        ? b.kickoff_at.localeCompare(a.kickoff_at)
+        : a.kickoff_at.localeCompare(b.kickoff_at);
+
+    return list.sort(compareKickoff);
+  }, [matches, activeTab, liveMatchIds]);
 
   const drawerMatches = useMemo(
     () => [...liveMatches, ...filteredMatches],
@@ -573,6 +578,7 @@ export function MatchesView({
   );
 
   const groupedByDate = useMemo(() => {
+    const reverse = activeTab === "past";
     const groups = new Map<string, Match[]>();
 
     for (const match of filteredMatches) {
@@ -582,8 +588,15 @@ export function MatchesView({
       groups.set(key, list);
     }
 
-    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [filteredMatches]);
+    const compareKickoff = (a: Match, b: Match) =>
+      reverse
+        ? b.kickoff_at.localeCompare(a.kickoff_at)
+        : a.kickoff_at.localeCompare(b.kickoff_at);
+
+    return [...groups.entries()]
+      .sort(([a], [b]) => (reverse ? b.localeCompare(a) : a.localeCompare(b)))
+      .map(([dateKey, dayMatches]) => [dateKey, [...dayMatches].sort(compareKickoff)] as const);
+  }, [filteredMatches, activeTab]);
 
   const openMatch = useCallback((matchId: string) => {
     setSelectedMatchId(matchId);
