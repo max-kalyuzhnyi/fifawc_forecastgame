@@ -18,6 +18,7 @@ export interface AdminMatch {
   away_score: number | null;
   status: string;
   highlights_youtube_id: string | null;
+  highlights_source: string | null;
   round_display: string;
   group_name: string | null;
 }

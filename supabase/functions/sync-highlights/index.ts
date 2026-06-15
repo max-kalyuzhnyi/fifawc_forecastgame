@@ -4,6 +4,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const YT_API_BASE = "https://www.googleapis.com/youtube/v3";
 const MAX_PAGES = 5;
 const MAX_MATCHES_PER_RUN = 20;
+const SPORTTV_CHANNEL_HANDLE = "sporttvportugal";
 
 const OUR_TO_FIFA_TEAM_NAME: Record<string, string> = {
   USA: "United States",
@@ -18,11 +19,66 @@ const OUR_TO_FIFA_TEAM_NAME: Record<string, string> = {
   Turkey: "Türkiye",
 };
 
+const OUR_TO_PT_TEAM_NAME: Record<string, string> = {
+  Algeria: "Argélia",
+  Argentina: "Argentina",
+  Australia: "Austrália",
+  Austria: "Áustria",
+  Belgium: "Bélgica",
+  "Bosnia & Herzegovina": "Bósnia e Herzegovina",
+  Brazil: "Brasil",
+  Canada: "Canadá",
+  "Cape Verde": "Cabo Verde",
+  Colombia: "Colômbia",
+  Croatia: "Croácia",
+  Curaçao: "Curaçao",
+  "Czech Republic": "República Checa",
+  "DR Congo": "RD Congo",
+  Ecuador: "Equador",
+  Egypt: "Egito",
+  England: "Inglaterra",
+  France: "França",
+  Germany: "Alemanha",
+  Ghana: "Gana",
+  Haiti: "Haiti",
+  Iran: "Irão",
+  Iraq: "Iraque",
+  "Ivory Coast": "Costa do Marfim",
+  Japan: "Japão",
+  Jordan: "Jordânia",
+  Mexico: "México",
+  Morocco: "Marrocos",
+  Netherlands: "Países Baixos",
+  "New Zealand": "Nova Zelândia",
+  Norway: "Noruega",
+  Panama: "Panamá",
+  Paraguay: "Paraguai",
+  Portugal: "Portugal",
+  Qatar: "Catar",
+  "Saudi Arabia": "Arábia Saudita",
+  Scotland: "Escócia",
+  Senegal: "Senegal",
+  "South Africa": "África do Sul",
+  "South Korea": "Coreia do Sul",
+  Spain: "Espanha",
+  Sweden: "Suécia",
+  Switzerland: "Suíça",
+  Tunisia: "Tunísia",
+  Turkey: "Turquia",
+  USA: "Estados Unidos",
+  Uruguay: "Uruguai",
+  Uzbekistan: "Usbequistão",
+};
+
+type HighlightSource = "fifa" | "sporttv";
+
 interface DbMatch {
   id: string;
   home_team_name: string;
   away_team_name: string;
   kickoff_at: string;
+  highlights_youtube_id: string | null;
+  highlights_source: string | null;
 }
 
 interface YtPlaylistItem {
@@ -60,28 +116,48 @@ function normalizeForMatch(value: string): string {
     .trim();
 }
 
+function addNameVariants(variants: Set<string>, name: string): void {
+  const normalized = normalizeForMatch(name);
+  if (normalized) variants.add(normalized);
+
+  const words = normalized.split(/\s+/).filter((word) => word.length >= 3);
+  for (const word of words) {
+    variants.add(word);
+  }
+}
+
 function getTeamVariants(ourName: string): string[] {
   const variants = new Set<string>();
   const fifaName = OUR_TO_FIFA_TEAM_NAME[ourName] ?? ourName;
+  const ptName = OUR_TO_PT_TEAM_NAME[ourName];
 
-  for (const name of [ourName, fifaName]) {
-    const normalized = normalizeForMatch(name);
-    if (normalized) variants.add(normalized);
-
-    const words = normalized.split(/\s+/).filter((word) => word.length >= 3);
-    for (const word of words) {
-      variants.add(word);
-    }
+  for (const name of [ourName, fifaName, ptName].filter(Boolean)) {
+    addNameVariants(variants, name);
   }
 
   if (ourName === "USA") {
     variants.add("usa");
     variants.add("united states");
+    variants.add("estados unidos");
+    variants.add("eua");
   }
 
   if (ourName === "South Korea") {
     variants.add("korea republic");
     variants.add("korea");
+    variants.add("coreia do sul");
+    variants.add("coreia");
+  }
+
+  if (ourName === "Netherlands") {
+    variants.add("paises baixos");
+    variants.add("holanda");
+  }
+
+  if (ourName === "DR Congo") {
+    variants.add("rd congo");
+    variants.add("congo dr");
+    variants.add("republica democratica do congo");
   }
 
   return [...variants];
@@ -95,18 +171,13 @@ function titleContainsTeam(title: string, teamName: string): boolean {
   });
 }
 
-function videoMatchesMatch(
+function videoMatchesTeamsAndDate(
   title: string,
   publishedAt: string,
   homeTeamName: string,
   awayTeamName: string,
   kickoffAt: string,
 ): boolean {
-  const normalizedTitle = normalizeForMatch(title);
-  if (!normalizedTitle.includes("highlight")) {
-    return false;
-  }
-
   if (
     !titleContainsTeam(title, homeTeamName) ||
     !titleContainsTeam(title, awayTeamName)
@@ -124,14 +195,69 @@ function videoMatchesMatch(
   );
 }
 
+function titleHasKeyword(
+  title: string,
+  keywords: string[],
+): boolean {
+  const normalizedTitle = normalizeForMatch(title);
+  return keywords.some((keyword) => normalizedTitle.includes(keyword));
+}
+
+function videoMatchesFifaHighlight(
+  title: string,
+  publishedAt: string,
+  homeTeamName: string,
+  awayTeamName: string,
+  kickoffAt: string,
+): boolean {
+  if (!titleHasKeyword(title, ["highlight"])) {
+    return false;
+  }
+
+  return videoMatchesTeamsAndDate(
+    title,
+    publishedAt,
+    homeTeamName,
+    awayTeamName,
+    kickoffAt,
+  );
+}
+
+function videoMatchesSportTvSummary(
+  title: string,
+  publishedAt: string,
+  homeTeamName: string,
+  awayTeamName: string,
+  kickoffAt: string,
+): boolean {
+  if (!titleHasKeyword(title, ["resumo", "summary"])) {
+    return false;
+  }
+
+  return videoMatchesTeamsAndDate(
+    title,
+    publishedAt,
+    homeTeamName,
+    awayTeamName,
+    kickoffAt,
+  );
+}
+
 async function fetchUploadsPlaylistId(
   apiKey: string,
-  channelId: string,
+  options: { channelId?: string; forHandle?: string },
 ): Promise<string> {
   const url = new URL(`${YT_API_BASE}/channels`);
   url.searchParams.set("part", "contentDetails");
-  url.searchParams.set("id", channelId);
   url.searchParams.set("key", apiKey);
+
+  if (options.channelId) {
+    url.searchParams.set("id", options.channelId);
+  } else if (options.forHandle) {
+    url.searchParams.set("forHandle", options.forHandle);
+  } else {
+    throw new Error("Either channelId or forHandle is required");
+  }
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -142,7 +268,7 @@ async function fetchUploadsPlaylistId(
   const data = (await response.json()) as YtChannelResponse;
   const uploadsId = data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!uploadsId) {
-    throw new Error("FIFA channel uploads playlist not found");
+    throw new Error("YouTube channel uploads playlist not found");
   }
 
   return uploadsId;
@@ -189,7 +315,7 @@ async function fetchRecentUploads(
   return items;
 }
 
-function scoreHighlightTitle(title: string): number {
+function scoreFifaHighlightTitle(title: string): number {
   const normalized = normalizeForMatch(title);
   if (normalized.includes("alt cast")) return 1;
   if (normalized.startsWith("highlights")) return 10;
@@ -197,9 +323,26 @@ function scoreHighlightTitle(title: string): number {
   return 0;
 }
 
-function findHighlightVideoId(
+function scoreSportTvTitle(title: string): number {
+  const normalized = normalizeForMatch(title);
+  if (normalized.startsWith("resumo")) return 10;
+  if (normalized.startsWith("summary")) return 10;
+  if (normalized.includes("resumo")) return 5;
+  if (normalized.includes("summary")) return 5;
+  return 0;
+}
+
+function findBestVideoId(
   uploads: YtPlaylistItem[],
   match: DbMatch,
+  matcher: (
+    title: string,
+    publishedAt: string,
+    homeTeamName: string,
+    awayTeamName: string,
+    kickoffAt: string,
+  ) => boolean,
+  scorer: (title: string) => number,
 ): string | null {
   let bestVideoId: string | null = null;
   let bestScore = 0;
@@ -207,7 +350,7 @@ function findHighlightVideoId(
   for (const item of uploads) {
     const { title, publishedAt, resourceId } = item.snippet;
     if (
-      !videoMatchesMatch(
+      !matcher(
         title,
         publishedAt,
         match.home_team_name,
@@ -218,7 +361,7 @@ function findHighlightVideoId(
       continue;
     }
 
-    const score = scoreHighlightTitle(title);
+    const score = scorer(title);
     if (score > bestScore) {
       bestScore = score;
       bestVideoId = resourceId.videoId;
@@ -232,6 +375,7 @@ Deno.serve(async (req) => {
   const cronSecret = Deno.env.get("CRON_SECRET");
   const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY");
   const fifaChannelId = Deno.env.get("FIFA_YT_CHANNEL_ID");
+  const sportTvChannelId = Deno.env.get("SPORTTV_YT_CHANNEL_ID");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -264,9 +408,11 @@ Deno.serve(async (req) => {
 
     const { data: pendingMatches, error: pendingError } = await supabase
       .from("matches")
-      .select("id, home_team_name, away_team_name, kickoff_at")
+      .select(
+        "id, home_team_name, away_team_name, kickoff_at, highlights_youtube_id, highlights_source",
+      )
       .eq("status", "finished")
-      .is("highlights_youtube_id", null)
+      .or("highlights_youtube_id.is.null,highlights_source.eq.sporttv")
       .gte("kickoff_at", since.toISOString())
       .order("kickoff_at", { ascending: false })
       .limit(MAX_MATCHES_PER_RUN);
@@ -283,34 +429,90 @@ Deno.serve(async (req) => {
       );
     }
 
-    const uploadsPlaylistId = await fetchUploadsPlaylistId(
-      youtubeApiKey,
-      fifaChannelId,
-    );
-
     const oldestKickoffMs = Math.min(
       ...matches.map((match) => new Date(match.kickoff_at).getTime()),
     );
 
-    const uploads = await fetchRecentUploads(
+    const fifaUploadsPlaylistId = await fetchUploadsPlaylistId(youtubeApiKey, {
+      channelId: fifaChannelId,
+    });
+    const fifaUploads = await fetchRecentUploads(
       youtubeApiKey,
-      uploadsPlaylistId,
+      fifaUploadsPlaylistId,
       oldestKickoffMs,
     );
 
-    let matched = 0;
+    const needsSportTvFallback = matches.some(
+      (match) => !match.highlights_youtube_id,
+    );
+
+    let sportTvUploads: YtPlaylistItem[] = [];
+    if (needsSportTvFallback) {
+      const sportTvUploadsPlaylistId = await fetchUploadsPlaylistId(
+        youtubeApiKey,
+        sportTvChannelId
+          ? { channelId: sportTvChannelId }
+          : { forHandle: SPORTTV_CHANNEL_HANDLE },
+      );
+      sportTvUploads = await fetchRecentUploads(
+        youtubeApiKey,
+        sportTvUploadsPlaylistId,
+        oldestKickoffMs,
+      );
+    }
+
+    let matchedFifa = 0;
+    let matchedSportTv = 0;
     let updated = 0;
 
     for (const match of matches) {
-      const videoId = findHighlightVideoId(uploads, match);
-      if (!videoId) continue;
+      const fifaVideoId = findBestVideoId(
+        fifaUploads,
+        match,
+        videoMatchesFifaHighlight,
+        scoreFifaHighlightTitle,
+      );
 
-      matched++;
+      if (fifaVideoId) {
+        matchedFifa++;
+
+        const { error: updateError } = await supabase
+          .from("matches")
+          .update({
+            highlights_youtube_id: fifaVideoId,
+            highlights_source: "fifa" satisfies HighlightSource,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", match.id)
+          .or("highlights_youtube_id.is.null,highlights_source.eq.sporttv");
+
+        if (!updateError) {
+          updated++;
+        } else {
+          console.error("FIFA highlights update failed", match.id, updateError);
+        }
+        continue;
+      }
+
+      if (match.highlights_youtube_id) {
+        continue;
+      }
+
+      const sportTvVideoId = findBestVideoId(
+        sportTvUploads,
+        match,
+        videoMatchesSportTvSummary,
+        scoreSportTvTitle,
+      );
+      if (!sportTvVideoId) continue;
+
+      matchedSportTv++;
 
       const { error: updateError } = await supabase
         .from("matches")
         .update({
-          highlights_youtube_id: videoId,
+          highlights_youtube_id: sportTvVideoId,
+          highlights_source: "sporttv" satisfies HighlightSource,
           updated_at: new Date().toISOString(),
         })
         .eq("id", match.id)
@@ -319,7 +521,7 @@ Deno.serve(async (req) => {
       if (!updateError) {
         updated++;
       } else {
-        console.error("Highlights update failed", match.id, updateError);
+        console.error("Sport TV highlights update failed", match.id, updateError);
       }
     }
 
@@ -327,8 +529,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         pending: matches.length,
-        uploadsScanned: uploads.length,
-        matched,
+        fifaUploadsScanned: fifaUploads.length,
+        sportTvUploadsScanned: sportTvUploads.length,
+        matchedFifa,
+        matchedSportTv,
         updated,
       }),
       { headers: { "Content-Type": "application/json" } },

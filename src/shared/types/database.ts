@@ -91,6 +91,7 @@ export interface Database {
           home_lineup: Record<string, unknown> | null;
           away_lineup: Record<string, unknown> | null;
           highlights_youtube_id: string | null;
+          highlights_source: string | null;
           pick_reminder_sent_at: string | null;
           created_at: string;
           updated_at: string;

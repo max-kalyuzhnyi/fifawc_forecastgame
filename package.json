@@ -22,6 +22,8 @@
     "broadcast:send": "tsx scripts/send-broadcast.ts",
     "broadcast:env:pull": "vercel env pull .env.broadcast.local --environment=production --yes && node scripts/patch-broadcast-env.mjs",
     "broadcast:send:prod": "npm run broadcast:env:pull && BROADCAST_ENV_FILE=.env.broadcast.local tsx scripts/send-broadcast.ts",
+    "deploy": "vercel deploy --yes",
+    "deploy:prod": "vercel deploy --prod --yes",
     "deploy:functions": "supabase functions deploy sync-live-matches send-goal-notifications send-pick-reminders send-broadcast sync-highlights --no-verify-jwt --project-ref qgawmjczgfbhwsdpsqly"
   },
   "dependencies": {

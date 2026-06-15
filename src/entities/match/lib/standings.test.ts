@@ -25,6 +25,7 @@ function makeMatch(overrides: Partial<Match> & Pick<Match, "home_team_name" | "a
     home_lineup: null,
     away_lineup: null,
     highlights_youtube_id: null,
+    highlights_source: null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,

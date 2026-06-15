@@ -72,7 +72,19 @@ Open the bot in Telegram and launch the Mini App — browser-only access shows a
 - `npm run dev` — development server
 - `npm run import:schedule` — fetch OpenFootball WC 2026 fixtures
 - `npm test` — unit tests for scoring logic
+- `npm run deploy:prod` — **production deploy via Vercel CLI** (push to GitHub alone does not update prod)
+- `npm run deploy` — preview deploy via Vercel CLI
 - `npm run deploy:functions` — deploy edge functions to `qgawmjczgfbhwsdpsqly`
+
+## Deploy to production
+
+After `git push` to `main`, run:
+
+```bash
+npm run deploy:prod
+```
+
+Requires Vercel CLI (`npm i -g vercel`) and a linked project (`.vercel/project.json`). Production URL: `https://fifawcforecastgame.vercel.app`
 
 ## Broadcast
 

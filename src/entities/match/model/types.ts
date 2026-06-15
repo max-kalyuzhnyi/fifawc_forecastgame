@@ -49,6 +49,7 @@ export interface Match {
   home_lineup?: TeamLineup | null;
   away_lineup?: TeamLineup | null;
   highlights_youtube_id?: string | null;
+  highlights_source?: string | null;
   created_at?: string;
   updated_at?: string;
 }

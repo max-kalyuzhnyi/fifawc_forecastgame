@@ -61,6 +61,7 @@ export async function saveMatchResult(
       away_score,
       status: isFinal ? "finished" : "live",
       highlights_youtube_id: highlightsYoutubeId,
+      highlights_source: highlightsYoutubeId ? "fifa" : null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", match_id);
