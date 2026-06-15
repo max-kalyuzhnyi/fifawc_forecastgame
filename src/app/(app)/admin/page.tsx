@@ -84,6 +84,8 @@ export default async function AdminPage() {
         players={players ?? []}
         scorersByMatch={scorersByMatch}
         users={users}
+        profiles={profileList}
+        predictions={predictionList}
         pickers={pickers}
         currentUserId={currentUserId}
       />

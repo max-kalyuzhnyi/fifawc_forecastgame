@@ -50,7 +50,9 @@
   },
   "auth": {
     "openInTelegram": "Откройте приложение внутри Telegram для входа.",
-    "signingIn": "Вход через Telegram…"
+    "signingIn": "Вход через Telegram…",
+    "devLogin": "Dev-вход",
+    "devLoginHint": "Локальная разработка: вход без Telegram Mini App."
   },
   "matches": {
     "scheduleTabs": "Расписание матчей",
@@ -254,6 +256,7 @@
       "admin": "Админ"
     },
     "tabs": {
+      "communications": "Рассылки",
       "picks": "Пики",
       "users": "Пользователи",
       "teams": "Команды",
@@ -283,6 +286,31 @@
       "withPickTitle": "С пиком ({count})",
       "noPicksYet": "Пиков пока нет.",
       "allDone": "Все уже сделали пик."
+    },
+    "communications": {
+      "title": "Рассылки",
+      "description": "Отправка текстовых сообщений пользователям бота в Telegram.",
+      "message": "Сообщение",
+      "messagePlaceholder": "Обновление, напоминание или объявление…",
+      "messageHint": "До 4096 символов. У получателей будет кнопка открытия приложения.",
+      "target": "Получатели",
+      "targetSelected": "Выбранные",
+      "targetMissingPick": "Без пика (скоро)",
+      "targetAll": "Все",
+      "selectUsers": "Выберите пользователей",
+      "searchUsers": "Поиск по имени…",
+      "noTelegramUsers": "Нет пользователей с привязанным Telegram.",
+      "soonMatch": "Ближайший матч (в течение 3 часов)",
+      "confirmAll": "Подтвердить отправку всем ({count})",
+      "recipientPreview": "{count, plural, =0 {Нет получателей} one {# получатель} few {# получателя} many {# получателей} other {# получателей}}",
+      "send": "Отправить",
+      "sending": "Отправка…",
+      "sendResult": "Отправлено: {sent}, ошибок: {failed}, всего: {total}",
+      "sendFailed": "Не удалось отправить сообщения в Telegram",
+      "invalidInput": "Некорректное сообщение или получатели",
+      "confirmRequired": "Подтвердите рассылку всем пользователям",
+      "noRecipients": "Нет получателей по выбранным критериям",
+      "noSoonMatch": "Нет запланированного матча в ближайшие 3 часа"
     },
     "ping": {
       "title": "⚽️ Напоминание о прогнозе",

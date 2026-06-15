@@ -50,7 +50,9 @@
   },
   "auth": {
     "openInTelegram": "Open this app inside Telegram to sign in.",
-    "signingIn": "Signing in via Telegram…"
+    "signingIn": "Signing in via Telegram…",
+    "devLogin": "Dev login",
+    "devLoginHint": "Local dev: sign in without Telegram Mini App."
   },
   "matches": {
     "scheduleTabs": "Match schedule",
@@ -254,6 +256,7 @@
       "admin": "Admin"
     },
     "tabs": {
+      "communications": "Communications",
       "picks": "Picks",
       "users": "Users",
       "teams": "Teams",
@@ -283,6 +286,31 @@
       "withPickTitle": "With pick ({count})",
       "noPicksYet": "No picks yet.",
       "allDone": "Everyone has submitted a pick."
+    },
+    "communications": {
+      "title": "Communications",
+      "description": "Send Telegram text messages to bot users.",
+      "message": "Message",
+      "messagePlaceholder": "Product update, reminder, or announcement…",
+      "messageHint": "Up to 4096 characters. Recipients get an Open App button.",
+      "target": "Recipients",
+      "targetSelected": "Selected",
+      "targetMissingPick": "No pick (soon)",
+      "targetAll": "Everyone",
+      "selectUsers": "Select users",
+      "searchUsers": "Search by name…",
+      "noTelegramUsers": "No users with Telegram linked.",
+      "soonMatch": "Soon match (within 3 hours)",
+      "confirmAll": "Confirm send to all {count} users",
+      "recipientPreview": "{count, plural, =0 {No recipients} one {# recipient} other {# recipients}}",
+      "send": "Send",
+      "sending": "Sending…",
+      "sendResult": "Sent: {sent}, failed: {failed}, total: {total}",
+      "sendFailed": "Failed to send Telegram messages",
+      "invalidInput": "Invalid message or target",
+      "confirmRequired": "Confirm broadcast to all users",
+      "noRecipients": "No recipients match this target",
+      "noSoonMatch": "No scheduled match starting within 3 hours"
     },
     "ping": {
       "title": "⚽️ Prediction reminder",

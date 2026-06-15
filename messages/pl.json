@@ -50,7 +50,9 @@
   },
   "auth": {
     "openInTelegram": "Otwórz aplikację w Telegramie, aby się zalogować.",
-    "signingIn": "Logowanie przez Telegram…"
+    "signingIn": "Logowanie przez Telegram…",
+    "devLogin": "Logowanie dev",
+    "devLoginHint": "Lokalny dev: logowanie bez Telegram Mini App."
   },
   "matches": {
     "scheduleTabs": "Terminarz meczów",
@@ -254,6 +256,7 @@
       "admin": "Admin"
     },
     "tabs": {
+      "communications": "Wiadomości",
       "picks": "Typy",
       "users": "Użytkownicy",
       "teams": "Drużyny",
@@ -283,6 +286,31 @@
       "withPickTitle": "Z typem ({count})",
       "noPicksYet": "Brak typów.",
       "allDone": "Wszyscy już obstawili."
+    },
+    "communications": {
+      "title": "Wiadomości",
+      "description": "Wysyłaj wiadomości tekstowe do użytkowników bota w Telegramie.",
+      "message": "Wiadomość",
+      "messagePlaceholder": "Aktualizacja, przypomnienie lub ogłoszenie…",
+      "messageHint": "Do 4096 znaków. Odbiorcy dostaną przycisk otwarcia aplikacji.",
+      "target": "Odbiorcy",
+      "targetSelected": "Wybrani",
+      "targetMissingPick": "Bez typu (wkrótce)",
+      "targetAll": "Wszyscy",
+      "selectUsers": "Wybierz użytkowników",
+      "searchUsers": "Szukaj po nazwie…",
+      "noTelegramUsers": "Brak użytkowników z podłączonym Telegramem.",
+      "soonMatch": "Nadchodzący mecz (w ciągu 3 godzin)",
+      "confirmAll": "Potwierdź wysyłkę do wszystkich ({count})",
+      "recipientPreview": "{count, plural, =0 {Brak odbiorców} one {# odbiorca} few {# odbiorców} many {# odbiorców} other {# odbiorców}}",
+      "send": "Wyślij",
+      "sending": "Wysyłanie…",
+      "sendResult": "Wysłano: {sent}, błędów: {failed}, łącznie: {total}",
+      "sendFailed": "Nie udało się wysłać wiadomości Telegram",
+      "invalidInput": "Nieprawidłowa wiadomość lub odbiorcy",
+      "confirmRequired": "Potwierdź wysyłkę do wszystkich użytkowników",
+      "noRecipients": "Brak odbiorców dla wybranych kryteriów",
+      "noSoonMatch": "Brak zaplanowanego meczu w ciągu 3 godzin"
     },
     "ping": {
       "title": "⚽️ Przypomnienie o typie",
