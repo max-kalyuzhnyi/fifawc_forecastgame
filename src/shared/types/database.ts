@@ -1,4 +1,13 @@
 export type Locale = "en" | "ru" | "pl";
+export type CardRarity = "common" | "rare" | "legendary";
+export type CardPackReason =
+  | "daily_picks"
+  | "scored"
+  | "boost_scorer"
+  | "exchange_3"
+  | "exchange_5";
+export type CardPackStatus = "unopened" | "opened";
+export type CardGiftRequestStatus = "open" | "fulfilled" | "cancelled";
 export type MatchEventType =
   | "goal"
   | "penalty"
@@ -217,6 +226,124 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["match_scorers"]["Insert"]>;
+        Relationships: [];
+      };
+      cards: {
+        Row: {
+          id: string;
+          player_id: string | null;
+          team_id: string | null;
+          is_legend: boolean;
+          display_name: string;
+          image_url: string | null;
+          rarity: CardRarity;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id?: string | null;
+          team_id?: string | null;
+          is_legend?: boolean;
+          display_name: string;
+          image_url?: string | null;
+          rarity?: CardRarity;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cards"]["Insert"]>;
+        Relationships: [];
+      };
+      user_cards: {
+        Row: {
+          user_id: string;
+          card_id: string;
+          count: number;
+          first_obtained_at: string;
+          last_obtained_at: string;
+        };
+        Insert: {
+          user_id: string;
+          card_id: string;
+          count?: number;
+          first_obtained_at?: string;
+          last_obtained_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_cards"]["Insert"]>;
+        Relationships: [];
+      };
+      card_packs: {
+        Row: {
+          id: string;
+          user_id: string;
+          reason: CardPackReason;
+          size: number;
+          status: CardPackStatus;
+          source_day: string | null;
+          created_at: string;
+          opened_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reason: CardPackReason;
+          size: number;
+          status?: CardPackStatus;
+          source_day?: string | null;
+          created_at?: string;
+          opened_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["card_packs"]["Insert"]>;
+        Relationships: [];
+      };
+      card_gift_requests: {
+        Row: {
+          id: string;
+          requester_user_id: string;
+          card_id: string;
+          status: CardGiftRequestStatus;
+          fulfilled_by: string | null;
+          created_at: string;
+          fulfilled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          requester_user_id: string;
+          card_id: string;
+          status?: CardGiftRequestStatus;
+          fulfilled_by?: string | null;
+          created_at?: string;
+          fulfilled_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["card_gift_requests"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      card_gifts: {
+        Row: {
+          id: string;
+          from_user_id: string;
+          to_user_id: string;
+          card_id: string;
+          request_id: string | null;
+          seen_by_recipient: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_user_id: string;
+          to_user_id: string;
+          card_id: string;
+          request_id?: string | null;
+          seen_by_recipient?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["card_gifts"]["Insert"]>;
         Relationships: [];
       };
     };

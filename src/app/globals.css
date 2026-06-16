@@ -320,6 +320,43 @@
             opacity: 1;
         }
     }
+
+    .card-flip-reveal {
+        animation: card-flip-reveal 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
+
+    .card-reveal-stagger {
+        animation: card-flip-reveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
+
+    @keyframes card-flip-reveal {
+        0% {
+            opacity: 0;
+            transform: perspective(600px) rotateY(90deg) scale(0.85);
+        }
+
+        100% {
+            opacity: 1;
+            transform: perspective(600px) rotateY(0deg) scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .card-flip-reveal,
+        .card-reveal-stagger {
+            animation: none;
+        }
+    }
+
+    .collection-progress-fill {
+        transition: width 500ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .collection-progress-fill {
+            transition: none;
+        }
+    }
 }
 
 @layer base {

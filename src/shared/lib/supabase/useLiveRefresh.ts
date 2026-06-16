@@ -10,7 +10,11 @@ type LiveTable =
   | "matches"
   | "match_events"
   | "predictions"
-  | "match_scorers";
+  | "match_scorers"
+  | "user_cards"
+  | "card_packs"
+  | "card_gift_requests"
+  | "card_gifts";
 
 const REFRESH_DEBOUNCE_MS = 10_000;
 

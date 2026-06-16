@@ -17,6 +17,8 @@
     "import:schedule": "tsx scripts/import-schedule.ts",
     "import:squads": "tsx scripts/import-squads.ts",
     "import:player-photos": "tsx scripts/import-player-photos.ts",
+    "seed:cards": "tsx scripts/seed-cards.ts",
+    "simulate:cards": "tsx scripts/simulate-card-economy.ts",
     "map:fd": "tsx scripts/map-football-data.ts",
     "extract:team-colors": "tsx scripts/extract-team-colors.ts",
     "broadcast:send": "tsx scripts/send-broadcast.ts",

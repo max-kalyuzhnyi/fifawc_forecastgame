@@ -8,6 +8,7 @@
     "matches": "Матчи",
     "leaderboard": "Рейтинг",
     "settings": "Настройки",
+    "cards": "Карточки",
     "admin": "Админ"
   },
   "common": {
@@ -260,6 +261,7 @@
       "picks": "Пики",
       "users": "Пользователи",
       "teams": "Команды",
+      "cards": "Карточки",
       "results": "Результаты"
     },
     "users": {
@@ -331,6 +333,73 @@
       "alreadyPredicted": "Пользователь уже сделал пик",
       "sendFailed": "Не удалось отправить сообщение в Telegram",
       "noPending": "Нет участников без пика"
+    }
+  },
+  "cards": {
+    "title": "Коллекция карточек",
+    "description": "Собирай карточки игроков за прогнозы и обмены.",
+    "locked": "Нет",
+    "legend": "Легенда",
+    "collectionProgress": "Прогресс коллекции",
+    "progressPercent": "{percent}%",
+    "tabs": {
+      "collection": "Коллекция",
+      "requests": "Запросы"
+    },
+    "cooldown": "Доступно через {time}",
+    "yourRequestsTitle": "Ваши запросы",
+    "othersRequestsTitle": "Запросы других",
+    "noOthersRequests": "Пока нет запросов от других игроков.",
+    "unopenedPacks": "Неполученные наборы",
+    "openingPack": "Открываем набор",
+    "revealing": "Показываем карточки…",
+    "close": "Закрыть",
+    "exchangeTitle": "Обмен повторок",
+    "duplicatesCount": "{count} повторок",
+    "exchange3": "3 повторки → {cards} карточек",
+    "exchange5": "5 повторок → {cards} карточек",
+    "requestBoard": "Запросы карточек",
+    "noRequests": "Пока нет открытых запросов.",
+    "yourRequest": "Ваш запрос",
+    "requestedBy": "Запросил {name}",
+    "cancel": "Отменить",
+    "gift": "Подарить",
+    "requestHint": "Нажми на отсутствующую карточку, чтобы запросить. Другие могут подарить повторку.",
+    "requestCard": "Попросить",
+    "requested": "Запрошено",
+    "unknownCard": "Неизвестная карточка",
+    "giftReceived": "Тебе подарили карточку!",
+    "giftFrom": "Подарок от {name}",
+    "awesome": "Круто!",
+    "packReason": {
+      "dailyPicks": "Все пики за день · {count} карт",
+      "scored": "Набрал очки · {count} карт",
+      "boostScorer": "Буст + голскорер · {count} карт",
+      "exchange3": "Обмен повторок · {count} карт",
+      "exchange5": "Обмен повторок · {count} карт",
+      "default": "{count} карт"
+    },
+    "rarity": {
+      "common": "Обычная",
+      "rare": "Редкая",
+      "legendary": "Легендарная"
+    },
+    "admin": {
+      "legendsTitle": "Legends OTB",
+      "legendName": "Имя легенды",
+      "legendNamePlaceholder": "например, Ronaldinho",
+      "addLegend": "Добавить",
+      "noPhoto": "Нет фото",
+      "uploadPhoto": "Загрузить фото",
+      "remove": "Удалить",
+      "playersPool": "Пул игроков",
+      "playersPoolHint": "Карточки сборных создаются из составов. Редкость можно менять ниже.",
+      "playersAvailable": "игроков в базе",
+      "rarity": {
+        "common": "Обычная",
+        "rare": "Редкая",
+        "legendary": "Легендарная"
+      }
     }
   },
   "errors": {

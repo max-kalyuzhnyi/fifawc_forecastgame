@@ -8,6 +8,7 @@
     "matches": "Mecze",
     "leaderboard": "Ranking",
     "settings": "Ustawienia",
+    "cards": "Karty",
     "admin": "Admin"
   },
   "common": {
@@ -260,6 +261,7 @@
       "picks": "Typy",
       "users": "Użytkownicy",
       "teams": "Drużyny",
+      "cards": "Karty",
       "results": "Wyniki"
     },
     "users": {
@@ -331,6 +333,73 @@
       "alreadyPredicted": "Użytkownik już obstawił",
       "sendFailed": "Nie udało się wysłać wiadomości Telegram",
       "noPending": "Brak uczestników bez typu"
+    }
+  },
+  "cards": {
+    "title": "Kolekcja kart",
+    "description": "Zbieraj karty piłkarzy za typy i wymiany.",
+    "locked": "Brak",
+    "legend": "Legenda",
+    "collectionProgress": "Postęp kolekcji",
+    "progressPercent": "{percent}%",
+    "tabs": {
+      "collection": "Kolekcja",
+      "requests": "Prośby"
+    },
+    "cooldown": "Następna prośba za {time}",
+    "yourRequestsTitle": "Twoje prośby",
+    "othersRequestsTitle": "Od innych graczy",
+    "noOthersRequests": "Brak próśb od innych graczy.",
+    "unopenedPacks": "Nieotwarte paczki",
+    "openingPack": "Otwieranie paczki",
+    "revealing": "Odsłanianie kart…",
+    "close": "Zamknij",
+    "exchangeTitle": "Wymiana duplikatów",
+    "duplicatesCount": "{count} duplikatów",
+    "exchange3": "3 duplikaty → {cards} kart",
+    "exchange5": "5 duplikatów → {cards} kart",
+    "requestBoard": "Prośby o karty",
+    "noRequests": "Brak otwartych próśb.",
+    "yourRequest": "Twoja prośba",
+    "requestedBy": "Prosi {name}",
+    "cancel": "Anuluj",
+    "gift": "Podaruj",
+    "requestHint": "Dotknij brakującej karty, aby poprosić. Inni mogą podarować duplikat.",
+    "requestCard": "Poproś o kartę",
+    "requested": "Poproszono",
+    "unknownCard": "Nieznana karta",
+    "giftReceived": "Otrzymałeś kartę!",
+    "giftFrom": "Prezent od {name}",
+    "awesome": "Super!",
+    "packReason": {
+      "dailyPicks": "Wszystkie typy dnia · {count} kart",
+      "scored": "Zdobyte punkty · {count} kart",
+      "boostScorer": "Boost + strzelec · {count} kart",
+      "exchange3": "Wymiana duplikatów · {count} kart",
+      "exchange5": "Wymiana duplikatów · {count} kart",
+      "default": "{count} kart"
+    },
+    "rarity": {
+      "common": "Zwykła",
+      "rare": "Rzadka",
+      "legendary": "Legendarna"
+    },
+    "admin": {
+      "legendsTitle": "Legends OTB",
+      "legendName": "Imię legendy",
+      "legendNamePlaceholder": "np. Ronaldinho",
+      "addLegend": "Dodaj",
+      "noPhoto": "Brak zdjęcia",
+      "uploadPhoto": "Wgraj zdjęcie",
+      "remove": "Usuń",
+      "playersPool": "Pula zawodników",
+      "playersPoolHint": "Karty reprezentacji pochodzą ze składów. Rzadkość można zmienić poniżej.",
+      "playersAvailable": "zawodników w bazie",
+      "rarity": {
+        "common": "Zwykła",
+        "rare": "Rzadka",
+        "legendary": "Legendarna"
+      }
     }
   },
   "errors": {

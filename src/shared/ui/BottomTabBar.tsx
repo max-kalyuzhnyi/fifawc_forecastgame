@@ -9,22 +9,34 @@ import {
   RankingIcon,
   Settings01Icon,
   ShieldIcon,
+  Album02Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 interface BottomTabBarProps {
   isAdmin?: boolean;
+  cardsEnabled?: boolean;
 }
 
-const tabs = [
+const baseTabs = [
   { href: "/matches", key: "matches", icon: FootballIcon },
   { href: "/leaderboard", key: "leaderboard", icon: RankingIcon },
   { href: "/settings", key: "settings", icon: Settings01Icon },
 ] as const;
 
-export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
+const cardsTab = {
+  href: "/cards",
+  key: "cards" as const,
+  icon: Album02Icon,
+};
+
+export function BottomTabBar({ isAdmin, cardsEnabled }: BottomTabBarProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+
+  const tabs = cardsEnabled
+    ? [baseTabs[0], cardsTab, baseTabs[1], baseTabs[2]]
+    : [...baseTabs];
 
   const allTabs = isAdmin
     ? [...tabs, { href: "/admin", key: "admin" as const, icon: ShieldIcon }]
@@ -46,7 +58,9 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
                 key={tab.href}
                 href={tab.href}
                 prefetch={
-                  tab.href === "/settings" || tab.href === "/admin"
+                  tab.href === "/settings" ||
+                  tab.href === "/admin" ||
+                  tab.href === "/cards"
                 }
                 className={cn(
                   "flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[11px] font-medium transition-[color,transform] duration-200 active:scale-95 motion-reduce:transition-none",

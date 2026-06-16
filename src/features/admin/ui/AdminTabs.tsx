@@ -14,6 +14,7 @@ import { ResultsTab } from "@/features/admin/ui/ResultsTab";
 import { UsersTab } from "@/features/admin/ui/UsersTab";
 import { PicksTab } from "@/features/admin/ui/PicksTab";
 import { TeamsTab } from "@/features/admin/ui/TeamsTab";
+import { CardsAdminTab } from "@/features/cards/ui/CardsAdminTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AdminTabsProps {
@@ -26,6 +27,14 @@ interface AdminTabsProps {
   predictions: AdminPrediction[];
   pickers: NextMatchPickers | null;
   currentUserId: string | null;
+  cards: {
+    id: string;
+    displayName: string;
+    teamName: string | null;
+    rarity: "common" | "rare" | "legendary";
+    imageUrl: string | null;
+    isLegend: boolean;
+  }[];
 }
 
 export function AdminTabs({
@@ -38,6 +47,7 @@ export function AdminTabs({
   predictions,
   pickers,
   currentUserId,
+  cards,
 }: AdminTabsProps) {
   const t = useTranslations("admin");
 
@@ -48,6 +58,7 @@ export function AdminTabs({
         <TabsTrigger value="picks">{t("tabs.picks")}</TabsTrigger>
         <TabsTrigger value="users">{t("tabs.users")}</TabsTrigger>
         <TabsTrigger value="teams">{t("tabs.teams")}</TabsTrigger>
+        <TabsTrigger value="cards">{t("tabs.cards")}</TabsTrigger>
         <TabsTrigger value="results">{t("tabs.results")}</TabsTrigger>
       </TabsList>
 
@@ -69,6 +80,20 @@ export function AdminTabs({
 
       <TabsContent value="teams" className="min-h-0 overflow-y-auto">
         <TeamsTab teams={teams} players={players} />
+      </TabsContent>
+
+      <TabsContent value="cards" className="min-h-0 overflow-y-auto">
+        <CardsAdminTab
+          cards={cards}
+          players={players.map((player) => ({
+            id: player.id,
+            name: player.name,
+            teamId: player.team_id,
+            teamName:
+              teams.find((team) => team.id === player.team_id)?.name ?? "",
+            photoUrl: player.photo_url,
+          }))}
+        />
       </TabsContent>
 
       <TabsContent value="results" className="min-h-0 overflow-y-auto">

@@ -8,6 +8,7 @@
     "matches": "Matches",
     "leaderboard": "Leaderboard",
     "settings": "Settings",
+    "cards": "Cards",
     "admin": "Admin"
   },
   "common": {
@@ -260,6 +261,7 @@
       "picks": "Picks",
       "users": "Users",
       "teams": "Teams",
+      "cards": "Cards",
       "results": "Results"
     },
     "users": {
@@ -331,6 +333,73 @@
       "alreadyPredicted": "User already submitted a pick",
       "sendFailed": "Failed to send Telegram message",
       "noPending": "No participants without a pick"
+    }
+  },
+  "cards": {
+    "title": "Card Collection",
+    "description": "Collect player cards from your predictions and trades.",
+    "locked": "Locked",
+    "legend": "Legend",
+    "collectionProgress": "Collection progress",
+    "progressPercent": "{percent}%",
+    "tabs": {
+      "collection": "Collection",
+      "requests": "Requests"
+    },
+    "cooldown": "Next request in {time}",
+    "yourRequestsTitle": "Your requests",
+    "othersRequestsTitle": "From other players",
+    "noOthersRequests": "No requests from other players yet.",
+    "unopenedPacks": "Unopened packs",
+    "openingPack": "Opening pack",
+    "revealing": "Revealing cards…",
+    "close": "Close",
+    "exchangeTitle": "Trade duplicates",
+    "duplicatesCount": "{count} duplicates",
+    "exchange3": "Trade 3 dupes → {cards} cards",
+    "exchange5": "Trade 5 dupes → {cards} cards",
+    "requestBoard": "Card requests",
+    "noRequests": "No open requests yet.",
+    "yourRequest": "Your request",
+    "requestedBy": "Requested by {name}",
+    "cancel": "Cancel",
+    "gift": "Gift",
+    "requestHint": "Tap a missing card to request it. Others can gift duplicates.",
+    "requestCard": "Request card",
+    "requested": "Requested",
+    "unknownCard": "Unknown card",
+    "giftReceived": "You received a card!",
+    "giftFrom": "A gift from {name}",
+    "awesome": "Awesome!",
+    "packReason": {
+      "dailyPicks": "Daily picks · {count} cards",
+      "scored": "Scored points · {count} cards",
+      "boostScorer": "Boost + scorer · {count} cards",
+      "exchange3": "Duplicate trade · {count} cards",
+      "exchange5": "Duplicate trade · {count} cards",
+      "default": "{count} cards"
+    },
+    "rarity": {
+      "common": "Common",
+      "rare": "Rare",
+      "legendary": "Legendary"
+    },
+    "admin": {
+      "legendsTitle": "Legends OTB",
+      "legendName": "Legend name",
+      "legendNamePlaceholder": "e.g. Ronaldinho",
+      "addLegend": "Add legend",
+      "noPhoto": "No photo",
+      "uploadPhoto": "Upload photo",
+      "remove": "Remove",
+      "playersPool": "Players pool",
+      "playersPoolHint": "National team cards are seeded from squads. Adjust rarity per card below.",
+      "playersAvailable": "players in database",
+      "rarity": {
+        "common": "Common",
+        "rare": "Rare",
+        "legendary": "Legendary"
+      }
     }
   },
   "errors": {

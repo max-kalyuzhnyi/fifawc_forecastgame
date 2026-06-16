@@ -19,6 +19,7 @@ function useRefreshOnTabChange(): void {
     if (
       pathname === "/matches" ||
       pathname === "/leaderboard" ||
+      pathname === "/cards" ||
       pathname.startsWith("/matches/")
     ) {
       router.refresh();
@@ -37,6 +38,10 @@ export function AppLiveRefresh({
     "predictions",
     "match_scorers",
     "match_events",
+    "user_cards",
+    "card_packs",
+    "card_gift_requests",
+    "card_gifts",
   );
   useRefreshOnTabChange();
 

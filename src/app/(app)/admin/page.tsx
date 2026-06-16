@@ -22,6 +22,7 @@ export default async function AdminPage() {
     { data: predictions },
     { data: adminUsers },
     { data: scorers },
+    { data: cards },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -45,7 +46,14 @@ export default async function AdminPage() {
       ),
     supabase.from("admin_users").select("user_id"),
     supabase.from("match_scorers").select("match_id, scorer_name"),
+    supabase
+      .from("cards")
+      .select("id, display_name, image_url, rarity, is_legend, team_id")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
+
+  const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
 
   const scorersByMatch: Record<string, string[]> = {};
   for (const scorer of scorers ?? []) {
@@ -88,6 +96,16 @@ export default async function AdminPage() {
         predictions={predictionList}
         pickers={pickers}
         currentUserId={currentUserId}
+        cards={(cards ?? []).map((card) => ({
+          id: card.id,
+          displayName: card.display_name,
+          teamName: card.is_legend
+            ? "Legends OTB"
+            : (card.team_id ? teamNameById.get(card.team_id) ?? null : null),
+          rarity: card.rarity,
+          imageUrl: card.image_url,
+          isLegend: card.is_legend,
+        }))}
       />
     </div>
   );
