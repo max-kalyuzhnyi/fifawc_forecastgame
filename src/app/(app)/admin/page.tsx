@@ -5,7 +5,10 @@ import { buildUserPicks } from "@/features/admin/lib/buildUserPicks";
 import { findNextMatch } from "@/features/admin/lib/findNextMatch";
 import { splitPickers } from "@/features/admin/lib/splitPickers";
 import { createClient } from "@/shared/lib/supabase/server";
+import { buildMatchScorers } from "@/shared/lib/scorers";
 import { getCurrentUserId, isAdmin } from "@/shared/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/matches");
@@ -21,7 +24,7 @@ export default async function AdminPage() {
     { data: profiles },
     { data: predictions },
     { data: adminUsers },
-    { data: scorers },
+    { data: matchEvents },
     { data: cards },
   ] = await Promise.all([
     supabase
@@ -45,7 +48,10 @@ export default async function AdminPage() {
         "id, user_id, match_id, home_score, away_score, scorer_player_id, scorer_name, boost_multiplier, round_key",
       ),
     supabase.from("admin_users").select("user_id"),
-    supabase.from("match_scorers").select("match_id, scorer_name"),
+    supabase
+      .from("match_events")
+      .select("match_id, type, player_name")
+      .in("type", ["goal", "penalty"]),
     supabase
       .from("cards")
       .select("id, display_name, image_url, rarity, is_legend, team_id")
@@ -55,12 +61,14 @@ export default async function AdminPage() {
 
   const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
 
-  const scorersByMatch: Record<string, string[]> = {};
-  for (const scorer of scorers ?? []) {
-    const list = scorersByMatch[scorer.match_id] ?? [];
-    list.push(scorer.scorer_name);
-    scorersByMatch[scorer.match_id] = list;
-  }
+  const { namesByMatch: scorersByMatch } = buildMatchScorers(
+    (matchEvents ?? []).map((event) => ({
+      matchId: event.match_id,
+      type: event.type,
+      playerName: event.player_name,
+    })),
+    players ?? [],
+  );
 
   const adminUserIds = new Set((adminUsers ?? []).map((row) => row.user_id));
   const matchList = matches ?? [];

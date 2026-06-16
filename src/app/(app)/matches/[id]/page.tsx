@@ -9,8 +9,8 @@ import {
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import {
   buildPredictionsByMatch,
-  buildScorersByMatch,
 } from "@/features/matches/lib/predictionsByMatch";
+import { buildMatchScorers } from "@/shared/lib/scorers";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
 import { buildPlayersByMatch } from "@/features/matches/lib/playersByMatch";
@@ -25,6 +25,8 @@ import {
 } from "@/shared/lib/onside/upsets";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { Button } from "@/components/ui/button";
+
+export const dynamic = "force-dynamic";
 
 export default async function MatchDetailPage({
   params,
@@ -50,7 +52,6 @@ export default async function MatchDetailPage({
     { data: allPredictions },
     { data: profiles },
     { data: players },
-    { data: matchScorers },
     { data: teams },
     { data: matchEvents },
     { data: liveMatches },
@@ -61,7 +62,7 @@ export default async function MatchDetailPage({
     supabase
       .from("predictions")
       .select(
-        "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier, round_key",
+        "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
       )
       .eq("match_id", id),
     supabase.from("profiles").select("id, display_name, photo_url"),
@@ -74,7 +75,6 @@ export default async function MatchDetailPage({
           Boolean,
         ) as string[],
       ),
-    supabase.from("match_scorers").select("match_id, scorer_name").eq("match_id", id),
     supabase.from("teams").select("name, primary_color"),
     supabase
       .from("match_events")
@@ -100,7 +100,15 @@ export default async function MatchDetailPage({
     allPredictions ?? [],
     profiles ?? [],
   );
-  const scorersByMatch = buildScorersByMatch(matchScorers ?? []);
+  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
+    buildMatchScorers(
+      (matchEvents ?? []).map((event) => ({
+        matchId: event.match_id,
+        type: event.type,
+        playerName: event.player_name,
+      })),
+      players ?? [],
+    );
   const teamColors = buildTeamColorsMap(teams ?? []);
   const liveScoreByTeam = buildLiveScoreByTeam((liveMatches ?? []) as Match[]);
 
@@ -125,6 +133,7 @@ export default async function MatchDetailPage({
         players={playersByMatch[id] ?? []}
         matchPredictions={predictionsByMatch[id] ?? []}
         matchScorers={scorersByMatch[id] ?? []}
+        matchScorerPlayerIds={scorerPlayerIdsByMatch[id] ?? []}
         matchEvents={(matchEvents ?? []) as MatchEvent[]}
         groupStanding={groupStanding}
         liveScoreByTeam={liveScoreByTeam}

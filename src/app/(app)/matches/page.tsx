@@ -6,8 +6,8 @@ import {
 } from "@/features/matches/lib/playersByMatch";
 import {
   buildPredictionsByMatch,
-  buildScorersByMatch,
 } from "@/features/matches/lib/predictionsByMatch";
+import { buildMatchScorers } from "@/shared/lib/scorers";
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { buildPlayerPhotosMap } from "@/features/matches/lib/playerPhotos";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
@@ -25,6 +25,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 
+export const dynamic = "force-dynamic";
+
 export default async function MatchesPage() {
   const supabase = await createClient();
   const userId = await getCurrentUserId();
@@ -41,7 +43,6 @@ export default async function MatchesPage() {
     { data: allPredictions },
     { data: profiles },
     { data: players },
-    { data: matchScorers },
     { data: teams },
     { data: matchEvents },
   ] = await Promise.all([
@@ -51,7 +52,7 @@ export default async function MatchesPage() {
     supabase
       .from("predictions")
       .select(
-        "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier, round_key",
+        "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
       ),
     supabase.from("profiles").select("id, display_name, photo_url"),
     teamIds.length > 0
@@ -60,7 +61,6 @@ export default async function MatchesPage() {
           .select("id, name, team_id, position, shirt_number, photo_url")
           .in("team_id", teamIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("match_scorers").select("match_id, scorer_name"),
     supabase.from("teams").select("name, primary_color"),
     supabase.from("match_events").select("*").order("minute", { ascending: true }),
   ]);
@@ -88,7 +88,15 @@ export default async function MatchesPage() {
     profiles ?? [],
   );
 
-  const scorersByMatch = buildScorersByMatch(matchScorers ?? []);
+  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
+    buildMatchScorers(
+      (matchEvents ?? []).map((event) => ({
+        matchId: event.match_id,
+        type: event.type,
+        playerName: event.player_name,
+      })),
+      players ?? [],
+    );
   const teamColors = buildTeamColorsMap(teams ?? []);
   const playerPhotosByTeam = buildPlayerPhotosMap(
     (players ?? []).map((player) => ({
@@ -129,6 +137,7 @@ export default async function MatchesPage() {
         playersByMatch={playersByMatch}
         predictionsByMatch={predictionsByMatch}
         scorersByMatch={scorersByMatch}
+        scorerPlayerIdsByMatch={scorerPlayerIdsByMatch}
         eventsByMatch={eventsByMatch}
         currentUserId={userId}
         teamColors={teamColors}

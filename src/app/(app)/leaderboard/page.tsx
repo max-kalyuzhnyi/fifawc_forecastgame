@@ -2,8 +2,11 @@ import { buildLeaderboardAnalytics } from "@/features/leaderboard/lib/buildAnaly
 import { LeaderboardTabs } from "@/features/leaderboard/ui/LeaderboardTabs";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { createClient } from "@/shared/lib/supabase/server";
+import { buildMatchScorers } from "@/shared/lib/scorers";
 import { getTranslations } from "next-intl/server";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -14,7 +17,8 @@ export default async function LeaderboardPage() {
     { data: matches },
     { data: predictions },
     { data: profiles },
-    { data: matchScorers },
+    { data: matchEvents },
+    { data: players },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -22,18 +26,25 @@ export default async function LeaderboardPage() {
     supabase
       .from("predictions")
       .select(
-        "match_id, user_id, home_score, away_score, scorer_name, boost_multiplier",
+        "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
       ),
     supabase.from("profiles").select("id, display_name, photo_url"),
-    supabase.from("match_scorers").select("match_id, scorer_name"),
+    supabase
+      .from("match_events")
+      .select("match_id, type, player_name")
+      .in("type", ["goal", "penalty"]),
+    supabase.from("players").select("id, name"),
   ]);
 
-  const scorersByMatch: Record<string, string[]> = {};
-  for (const scorer of matchScorers ?? []) {
-    const list = scorersByMatch[scorer.match_id] ?? [];
-    list.push(scorer.scorer_name);
-    scorersByMatch[scorer.match_id] = list;
-  }
+  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
+    buildMatchScorers(
+      (matchEvents ?? []).map((event) => ({
+        matchId: event.match_id,
+        type: event.type,
+        playerName: event.player_name,
+      })),
+      players ?? [],
+    );
 
   const analytics = buildLeaderboardAnalytics({
     matches: matches ?? [],
@@ -43,6 +54,7 @@ export default async function LeaderboardPage() {
     })),
     profiles: profiles ?? [],
     scorersByMatch,
+    scorerPlayerIdsByMatch,
   });
 
   return (

@@ -29,6 +29,7 @@ export interface PredictionForAnalytics {
   home_score: number;
   away_score: number;
   scorer_name: string | null;
+  scorer_player_id: string | null;
   boost_multiplier: BoostMultiplier;
 }
 
@@ -119,8 +120,10 @@ export function buildLeaderboardAnalytics(input: {
   predictions: PredictionForAnalytics[];
   profiles: ProfileForAnalytics[];
   scorersByMatch: Record<string, string[]>;
+  scorerPlayerIdsByMatch?: Record<string, string[]>;
 }): LeaderboardAnalytics {
-  const { matches, predictions, profiles, scorersByMatch } = input;
+  const { matches, predictions, profiles, scorersByMatch, scorerPlayerIdsByMatch } =
+    input;
 
   const matchMap = new Map(matches.map((match) => [match.id, match]));
   const scoredMatchIds = new Set(
@@ -173,7 +176,10 @@ export function buildLeaderboardAnalytics(input: {
       actualHome: match.home_score!,
       actualAway: match.away_score!,
       predictedScorer: prediction.scorer_name,
+      predictedScorerPlayerId: prediction.scorer_player_id,
       actualScorers: scorersByMatch[prediction.match_id] ?? [],
+      actualScorerPlayerIds:
+        scorerPlayerIdsByMatch?.[prediction.match_id] ?? [],
       boostMultiplier: prediction.boost_multiplier,
     }).totalPoints;
 

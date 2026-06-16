@@ -23,6 +23,7 @@ interface MatchDrawerSlideProps {
   players: MatchPlayerOption[];
   matchPredictions: MatchPredictionEntry[];
   matchScorers: string[];
+  matchScorerPlayerIds?: string[];
   matchEvents?: MatchEvent[];
   currentUserId: string | null;
   teamColors: Record<string, string>;
@@ -46,6 +47,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
   players,
   matchPredictions,
   matchScorers,
+  matchScorerPlayerIds = [],
   matchEvents = [],
   currentUserId,
   teamColors,
@@ -83,6 +85,7 @@ export const MatchDrawerSlide = memo(function MatchDrawerSlide({
           players={players}
           matchPredictions={matchPredictions}
           matchScorers={matchScorers}
+          matchScorerPlayerIds={matchScorerPlayerIds}
           matchEvents={matchEvents}
           currentUserId={currentUserId}
           teamColors={teamColors}

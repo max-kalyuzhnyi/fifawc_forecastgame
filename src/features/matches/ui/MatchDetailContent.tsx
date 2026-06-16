@@ -56,6 +56,7 @@ interface MatchDetailContentProps {
   playersLoading?: boolean;
   matchPredictions?: MatchPredictionEntry[];
   matchScorers?: string[];
+  matchScorerPlayerIds?: string[];
   matchEvents?: MatchEvent[];
   currentUserId?: string | null;
   teamColors?: Record<string, string>;
@@ -209,6 +210,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   playersLoading = false,
   matchPredictions = [],
   matchScorers = [],
+  matchScorerPlayerIds = [],
   matchEvents = [],
   currentUserId,
   teamColors = {},
@@ -258,7 +260,9 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           actualHome: match.home_score!,
           actualAway: match.away_score!,
           predictedScorer: prediction.scorer_name,
+          predictedScorerPlayerId: prediction.scorer_player_id,
           actualScorers: matchScorers,
+          actualScorerPlayerIds: matchScorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
         }).totalPoints
       : null;
@@ -270,7 +274,9 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           actualHome: match.home_score!,
           actualAway: match.away_score!,
           predictedScorer: prediction.scorer_name,
+          predictedScorerPlayerId: prediction.scorer_player_id,
           actualScorers: matchScorers,
+          actualScorerPlayerIds: matchScorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
         }).basePoints > 0
       : false;
@@ -422,6 +428,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                   match={match}
                   predictions={matchPredictions}
                   actualScorers={matchScorers}
+                  actualScorerPlayerIds={matchScorerPlayerIds}
                   currentUserId={currentUserId}
                 />
               ) : (

@@ -32,6 +32,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 2,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -40,6 +41,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 1,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -48,6 +50,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 0,
           away_score: 0,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
       ],
@@ -87,6 +90,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 1,
           away_score: 0,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -95,6 +99,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 0,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -103,6 +108,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 0,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
       ],
@@ -145,6 +151,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 1,
           away_score: 0,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -153,6 +160,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 0,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
         {
@@ -161,6 +169,7 @@ describe("buildLeaderboardAnalytics", () => {
           home_score: 2,
           away_score: 1,
           scorer_name: null,
+          scorer_player_id: null,
           boost_multiplier: 1,
         },
       ],
@@ -184,5 +193,35 @@ describe("buildLeaderboardAnalytics", () => {
       rank: 1,
     });
     expect(analytics.perStage.group_1?.find((entry) => entry.user_id === "user-b")?.points).toBe(0);
+  });
+
+  it("adds scorer bonus when predicted player scored", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "m1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 3,
+          away_score: 1,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "m1",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: "Kylian Mbappé",
+          scorer_player_id: "player-mbappe",
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: { m1: ["Kylian Mbappé"] },
+      scorerPlayerIdsByMatch: { m1: ["player-mbappe"] },
+    });
+
+    expect(analytics.overall[0]?.total_points).toBe(3);
   });
 });

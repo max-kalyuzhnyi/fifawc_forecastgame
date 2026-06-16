@@ -53,6 +53,7 @@ interface MatchesViewProps {
   playersByMatch: Record<string, MatchPlayerOption[]>;
   predictionsByMatch: Record<string, MatchPredictionEntry[]>;
   scorersByMatch: Record<string, string[]>;
+  scorerPlayerIdsByMatch: Record<string, string[]>;
   eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
@@ -282,6 +283,7 @@ function MatchCard({
   prediction,
   voters,
   scorers,
+  scorerPlayerIds,
   isSelected,
   featured = false,
   isUpsetWatch = false,
@@ -293,6 +295,7 @@ function MatchCard({
   prediction: PredictionDetail | undefined;
   voters: MatchVoterInfo;
   scorers: string[];
+  scorerPlayerIds: string[];
   isSelected: boolean;
   featured?: boolean;
   isUpsetWatch?: boolean;
@@ -314,7 +317,9 @@ function MatchCard({
           actualHome: match.home_score!,
           actualAway: match.away_score!,
           predictedScorer: prediction.scorer_name,
+          predictedScorerPlayerId: prediction.scorer_player_id,
           actualScorers: scorers,
+          actualScorerPlayerIds: scorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
         }).totalPoints
       : null;
@@ -412,6 +417,7 @@ export function MatchesView({
   playersByMatch,
   predictionsByMatch,
   scorersByMatch,
+  scorerPlayerIdsByMatch,
   eventsByMatch,
   currentUserId,
   teamColors,
@@ -703,6 +709,7 @@ export function MatchesView({
                       }
                     }
                     scorers={scorersByMatch[match.id] ?? []}
+                    scorerPlayerIds={scorerPlayerIdsByMatch[match.id] ?? []}
                     isSelected={selectedMatchId === match.id}
                     featured
                     isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
@@ -760,6 +767,7 @@ export function MatchesView({
                         }
                       }
                       scorers={scorersByMatch[match.id] ?? []}
+                    scorerPlayerIds={scorerPlayerIdsByMatch[match.id] ?? []}
                       isSelected={selectedMatchId === match.id}
                       isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
                       locale={locale}
@@ -789,6 +797,7 @@ export function MatchesView({
         playersByMatch={playersByMatch}
         predictionsByMatch={predictionsByMatch}
         scorersByMatch={scorersByMatch}
+        scorerPlayerIdsByMatch={scorerPlayerIdsByMatch}
         eventsByMatch={eventsByMatch}
         currentUserId={currentUserId}
         teamColors={teamColors}

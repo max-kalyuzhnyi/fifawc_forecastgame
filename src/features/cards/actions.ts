@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { drawCardsFromPack } from "@/shared/lib/cards/drawCard";
 import {
-  buildScorersByMatch,
   countTotalDuplicates,
   evaluateDailyPackGrants,
 } from "@/shared/lib/cards/earnPacks";
+import { buildMatchScorers } from "@/shared/lib/scorers";
 import { EXCHANGE_TIERS, REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
 import type { CatalogCard } from "@/shared/lib/cards/types";
 import {
@@ -175,7 +175,7 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
   const { userId } = access;
   const supabase = await createClient();
 
-  const [{ data: matches }, { data: predictions }, { data: events }] =
+  const [{ data: matches }, { data: predictions }, { data: events }, { data: players }] =
     await Promise.all([
       supabase
         .from("matches")
@@ -183,22 +183,25 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
       supabase
         .from("predictions")
         .select(
-          "match_id, home_score, away_score, scorer_name, boost_multiplier",
+          "match_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
         )
         .eq("user_id", userId),
       supabase
         .from("match_events")
         .select("match_id, type, player_name")
         .in("type", ["goal", "penalty"]),
+      supabase.from("players").select("id, name"),
     ]);
 
-  const scorersByMatch = buildScorersByMatch(
-    (events ?? []).map((event) => ({
-      matchId: event.match_id,
-      type: event.type,
-      playerName: event.player_name,
-    })),
-  );
+  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
+    buildMatchScorers(
+      (events ?? []).map((event) => ({
+        matchId: event.match_id,
+        type: event.type,
+        playerName: event.player_name,
+      })),
+      players ?? [],
+    );
 
   const grants = evaluateDailyPackGrants({
     matches: (matches ?? []).map((match) => ({
@@ -213,9 +216,11 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
       homeScore: prediction.home_score,
       awayScore: prediction.away_score,
       scorerName: prediction.scorer_name,
+      scorerPlayerId: prediction.scorer_player_id,
       boostMultiplier: prediction.boost_multiplier,
     })),
     scorersByMatch,
+    scorerPlayerIdsByMatch,
   });
 
   let granted = 0;

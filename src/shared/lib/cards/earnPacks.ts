@@ -1,7 +1,10 @@
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
 import { getDateGroupKey } from "@/shared/lib/formatDate";
 import { PACK_SIZES } from "@/shared/lib/cards/config";
+import { buildScorersByMatch } from "@/shared/lib/scorers";
 import type { CardPackReason } from "@/shared/types/database";
+
+export { buildScorersByMatch };
 
 export interface EarnMatch {
   id: string;
@@ -16,6 +19,7 @@ export interface EarnPrediction {
   homeScore: number;
   awayScore: number;
   scorerName: string | null;
+  scorerPlayerId?: string | null;
   boostMultiplier: number;
 }
 
@@ -25,32 +29,11 @@ export interface EarnPackGrant {
   size: number;
 }
 
-function isGoalEvent(type: string): boolean {
-  return type === "goal" || type === "penalty";
-}
-
-export function buildScorersByMatch(
-  events: { matchId: string; type: string; playerName: string }[],
-): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
-
-  for (const event of events) {
-    if (!isGoalEvent(event.type)) {
-      continue;
-    }
-
-    const list = result[event.matchId] ?? [];
-    list.push(event.playerName);
-    result[event.matchId] = list;
-  }
-
-  return result;
-}
-
 export function evaluateDailyPackGrants(input: {
   matches: EarnMatch[];
   predictions: EarnPrediction[];
   scorersByMatch: Record<string, string[]>;
+  scorerPlayerIdsByMatch?: Record<string, string[]>;
   todayKey?: string;
 }): EarnPackGrant[] {
   const todayKey = input.todayKey ?? getDateGroupKey(new Date().toISOString());
@@ -113,7 +96,9 @@ export function evaluateDailyPackGrants(input: {
         actualHome: match.homeScore,
         actualAway: match.awayScore,
         predictedScorer: prediction.scorerName,
+        predictedScorerPlayerId: prediction.scorerPlayerId,
         actualScorers: input.scorersByMatch[match.id] ?? [],
+        actualScorerPlayerIds: input.scorerPlayerIdsByMatch?.[match.id] ?? [],
         boostMultiplier: prediction.boostMultiplier as 1 | 2,
       });
 

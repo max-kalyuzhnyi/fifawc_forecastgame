@@ -60,6 +60,7 @@ interface MatchDrawerProps {
   playersByMatch: Record<string, MatchPlayerOption[]>;
   predictionsByMatch: Record<string, MatchPredictionEntry[]>;
   scorersByMatch: Record<string, string[]>;
+  scorerPlayerIdsByMatch: Record<string, string[]>;
   eventsByMatch: Record<string, MatchEvent[]>;
   currentUserId: string | null;
   teamColors: Record<string, string>;
@@ -80,6 +81,7 @@ export function MatchDrawer({
   playersByMatch,
   predictionsByMatch,
   scorersByMatch,
+  scorerPlayerIdsByMatch,
   eventsByMatch,
   currentUserId,
   teamColors,
@@ -312,6 +314,7 @@ export function MatchDrawer({
                       players={playersByMatch[match.id] ?? []}
                       matchPredictions={predictionsByMatch[match.id] ?? []}
                       matchScorers={scorersByMatch[match.id] ?? []}
+                      matchScorerPlayerIds={scorerPlayerIdsByMatch[match.id] ?? []}
                       matchEvents={eventsByMatch[match.id] ?? []}
                       currentUserId={currentUserId}
                       teamColors={teamColors}

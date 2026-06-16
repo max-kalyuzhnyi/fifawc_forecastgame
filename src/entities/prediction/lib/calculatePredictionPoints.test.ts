@@ -69,4 +69,20 @@ describe("calculatePredictionPoints", () => {
     });
     expect(result.totalPoints).toBe(0);
   });
+
+  it("matches scorer bonus by player id when names differ", () => {
+    const result = calculatePredictionPoints({
+      predictedHome: 2,
+      predictedAway: 1,
+      actualHome: 3,
+      actualAway: 1,
+      predictedScorer: "K. Mbappé",
+      predictedScorerPlayerId: "player-1",
+      actualScorers: ["Kylian Mbappé"],
+      actualScorerPlayerIds: ["player-1"],
+      boostMultiplier: 1,
+    });
+    expect(result.scorerBonus).toBe(2);
+    expect(result.totalPoints).toBe(3);
+  });
 });

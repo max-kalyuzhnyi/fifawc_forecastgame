@@ -7,7 +7,9 @@ export interface ScoreInput {
   actualHome: number;
   actualAway: number;
   predictedScorer: string | null;
+  predictedScorerPlayerId?: string | null;
   actualScorers: string[];
+  actualScorerPlayerIds?: string[];
   boostMultiplier: BoostMultiplier;
 }
 
@@ -43,7 +45,11 @@ export function calculatePredictionPoints(input: ScoreInput): ScoreBreakdown {
   }
 
   let scorerBonus = 0;
-  if (input.predictedScorer) {
+  if (input.predictedScorerPlayerId && input.actualScorerPlayerIds?.length) {
+    if (input.actualScorerPlayerIds.includes(input.predictedScorerPlayerId)) {
+      scorerBonus = 2;
+    }
+  } else if (input.predictedScorer) {
     const normalized = normalizeScorerName(input.predictedScorer);
     const matched = input.actualScorers.some(
       (s) => normalizeScorerName(s) === normalized,

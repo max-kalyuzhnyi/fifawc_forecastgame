@@ -13,6 +13,7 @@ interface MatchPredictionsBoardProps {
   match: Match;
   predictions: MatchPredictionEntry[];
   actualScorers: string[];
+  actualScorerPlayerIds?: string[];
   currentUserId?: string | null;
 }
 
@@ -27,6 +28,7 @@ export function MatchPredictionsBoard({
   match,
   predictions,
   actualScorers,
+  actualScorerPlayerIds = [],
   currentUserId,
 }: MatchPredictionsBoardProps) {
   const hasScore =
@@ -43,7 +45,9 @@ export function MatchPredictionsBoard({
             actualHome: match.home_score!,
             actualAway: match.away_score!,
             predictedScorer: entry.scorer_name,
+            predictedScorerPlayerId: entry.scorer_player_id,
             actualScorers,
+            actualScorerPlayerIds,
             boostMultiplier: entry.boost_multiplier,
           }).totalPoints
         : null;
