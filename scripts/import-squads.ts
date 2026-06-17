@@ -18,6 +18,8 @@ type PlayerPosition = "GK" | "DF" | "MF" | "FW";
 
 interface ParsedPlayer {
   name: string;
+  /** Wikipedia page title from [[Page title|Display name]] for Commons lookup. */
+  wikiTitle: string;
   position: PlayerPosition;
   shirtNumber: number;
 }
@@ -89,6 +91,7 @@ function parsePlayerTemplate(content: string): ParsedPlayer | null {
 
   return {
     name: displayName,
+    wikiTitle: nameMatch[1].trim(),
     position: posMatch[1] as PlayerPosition,
     shirtNumber,
   };
@@ -199,6 +202,7 @@ async function main() {
         {
           team_id: teamId,
           name: player.name,
+          wiki_title: player.wikiTitle,
           position: player.position,
           shirt_number: player.shirtNumber,
         },

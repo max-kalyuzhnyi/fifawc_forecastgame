@@ -17,6 +17,8 @@
     "import:schedule": "tsx scripts/import-schedule.ts",
     "import:squads": "tsx scripts/import-squads.ts",
     "import:player-photos": "tsx scripts/import-player-photos.ts",
+    "import:card-photos-commons": "tsx scripts/import-card-photos-commons.ts",
+    "report:card-photo-review": "tsx scripts/report-card-photo-review.ts",
     "seed:cards": "tsx scripts/seed-cards.ts",
     "audit:card-photos": "tsx scripts/audit-card-photos.ts",
     "simulate:cards": "tsx scripts/simulate-card-economy.ts",

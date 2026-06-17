@@ -178,6 +178,50 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
         Relationships: [];
       };
+      player_photo_sources: {
+        Row: {
+          id: string;
+          player_id: string;
+          card_id: string | null;
+          source_provider: string;
+          file_title: string;
+          source_url: string;
+          thumb_url: string | null;
+          license_url: string | null;
+          author_credit: string | null;
+          width: number | null;
+          height: number | null;
+          score: number;
+          reason_tags: string[];
+          status: "pending" | "accepted" | "rejected";
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          card_id?: string | null;
+          source_provider: string;
+          file_title: string;
+          source_url: string;
+          thumb_url?: string | null;
+          license_url?: string | null;
+          author_credit?: string | null;
+          width?: number | null;
+          height?: number | null;
+          score?: number;
+          reason_tags?: string[];
+          status?: "pending" | "accepted" | "rejected";
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["player_photo_sources"]["Insert"]
+        >;
+        Relationships: [];
+      };
       predictions: {
         Row: {
           id: string;
