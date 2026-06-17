@@ -284,24 +284,33 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   return (
     <div
       className={cn(
-        "match-drawer-card corner-squircle relative isolate flex h-full w-full flex-col",
+        "match-drawer-card corner-squircle relative flex h-full w-full min-h-0 flex-col",
         expanded && "rounded-none border-0 shadow-none",
       )}
     >
-      <MatchTeamBackground
-        homeTeamName={match.home_team_name}
-        awayTeamName={match.away_team_name}
-        teamColors={teamColors}
-      />
-
       <div
         className={cn(
-          "relative flex min-h-0 flex-1 flex-col px-4",
+          "relative flex min-h-0 flex-1 flex-col",
           expanded
-            ? "overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
-            : "overflow-hidden pb-4 pt-2",
+            ? "overflow-y-auto overscroll-contain"
+            : "overflow-hidden",
         )}
       >
+        <div className="relative min-h-full">
+          <MatchTeamBackground
+            homeTeamName={match.home_team_name}
+            awayTeamName={match.away_team_name}
+            teamColors={teamColors}
+          />
+
+          <div
+            className={cn(
+              "relative z-10 flex flex-col px-4",
+              expanded
+                ? "pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+                : "pb-4 pt-2",
+            )}
+          >
         <section className="flex shrink-0 flex-col gap-2 pb-5">
           <div className="flex flex-col items-center gap-1.5">
             <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
@@ -471,6 +480,8 @@ export const MatchDetailContent = memo(function MatchDetailContent({
             </TabsContent>
           </Tabs>
         </section>
+          </div>
+        </div>
       </div>
     </div>
   );

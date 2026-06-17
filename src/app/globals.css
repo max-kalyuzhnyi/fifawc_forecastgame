@@ -120,10 +120,7 @@
     .corner-squircle {
         --squircle-radius: 1.5rem;
         border-radius: var(--squircle-radius);
-        corner-shape: squircle;
         overflow: hidden;
-        isolation: isolate;
-        transform: translateZ(0);
     }
 
     @supports not (corner-shape: squircle) {
@@ -191,10 +188,7 @@
         --sports-panel-radius: 1.5rem;
         --sports-panel-bg: rgb(2 8 56 / 0.8);
         border-radius: var(--sports-panel-radius);
-        corner-shape: squircle;
         overflow: hidden;
-        isolation: isolate;
-        transform: translateZ(0);
         background: var(--sports-panel-bg);
         border: 1px solid rgb(255 255 255 / 0.05);
         box-shadow:
@@ -208,21 +202,28 @@
         }
     }
 
+    .app-vh {
+        height: var(--tg-vh, 100dvh);
+    }
+
+    .app-vh-max {
+        max-height: var(--tg-vh, 100dvh);
+    }
+
     .sports-panel-max-h {
         max-height: calc(
-            100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
-                8.5rem
+            var(--tg-vh, 100dvh) - env(safe-area-inset-top, 0px) -
+                env(safe-area-inset-bottom, 0px) - 8.5rem
         );
     }
 
     .match-drawer-card {
         --sports-panel-radius: 1.5rem;
         min-height: 23rem;
+        height: 100%;
         border-radius: var(--sports-panel-radius);
-        corner-shape: squircle;
         overflow: hidden;
-        isolation: isolate;
-        transform: translateZ(0);
+        background: #1b2356;
         border: 1px solid rgb(255 255 255 / 0.1);
         box-shadow:
             inset 0 1px 0 0 rgb(255 255 255 / 0.06),

@@ -15,7 +15,7 @@ export default async function AppLayout({
 
   return (
     <AppLiveRefresh>
-      <div className="flex h-dvh flex-col overflow-hidden">
+      <div className="app-vh flex flex-col overflow-hidden">
         <AppNav />
         <main className="mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-2 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
           {children}

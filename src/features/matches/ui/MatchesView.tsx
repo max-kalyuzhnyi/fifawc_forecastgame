@@ -550,6 +550,23 @@ export function MatchesView({
   }, [drawerMatchId]);
 
   useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) {
+      return;
+    }
+
+    if (drawerMatchId) {
+      main.classList.add("overflow-hidden");
+    } else {
+      main.classList.remove("overflow-hidden");
+    }
+
+    return () => {
+      main.classList.remove("overflow-hidden");
+    };
+  }, [drawerMatchId]);
+
+  useEffect(() => {
     if (prevDrawerMatchIdRef.current && !drawerMatchId) {
       router.refresh();
     }

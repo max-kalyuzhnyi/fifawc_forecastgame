@@ -75,7 +75,7 @@ function DrawerContent({
           !frameless &&
             "before:absolute before:inset-2 before:-z-10 before:rounded-[min(var(--radius-4xl),24px)] before:border before:border-border before:bg-popover before:shadow-xl",
           fullscreen
-            ? "h-[100dvh] max-h-[100dvh] data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] data-[vaul-drawer-direction=top]:mb-0 data-[vaul-drawer-direction=top]:max-h-[100dvh]"
+            ? "app-vh app-vh-max data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:app-vh-max data-[vaul-drawer-direction=top]:mb-0 data-[vaul-drawer-direction=top]:app-vh-max"
             : "h-auto data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh]",
           className
         )}
