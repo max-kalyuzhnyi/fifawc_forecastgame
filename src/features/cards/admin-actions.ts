@@ -208,6 +208,13 @@ export async function uploadLegendCardPhoto(
   cardId: string,
   formData: FormData,
 ): Promise<{ imageUrl: string } | { error: string }> {
+  return uploadCardPhoto(cardId, formData);
+}
+
+export async function uploadCardPhoto(
+  cardId: string,
+  formData: FormData,
+): Promise<{ imageUrl: string } | { error: string }> {
   const adminCheck = await assertAdmin();
   if ("error" in adminCheck) {
     return adminCheck;
@@ -226,19 +233,35 @@ export async function uploadLegendCardPhoto(
   let webp: Buffer;
 
   try {
-    webp = await sharp(buffer).rotate().resize(512, 768, { fit: "cover" }).webp({ quality: 85 }).toBuffer();
+    webp = await sharp(buffer)
+      .rotate()
+      .resize(512, 768, { fit: "cover" })
+      .webp({ quality: 85 })
+      .toBuffer();
   } catch {
     return { error: "Failed to process image" };
   }
 
+  const supabase = await createClient();
+  const { data: card, error: cardError } = await supabase
+    .from("cards")
+    .select("id")
+    .eq("id", cardId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (cardError || !card) {
+    return { error: "Card not found" };
+  }
+
   const admin = createAdminClient();
-  const path = `legends/${cardId}/${Date.now()}.webp`;
+  // New paths avoid serving an old card image from the storage CDN.
+  const path = `cards/${cardId}/${Date.now()}.webp`;
 
   const { error: uploadError } = await admin.storage
     .from(CARD_ART_BUCKET)
     .upload(path, webp, {
       contentType: "image/webp",
-      upsert: true,
     });
 
   if (uploadError) {
@@ -246,13 +269,12 @@ export async function uploadLegendCardPhoto(
   }
 
   const imageUrl = getPublicCardArtUrl(path);
-  const supabase = await createClient();
 
   const { error } = await supabase
     .from("cards")
     .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
     .eq("id", cardId)
-    .eq("is_legend", true);
+    .eq("is_active", true);
 
   if (error) {
     return { error: error.message };

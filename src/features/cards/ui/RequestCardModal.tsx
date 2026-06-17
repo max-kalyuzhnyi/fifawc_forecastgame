@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -36,7 +35,6 @@ function getMonogram(name: string): string {
 
 function CardHeroPreview({ card }: { card: CatalogCard }) {
   const t = useTranslations("cards");
-  const [failed, setFailed] = useState(false);
   const teamName = card.teamName ?? t("legend");
 
   return (
@@ -47,34 +45,21 @@ function CardHeroPreview({ card }: { card: CatalogCard }) {
       )}
     >
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        {card.imageUrl && !failed ? (
-          <>
-            <Image
-              src={card.imageUrl}
-              alt={card.displayName}
-              fill
-              unoptimized
-              priority
-              sizes="280px"
-              onError={() => setFailed(true)}
-              className="object-cover object-[center_20%] scale-110"
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-          </>
-        ) : (
-          <div className="flex size-full items-center justify-center bg-white/5 text-4xl font-bold text-white/40">
+        {/* Requests should confirm the target card without spoiling its reveal art. */}
+        <div className="flex size-full flex-col items-center justify-center gap-4 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),rgba(15,23,42,0.28)_42%,rgba(2,6,23,0.78))] px-6 text-center">
+          <span className="text-5xl font-black tracking-tight text-white/30">
             {getMonogram(card.displayName)}
+          </span>
+          <div className="space-y-2">
+            <p className="text-xl font-bold leading-tight text-white">
+              {card.displayName}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-white/70">
+              <TeamFlag name={teamName} size={18} />
+              <span>{teamName}</span>
+            </div>
           </div>
-        )}
-      </div>
-      <div className="absolute inset-x-0 bottom-0 space-y-1 px-4 pb-4">
-        <p className="truncate text-base font-bold leading-tight text-white">
-          {card.displayName}
-        </p>
-        <p className="flex items-center gap-1.5 truncate text-sm text-white/70">
-          <TeamFlag name={teamName} size={16} />
-          <span>{teamName}</span>
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -91,29 +76,24 @@ function formatCooldown(ms: number): string {
 }
 
 function useCooldownRemaining(nextRequestAt: string | null): number {
-  const [remaining, setRemaining] = useState(() => {
-    if (!nextRequestAt) return 0;
-    return Math.max(0, new Date(nextRequestAt).getTime() - Date.now());
-  });
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!nextRequestAt) {
-      setRemaining(0);
       return;
     }
 
-    function tick(): void {
-      setRemaining(
-        Math.max(0, new Date(nextRequestAt!).getTime() - Date.now()),
-      );
-    }
-
-    tick();
-    const interval = window.setInterval(tick, 1000);
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
     return () => window.clearInterval(interval);
   }, [nextRequestAt]);
 
-  return remaining;
+  if (!nextRequestAt) {
+    return 0;
+  }
+
+  return Math.max(0, new Date(nextRequestAt).getTime() - now);
 }
 
 interface RequestCardModalProps {
@@ -134,15 +114,12 @@ export function RequestCardModal({
   const t = useTranslations("cards");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [localNextRequestAt, setLocalNextRequestAt] = useState<string | null>(
-    nextRequestAt,
-  );
-  const cooldownRemaining = useCooldownRemaining(localNextRequestAt);
+  const [optimisticNextRequestAt, setOptimisticNextRequestAt] = useState<
+    string | null
+  >(null);
+  const effectiveNextRequestAt = optimisticNextRequestAt ?? nextRequestAt;
+  const cooldownRemaining = useCooldownRemaining(effectiveNextRequestAt);
   const onCooldown = cooldownRemaining > 0;
-
-  useEffect(() => {
-    setLocalNextRequestAt(nextRequestAt);
-  }, [nextRequestAt]);
 
   if (!card) {
     return null;
@@ -153,11 +130,11 @@ export function RequestCardModal({
       const result = await createCardRequest(card!.id);
       if ("error" in result) {
         if ("nextAvailableAt" in result && result.nextAvailableAt) {
-          setLocalNextRequestAt(result.nextAvailableAt);
+          setOptimisticNextRequestAt(result.nextAvailableAt);
         }
         return;
       }
-      setLocalNextRequestAt(
+      setOptimisticNextRequestAt(
         new Date(Date.now() + REQUEST_COOLDOWN_MS).toISOString(),
       );
       router.refresh();

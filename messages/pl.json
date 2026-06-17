@@ -346,6 +346,7 @@
       "collection": "Kolekcja",
       "requests": "Prośby"
     },
+    "showOnlyRevealed": "Pokaż tylko odkryte karty",
     "cooldown": "Następna prośba za {time}",
     "yourRequestsTitle": "Twoje prośby",
     "othersRequestsTitle": "Od innych graczy",
@@ -393,7 +394,7 @@
       "uploadPhoto": "Wgraj zdjęcie",
       "remove": "Usuń",
       "playersPool": "Pula zawodników",
-      "playersPoolHint": "Karty reprezentacji pochodzą ze składów. Rzadkość można zmienić poniżej.",
+      "playersPoolHint": "Karty reprezentacji pochodzą ze składów. Sprawdź zdjęcia, wgraj zamienniki i ustaw rzadkość poniżej.",
       "playersAvailable": "zawodników w bazie",
       "rarity": {
         "common": "Zwykła",

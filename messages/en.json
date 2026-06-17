@@ -346,6 +346,7 @@
       "collection": "Collection",
       "requests": "Requests"
     },
+    "showOnlyRevealed": "Show only revealed cards",
     "cooldown": "Next request in {time}",
     "yourRequestsTitle": "Your requests",
     "othersRequestsTitle": "From other players",
@@ -393,7 +394,7 @@
       "uploadPhoto": "Upload photo",
       "remove": "Remove",
       "playersPool": "Players pool",
-      "playersPoolHint": "National team cards are seeded from squads. Adjust rarity per card below.",
+      "playersPoolHint": "National team cards are seeded from squads. Review photos, upload replacements, and adjust rarity below.",
       "playersAvailable": "players in database",
       "rarity": {
         "common": "Common",

@@ -18,6 +18,7 @@
     "import:squads": "tsx scripts/import-squads.ts",
     "import:player-photos": "tsx scripts/import-player-photos.ts",
     "seed:cards": "tsx scripts/seed-cards.ts",
+    "audit:card-photos": "tsx scripts/audit-card-photos.ts",
     "simulate:cards": "tsx scripts/simulate-card-economy.ts",
     "map:fd": "tsx scripts/map-football-data.ts",
     "extract:team-colors": "tsx scripts/extract-team-colors.ts",

@@ -83,6 +83,7 @@ export function RequestBoard({
                     <CardTile
                       card={card}
                       owned={false}
+                      showPhoto={false}
                       size="sm"
                       className="pointer-events-none shrink-0"
                     />
@@ -130,6 +131,7 @@ export function RequestBoard({
                     <CardTile
                       card={card}
                       owned
+                      showPhoto={false}
                       size="sm"
                       className="pointer-events-none shrink-0"
                     />

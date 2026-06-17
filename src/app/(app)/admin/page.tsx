@@ -54,12 +54,15 @@ export default async function AdminPage() {
       .in("type", ["goal", "penalty"]),
     supabase
       .from("cards")
-      .select("id, display_name, image_url, rarity, is_legend, team_id")
+      .select("id, player_id, display_name, image_url, rarity, is_legend, team_id")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);
 
   const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
+  const playerPhotoById = new Map(
+    (players ?? []).map((player) => [player.id, player.photo_url]),
+  );
 
   const { namesByMatch: scorersByMatch } = buildMatchScorers(
     (matchEvents ?? []).map((event) => ({
@@ -111,7 +114,9 @@ export default async function AdminPage() {
             ? "Legends OTB"
             : (card.team_id ? teamNameById.get(card.team_id) ?? null : null),
           rarity: card.rarity,
-          imageUrl: card.image_url,
+          imageUrl:
+            card.image_url ??
+            (card.player_id ? playerPhotoById.get(card.player_id) ?? null : null),
           isLegend: card.is_legend,
         }))}
       />

@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { CardTile } from "@/features/cards/ui/CardTile";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import type { CatalogCard, UserCardEntry } from "@/shared/lib/cards/types";
@@ -9,13 +8,23 @@ interface AlbumGridProps {
   catalog: CatalogCard[];
   inventory: UserCardEntry[];
   onCardClick?: (card: CatalogCard) => void;
+  showOnlyRevealed?: boolean;
 }
 
-export function AlbumGrid({ catalog, inventory, onCardClick }: AlbumGridProps) {
+export function AlbumGrid({
+  catalog,
+  inventory,
+  onCardClick,
+  showOnlyRevealed = false,
+}: AlbumGridProps) {
   const inventoryMap = new Map(inventory.map((entry) => [entry.cardId, entry]));
 
   const byTeam = new Map<string, CatalogCard[]>();
   for (const card of catalog) {
+    if (showOnlyRevealed && !inventoryMap.has(card.id)) {
+      continue;
+    }
+
     const key = card.isLegend ? "Legends OTB" : (card.teamName ?? "Other");
     const list = byTeam.get(key) ?? [];
     list.push(card);

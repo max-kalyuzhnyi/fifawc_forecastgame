@@ -18,9 +18,9 @@ import {
 import {
   createLegendCard,
   deleteLegendCard,
+  uploadCardPhoto,
   updateCardRarity,
   updateLegendCardName,
-  uploadLegendCardPhoto,
 } from "@/features/cards/admin-actions";
 import type { CardRarity } from "@/shared/types/database";
 
@@ -95,7 +95,7 @@ export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
     const formData = new FormData();
     formData.set("photo", file);
     startTransition(async () => {
-      await uploadLegendCardPhoto(cardId, formData);
+      await uploadCardPhoto(cardId, formData);
       router.refresh();
     });
   }
@@ -202,29 +202,72 @@ export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
           <CardHeader>
             <CardTitle>{teamName}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {teamCards.map((card) => (
               <div
                 key={card.id}
-                className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
+                className="flex flex-col gap-3 rounded-lg bg-muted/40 p-3 sm:flex-row sm:items-center"
               >
-                <span className="text-sm font-medium">{card.displayName}</span>
-                <Select
-                  value={card.rarity}
-                  onValueChange={(value) =>
-                    handleRarityChange(card.id, value as CardRarity)
-                  }
-                  disabled={isPending}
-                >
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="common">{t("rarity.common")}</SelectItem>
-                    <SelectItem value="rare">{t("rarity.rare")}</SelectItem>
-                    <SelectItem value="legendary">{t("rarity.legendary")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+                  {card.imageUrl ? (
+                    <Image
+                      src={card.imageUrl}
+                      alt={card.displayName}
+                      fill
+                      unoptimized
+                      className="object-cover object-top"
+                    />
+                  ) : (
+                    <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                      {t("noPhoto")}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{card.displayName}</p>
+                  <p className="text-xs text-muted-foreground">{teamName}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={(element) => {
+                      fileRefs.current[card.id] = element;
+                    }}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) handleUpload(card.id, file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={isPending}
+                    onClick={() => fileRefs.current[card.id]?.click()}
+                  >
+                    {t("uploadPhoto")}
+                  </Button>
+                  <Select
+                    value={card.rarity}
+                    onValueChange={(value) =>
+                      handleRarityChange(card.id, value as CardRarity)
+                    }
+                    disabled={isPending}
+                  >
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="common">{t("rarity.common")}</SelectItem>
+                      <SelectItem value="rare">{t("rarity.rare")}</SelectItem>
+                      <SelectItem value="legendary">
+                        {t("rarity.legendary")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             ))}
           </CardContent>

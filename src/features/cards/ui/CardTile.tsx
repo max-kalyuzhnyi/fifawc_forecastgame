@@ -12,8 +12,9 @@ interface CardTileProps {
   owned?: boolean;
   count?: number;
   onClick?: () => void;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   reveal?: boolean;
+  showPhoto?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -29,14 +30,8 @@ const sizeStyles = {
   sm: "w-[72px] aspect-[2/3]",
   md: "w-[96px] aspect-[2/3]",
   lg: "w-[140px] aspect-[2/3]",
+  xl: "w-[min(280px,82vw)] aspect-[2/3]",
 };
-
-function getMonogram(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
 
 export function CardTile({
   card,
@@ -45,12 +40,16 @@ export function CardTile({
   onClick,
   size = "md",
   reveal = false,
+  showPhoto = owned,
   className,
   style,
 }: CardTileProps) {
   const t = useTranslations("cards");
   const [failed, setFailed] = useState(false);
   const duplicates = Math.max(0, count - 1);
+  const teamName = card.teamName ?? t("legend");
+  // Keep unopened cards mysterious by not mounting the player image at all.
+  const visibleImageUrl = showPhoto && !failed ? card.imageUrl : null;
 
   return (
     <button
@@ -68,9 +67,9 @@ export function CardTile({
       style={style}
     >
       <div className="relative flex-1 overflow-hidden">
-        {card.imageUrl && !failed ? (
+        {visibleImageUrl ? (
           <Image
-            src={card.imageUrl}
+            src={visibleImageUrl}
             alt={card.displayName}
             fill
             unoptimized
@@ -78,20 +77,27 @@ export function CardTile({
             className="object-cover object-top"
           />
         ) : (
-          <div className="flex size-full items-center justify-center bg-white/5 text-lg font-bold text-white/50">
-            {getMonogram(card.displayName)}
+          <div className="flex size-full flex-col items-center justify-center gap-1 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(15,23,42,0.2)_45%,rgba(2,6,23,0.7))] px-2 text-center">
+            <span className="line-clamp-2 text-[10px] font-semibold leading-tight text-white/80">
+              {card.displayName}
+            </span>
+            <span className="line-clamp-1 text-[9px] text-white/50">
+              {teamName}
+            </span>
           </div>
         )}
         {!owned && <div className="absolute inset-0 bg-black/25" aria-hidden />}
       </div>
-      <div className="space-y-0.5 px-1.5 py-1.5 text-left">
-        <p className="truncate text-[10px] font-semibold leading-tight text-white">
-          {card.displayName}
-        </p>
-        <p className="truncate text-[9px] text-white/60">
-          {card.teamName ?? t("legend")}
-        </p>
-      </div>
+      {visibleImageUrl && (
+        <div className="space-y-0.5 px-1.5 py-1.5 text-left">
+          <p className="truncate text-[10px] font-semibold leading-tight text-white">
+            {card.displayName}
+          </p>
+          <p className="truncate text-[9px] text-white/60">
+            {teamName}
+          </p>
+        </div>
+      )}
       {duplicates > 0 && (
         <span className="absolute top-1 right-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
           +{duplicates}
