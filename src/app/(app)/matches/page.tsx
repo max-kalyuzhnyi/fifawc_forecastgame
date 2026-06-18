@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
 import {
   buildPlayersByMatch,
+  fetchPlayersByTeamIds,
   getMatchTeamIds,
 } from "@/features/matches/lib/playersByMatch";
 import {
@@ -55,12 +56,7 @@ export default async function MatchesPage() {
         "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
       ),
     supabase.from("profiles").select("id, display_name, photo_url"),
-    teamIds.length > 0
-      ? supabase
-          .from("players")
-          .select("id, name, team_id, position, shirt_number, photo_url")
-          .in("team_id", teamIds)
-      : Promise.resolve({ data: [] }),
+    fetchPlayersByTeamIds(supabase, teamIds).then((data) => ({ data })),
     supabase.from("teams").select("name, primary_color"),
     supabase.from("match_events").select("*").order("minute", { ascending: true }),
   ]);

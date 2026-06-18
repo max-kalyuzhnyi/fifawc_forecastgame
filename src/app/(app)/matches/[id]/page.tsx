@@ -13,7 +13,10 @@ import {
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
-import { buildPlayersByMatch } from "@/features/matches/lib/playersByMatch";
+import {
+  buildPlayersByMatch,
+  fetchPlayersByTeamIds,
+} from "@/features/matches/lib/playersByMatch";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
 import { loadUserPredictionMap } from "@/features/predictions/lib/loadUserPredictionMap";
@@ -66,15 +69,12 @@ export default async function MatchDetailPage({
       )
       .eq("match_id", id),
     supabase.from("profiles").select("id, display_name, photo_url"),
-    supabase
-      .from("players")
-      .select("id, name, team_id, position, shirt_number, photo_url")
-      .in(
-        "team_id",
-        [typedMatch.home_team_id, typedMatch.away_team_id].filter(
-          Boolean,
-        ) as string[],
-      ),
+    fetchPlayersByTeamIds(
+      supabase,
+      [typedMatch.home_team_id, typedMatch.away_team_id].filter(
+        Boolean,
+      ) as string[],
+    ).then((data) => ({ data })),
     supabase.from("teams").select("name, primary_color"),
     supabase
       .from("match_events")

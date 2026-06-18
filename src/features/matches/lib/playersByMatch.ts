@@ -1,6 +1,49 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Match } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
+import type { Database } from "@/shared/types/database";
 import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
+
+const PLAYERS_SELECT = "id, name, team_id, position, shirt_number, photo_url";
+// PostgREST caps each response at 1000 rows, so we page through with .range()
+// to avoid silently dropping players when many teams are requested at once.
+const PLAYERS_PAGE_SIZE = 1000;
+
+export async function fetchPlayersByTeamIds(
+  supabase: SupabaseClient<Database>,
+  teamIds: string[],
+): Promise<MatchPlayerOption[]> {
+  if (teamIds.length === 0) {
+    return [];
+  }
+
+  const all: MatchPlayerOption[] = [];
+
+  for (let from = 0; ; from += PLAYERS_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("players")
+      .select(PLAYERS_SELECT)
+      .in("team_id", teamIds)
+      .order("id", { ascending: true })
+      .range(from, from + PLAYERS_PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    all.push(...(data as MatchPlayerOption[]));
+
+    if (data.length < PLAYERS_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return all;
+}
 
 export function getMatchTeamIds(matches: Match[]): string[] {
   return [

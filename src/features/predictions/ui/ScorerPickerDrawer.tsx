@@ -232,15 +232,21 @@ export function ScorerPickerDrawer({
                 data-vaul-no-drag
               >
                 <div className="flex flex-col gap-1">
-                  {homePlayers.map((player) => (
-                    <PlayerRow
-                      key={player.id}
-                      player={player}
-                      selected={player.id === selectedPlayerId}
-                      positionLabel={getPositionLabel(player.position, t)}
-                      onSelect={() => handleSelect(player.id)}
-                    />
-                  ))}
+                  {homePlayers.length > 0 ? (
+                    homePlayers.map((player) => (
+                      <PlayerRow
+                        key={player.id}
+                        player={player}
+                        selected={player.id === selectedPlayerId}
+                        positionLabel={getPositionLabel(player.position, t)}
+                        onSelect={() => handleSelect(player.id)}
+                      />
+                    ))
+                  ) : (
+                    <p className="px-3 py-6 text-center text-sm text-white/60">
+                      {t("noPlayers")}
+                    </p>
+                  )}
                 </div>
               </TabsContent>
 
@@ -250,15 +256,21 @@ export function ScorerPickerDrawer({
                 data-vaul-no-drag
               >
                 <div className="flex flex-col gap-1">
-                  {awayPlayers.map((player) => (
-                    <PlayerRow
-                      key={player.id}
-                      player={player}
-                      selected={player.id === selectedPlayerId}
-                      positionLabel={getPositionLabel(player.position, t)}
-                      onSelect={() => handleSelect(player.id)}
-                    />
-                  ))}
+                  {awayPlayers.length > 0 ? (
+                    awayPlayers.map((player) => (
+                      <PlayerRow
+                        key={player.id}
+                        player={player}
+                        selected={player.id === selectedPlayerId}
+                        positionLabel={getPositionLabel(player.position, t)}
+                        onSelect={() => handleSelect(player.id)}
+                      />
+                    ))
+                  ) : (
+                    <p className="px-3 py-6 text-center text-sm text-white/60">
+                      {t("noPlayers")}
+                    </p>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

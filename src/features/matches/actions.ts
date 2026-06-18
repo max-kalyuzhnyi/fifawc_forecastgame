@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/shared/lib/supabase/server";
+import { fetchPlayersByTeamIds } from "@/features/matches/lib/playersByMatch";
 import { getOnsideCode } from "@/shared/lib/onside/codes";
 import { compareTeams, getMatchPrediction } from "@/shared/lib/onside/client";
 import {
@@ -95,14 +96,5 @@ export async function loadMatchPlayers(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("players")
-    .select("id, name, team_id, position, shirt_number, photo_url")
-    .in("team_id", teamIds);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data ?? [];
+  return fetchPlayersByTeamIds(supabase, teamIds);
 }
