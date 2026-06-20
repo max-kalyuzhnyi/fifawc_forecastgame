@@ -47,6 +47,25 @@ function LeaderboardEllipsisRow({ label }: { label: string }) {
   );
 }
 
+function getDefaultStage(
+  displayStages: string[],
+  perStage: Record<string, LeaderboardStageEntry[]>,
+  isPreview: boolean,
+): string {
+  if (isPreview) {
+    return displayStages[0] ?? "";
+  }
+
+  // Open on the newest stage that already awarded points, e.g. MD 2 after it finishes.
+  const latestStageWithPoints = [...displayStages]
+    .reverse()
+    .find((stageKey) =>
+      perStage[stageKey]?.some((entry) => entry.points > 0),
+    );
+
+  return latestStageWithPoints ?? displayStages.at(-1) ?? "";
+}
+
 export function LeaderboardStageTable({
   stages,
   perStage,
@@ -58,8 +77,15 @@ export function LeaderboardStageTable({
   const tCommon = useTranslations("common");
   const tStages = useTranslations("leaderboard.stages");
   const isPreview = stages.length === 0;
-  const displayStages = isPreview ? [...STAGE_ORDER] : stages;
-  const [selectedStage, setSelectedStage] = useState(displayStages[0] ?? "");
+  const displayStages = useMemo(
+    () => (isPreview ? [...STAGE_ORDER] : stages),
+    [isPreview, stages],
+  );
+  const defaultStage = useMemo(
+    () => getDefaultStage(displayStages, perStage, isPreview),
+    [displayStages, isPreview, perStage],
+  );
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   const rankLabels = useMemo(
     () => ({
@@ -70,9 +96,9 @@ export function LeaderboardStageTable({
     [t],
   );
 
-  const activeStage = displayStages.includes(selectedStage)
+  const activeStage = selectedStage && displayStages.includes(selectedStage)
     ? selectedStage
-    : displayStages[0]!;
+    : defaultStage;
   const entries = useMemo(() => {
     const stageEntries = perStage[activeStage];
     if (stageEntries && stageEntries.length > 0) {
@@ -90,14 +116,14 @@ export function LeaderboardStageTable({
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       {isPreview && (
-        <p className="px-3 text-[11px] leading-snug text-muted-foreground">
+        <p className="px-3 pb-3 text-[11px] leading-snug text-muted-foreground">
           {t("previewHint")}
         </p>
       )}
 
-      <div className="overflow-x-auto px-3 pb-1">
+      <div className="overflow-x-auto px-3 pb-3">
         <ToggleGroup
           type="single"
           value={activeStage}
