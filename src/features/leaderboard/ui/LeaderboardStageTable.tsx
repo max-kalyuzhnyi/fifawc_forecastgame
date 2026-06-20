@@ -8,6 +8,7 @@ import {
   type LeaderboardStageEntry,
 } from "@/features/leaderboard/lib/buildAnalytics";
 import { formatStageLabel } from "@/features/leaderboard/lib/formatStageLabel";
+import { buildLeaderboardDisplayItems } from "@/features/leaderboard/lib/filterLeaderboardEntries";
 import { LeaderboardRankCell } from "@/features/leaderboard/ui/LeaderboardRankCell";
 import { getInitials } from "@/features/matches/lib/voterInfo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +34,17 @@ function buildPreviewEntries(
     picks: 0,
     rank: entry.rank,
   }));
+}
+
+function LeaderboardEllipsisRow({ label }: { label: string }) {
+  return (
+    <div
+      className="border-t border-white/[0.08] px-3 py-2 text-center text-[13px] font-medium text-muted-foreground"
+      aria-hidden
+    >
+      {label}
+    </div>
+  );
 }
 
 export function LeaderboardStageTable({
@@ -61,13 +73,21 @@ export function LeaderboardStageTable({
   const activeStage = displayStages.includes(selectedStage)
     ? selectedStage
     : displayStages[0]!;
-  const stageEntries = perStage[activeStage];
-  const entries =
-    stageEntries && stageEntries.length > 0
-      ? stageEntries
-      : isPreview
-        ? buildPreviewEntries(overall)
-        : [];
+  const entries = useMemo(() => {
+    const stageEntries = perStage[activeStage];
+    if (stageEntries && stageEntries.length > 0) {
+      return stageEntries;
+    }
+    if (isPreview) {
+      return buildPreviewEntries(overall);
+    }
+    return [];
+  }, [activeStage, isPreview, overall, perStage]);
+
+  const displayItems = useMemo(
+    () => buildLeaderboardDisplayItems(entries, { currentUserId }),
+    [entries, currentUserId],
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -113,7 +133,17 @@ export function LeaderboardStageTable({
             <span className="text-right">{t("stagePicks")}</span>
           </div>
 
-          {entries.map((entry) => {
+          {displayItems.map((item, index) => {
+            if (item.type === "ellipsis") {
+              return (
+                <LeaderboardEllipsisRow
+                  key={`ellipsis-${index}`}
+                  label={t("rankGap")}
+                />
+              );
+            }
+
+            const { entry } = item;
             const isCurrentUser = entry.user_id === currentUserId;
 
             return (
@@ -165,17 +195,29 @@ export function LeaderboardStageTable({
             <span className="text-right">{t("stagePoints")}</span>
           </div>
 
-          {entries.map((entry) => (
-            <div
-              key={entry.user_id}
-              className="grid grid-cols-[2rem_1fr] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
-            >
-              <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
-              <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
-                {entry.points}
-              </p>
-            </div>
-          ))}
+          {displayItems.map((item, index) => {
+            if (item.type === "ellipsis") {
+              return (
+                <LeaderboardEllipsisRow
+                  key={`ellipsis-${index}`}
+                  label={t("rankGap")}
+                />
+              );
+            }
+
+            const { entry } = item;
+            return (
+              <div
+                key={entry.user_id}
+                className="grid grid-cols-[2rem_1fr] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
+              >
+                <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
+                <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
+                  {entry.points}
+                </p>
+              </div>
+            );
+          })}
         </>
       )}
     </div>

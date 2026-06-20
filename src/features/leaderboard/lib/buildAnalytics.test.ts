@@ -224,4 +224,76 @@ describe("buildLeaderboardAnalytics", () => {
 
     expect(analytics.overall[0]?.total_points).toBe(3);
   });
+
+  it("computes nominee awards from finished matches", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "m1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 2,
+          away_score: 1,
+        },
+        {
+          id: "m2",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 0,
+          away_score: 0,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "m1",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: "Kylian Mbappé",
+          scorer_player_id: "player-mbappe",
+          boost_multiplier: 2,
+        },
+        {
+          user_id: "user-b",
+          match_id: "m1",
+          home_score: 1,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-a",
+          match_id: "m2",
+          home_score: 0,
+          away_score: 0,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: { m1: ["Kylian Mbappé"] },
+      scorerPlayerIdsByMatch: { m1: ["player-mbappe"] },
+    });
+
+    expect(analytics.nominees.goldenBoot[0]).toMatchObject({
+      user_id: "user-a",
+      value: 1,
+      rank: 1,
+    });
+    expect(analytics.nominees.eagleEye[0]).toMatchObject({
+      user_id: "user-a",
+      value: 2,
+      rank: 1,
+    });
+    expect(analytics.nominees.boostHunter[0]).toMatchObject({
+      user_id: "user-a",
+      value: 5,
+      rank: 1,
+    });
+    expect(analytics.nominees.goldenBoot.some((entry) => entry.user_id === "user-b")).toBe(
+      false,
+    );
+  });
 });

@@ -194,6 +194,8 @@
     "tabOverall": "Overall",
     "tabStages": "By stage",
     "tabChart": "Trend",
+    "tabSpecials": "Specials",
+    "rankGap": "...",
     "live": "Live",
     "stagePoints": "Pts",
     "stagePicks": "Picks",
@@ -201,8 +203,32 @@
     "previewHint": "Preview — rankings update when a stage finishes.",
     "noStagePicks": "No picks in this stage yet.",
     "chartDescription": "Position after each stage (lower is better). Scroll sideways on small screens.",
+    "chartDescriptionTrend": "Top 5 plus you — position after each stage (lower is better). Scroll sideways on small screens.",
     "positionAxis": "Rank",
     "you": "You",
+    "nominees": {
+      "intro": "Special awards based on finished matches.",
+      "player": "Player",
+      "noNominees": "No nominees yet.",
+      "rank1": "1st place",
+      "rank2": "2nd place",
+      "rank3": "3rd place",
+      "goldenBoot": {
+        "title": "Golden boot",
+        "description": "Most correct goalscorer picks.",
+        "valueLabel": "Hits"
+      },
+      "eagleEye": {
+        "title": "Eagle eye",
+        "description": "Most exact score predictions.",
+        "valueLabel": "Exact"
+      },
+      "boostHunter": {
+        "title": "Boost hunter",
+        "description": "Most extra points earned from boosts.",
+        "valueLabel": "Boost pts"
+      }
+    },
     "stages": {
       "groupMatchday": "MD {number}",
       "roundOf32": "R32",

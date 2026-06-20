@@ -64,11 +64,23 @@ export interface PositionSeriesPoint {
   position: number;
 }
 
+export interface NomineeEntry extends LeaderboardPlayer {
+  value: number;
+  rank: number;
+}
+
+export interface LeaderboardNominees {
+  goldenBoot: NomineeEntry[];
+  eagleEye: NomineeEntry[];
+  boostHunter: NomineeEntry[];
+}
+
 export interface LeaderboardAnalytics {
   stages: string[];
   overall: LeaderboardOverallEntry[];
   perStage: Record<string, LeaderboardStageEntry[]>;
   positionSeries: Record<string, PositionSeriesPoint[]>;
+  nominees: LeaderboardNominees;
   hasLiveMatches: boolean;
 }
 
@@ -79,6 +91,9 @@ interface PlayerStats {
   totalPoints: number;
   livePoints: number;
   totalPicks: number;
+  goldenBootCount: number;
+  eagleEyeCount: number;
+  boostHunterPoints: number;
   stagePoints: Map<string, number>;
   stagePicks: Map<string, number>;
 }
@@ -113,6 +128,32 @@ function assignRanks<T extends { rank: number }>(entries: T[]): T[] {
     ...entry,
     rank: index + 1,
   }));
+}
+
+function compareNomineeEntries(
+  a: { value: number; display_name: string },
+  b: { value: number; display_name: string },
+): number {
+  if (b.value !== a.value) return b.value - a.value;
+  return a.display_name.localeCompare(b.display_name);
+}
+
+function buildNomineeList(
+  players: PlayerStats[],
+  getValue: (player: PlayerStats) => number,
+): NomineeEntry[] {
+  return assignRanks(
+    players
+      .map((player) => ({
+        user_id: player.user_id,
+        display_name: player.display_name,
+        photo_url: player.photo_url,
+        value: getValue(player),
+        rank: 0,
+      }))
+      .filter((entry) => entry.value > 0)
+      .sort(compareNomineeEntries),
+  );
 }
 
 export function buildLeaderboardAnalytics(input: {
@@ -152,6 +193,9 @@ export function buildLeaderboardAnalytics(input: {
       totalPoints: 0,
       livePoints: 0,
       totalPicks: 0,
+      goldenBootCount: 0,
+      eagleEyeCount: 0,
+      boostHunterPoints: 0,
       stagePoints: new Map(),
       stagePicks: new Map(),
     });
@@ -170,7 +214,7 @@ export function buildLeaderboardAnalytics(input: {
     const isLive = liveMatchIds.has(prediction.match_id);
     if (!isScored && !isLive) continue;
 
-    const points = calculatePredictionPoints({
+    const breakdown = calculatePredictionPoints({
       predictedHome: prediction.home_score,
       predictedAway: prediction.away_score,
       actualHome: match.home_score!,
@@ -181,9 +225,23 @@ export function buildLeaderboardAnalytics(input: {
       actualScorerPlayerIds:
         scorerPlayerIdsByMatch?.[prediction.match_id] ?? [],
       boostMultiplier: prediction.boost_multiplier,
-    }).totalPoints;
+    });
+    const points = breakdown.totalPoints;
 
     if (isScored) {
+      if (breakdown.scorerBonus > 0) {
+        player.goldenBootCount += 1;
+      }
+      if (
+        prediction.home_score === match.home_score &&
+        prediction.away_score === match.away_score
+      ) {
+        player.eagleEyeCount += 1;
+      }
+      const subtotal = breakdown.basePoints + breakdown.scorerBonus;
+      player.boostHunterPoints +=
+        subtotal * (breakdown.boostMultiplier - 1);
+
       player.totalPoints += points;
 
       const stageKey = match.round_key;
@@ -329,11 +387,21 @@ export function buildLeaderboardAnalytics(input: {
     }
   }
 
+  const nominees: LeaderboardNominees = {
+    goldenBoot: buildNomineeList(players, (player) => player.goldenBootCount),
+    eagleEye: buildNomineeList(players, (player) => player.eagleEyeCount),
+    boostHunter: buildNomineeList(
+      players,
+      (player) => player.boostHunterPoints,
+    ),
+  };
+
   return {
     stages: [...stages],
     overall,
     perStage,
     positionSeries,
+    nominees,
     hasLiveMatches,
   };
 }

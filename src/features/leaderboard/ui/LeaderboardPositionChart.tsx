@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/chart";
 
 const STAGE_CHART_WIDTH = 80;
+const TREND_TOP_N = 5;
 
 interface LeaderboardPositionChartProps {
   analytics: Pick<
@@ -108,9 +109,25 @@ export function LeaderboardPositionChart({
     [isPreview, stages],
   );
 
+  const visibleEntries = useMemo(() => {
+    const topEntries = overall.slice(0, TREND_TOP_N);
+    const visibleIds = new Set(topEntries.map((entry) => entry.user_id));
+
+    if (currentUserId && !visibleIds.has(currentUserId)) {
+      const currentUserEntry = overall.find(
+        (entry) => entry.user_id === currentUserId,
+      );
+      if (currentUserEntry) {
+        return [...topEntries, currentUserEntry];
+      }
+    }
+
+    return topEntries;
+  }, [overall, currentUserId]);
+
   const playerMeta = useMemo<PlayerMeta[]>(
     () =>
-      overall.map((entry, index) => {
+      visibleEntries.map((entry, index) => {
         const isCurrentUser = entry.user_id === currentUserId;
         return {
           userId: entry.user_id,
@@ -124,7 +141,7 @@ export function LeaderboardPositionChart({
           isCurrentUser,
         };
       }),
-    [overall, currentUserId, canSeePlayerNames, t, tMatches],
+    [visibleEntries, currentUserId, canSeePlayerNames, t, tMatches],
   );
 
   const chartConfig = useMemo(() => {
@@ -143,7 +160,7 @@ export function LeaderboardPositionChart({
           label: formatStageLabel(stageKey, tStages),
         };
 
-        for (const entry of overall) {
+        for (const entry of visibleEntries) {
           if (isPreview) {
             row[entry.user_id] = entry.rank;
             continue;
@@ -157,8 +174,22 @@ export function LeaderboardPositionChart({
 
         return row;
       }),
-    [displayStages, isPreview, overall, positionSeries, tStages],
+    [displayStages, isPreview, overall.length, positionSeries, tStages, visibleEntries],
   );
+
+  const rankDomain = useMemo(() => {
+    const positions = chartData.flatMap((row) =>
+      visibleEntries.map((entry) => Number(row[entry.user_id])),
+    );
+
+    if (positions.length === 0) {
+      return [1, Math.max(overall.length, 1)] as const;
+    }
+
+    const bestRank = Math.min(...positions);
+    const worstRank = Math.max(...positions);
+    return [bestRank, worstRank] as const;
+  }, [chartData, overall.length, visibleEntries]);
 
   if (overall.length === 0) {
     return (
@@ -169,7 +200,7 @@ export function LeaderboardPositionChart({
   }
 
   const chartMinWidth = Math.max(displayStages.length * STAGE_CHART_WIDTH, 280);
-  const maxRank = Math.max(overall.length, 1);
+  const [bestRank, worstRank] = rankDomain;
   const lastIndex = displayStages.length - 1;
   const renderOrder = [...playerMeta].sort(
     (a, b) => Number(a.isCurrentUser) - Number(b.isCurrentUser),
@@ -178,7 +209,7 @@ export function LeaderboardPositionChart({
   return (
     <div className="flex flex-col gap-2 px-3 pb-4">
       <p className="text-[11px] leading-snug text-muted-foreground">
-        {isPreview ? t("previewHint") : t("chartDescription")}
+        {isPreview ? t("previewHint") : t("chartDescriptionTrend")}
       </p>
 
       <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
@@ -202,7 +233,7 @@ export function LeaderboardPositionChart({
               />
               <YAxis
                 reversed
-                domain={[1, maxRank]}
+                domain={[bestRank, worstRank]}
                 allowDecimals={false}
                 tickLine={false}
                 axisLine={false}

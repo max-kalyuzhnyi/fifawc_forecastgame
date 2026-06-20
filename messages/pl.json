@@ -194,6 +194,8 @@
     "tabOverall": "Ranking",
     "tabStages": "Po rundach",
     "tabChart": "Trend",
+    "tabSpecials": "Specjalne",
+    "rankGap": "...",
     "live": "Na żywo",
     "stagePoints": "Pkt",
     "stagePicks": "Typy",
@@ -201,8 +203,32 @@
     "previewHint": "Podgląd — ranking zaktualizuje się po zakończeniu rundy.",
     "noStagePicks": "Brak typów w tej rundzie.",
     "chartDescription": "Pozycja po każdej rundzie (niżej = lepiej). Na wąskim ekranie przewiń w bok.",
+    "chartDescriptionTrend": "Top 5 i Ty — pozycja po każdej rundzie (niżej = lepiej). Na wąskim ekranie przewiń w bok.",
     "positionAxis": "Miejsce",
     "you": "Ty",
+    "nominees": {
+      "intro": "Specjalne nagrody na podstawie zakończonych meczów.",
+      "player": "Gracz",
+      "noNominees": "Brak nominowanych.",
+      "rank1": "1. miejsce",
+      "rank2": "2. miejsce",
+      "rank3": "3. miejsce",
+      "goldenBoot": {
+        "title": "Złoty but",
+        "description": "Najwięcej trafionych strzelców bramki.",
+        "valueLabel": "Traf."
+      },
+      "eagleEye": {
+        "title": "Orle oko",
+        "description": "Najwięcej dokładnych wyników.",
+        "valueLabel": "Dokł."
+      },
+      "boostHunter": {
+        "title": "Łowca boostów",
+        "description": "Najwięcej dodatkowych punktów z boostów.",
+        "valueLabel": "Pkt boost"
+      }
+    },
     "stages": {
       "groupMatchday": "Kolejka {number}",
       "roundOf32": "1/16",
