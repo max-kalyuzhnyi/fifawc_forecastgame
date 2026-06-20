@@ -85,4 +85,36 @@ describe("calculatePredictionPoints", () => {
     expect(result.scorerBonus).toBe(2);
     expect(result.totalPoints).toBe(3);
   });
+
+  it("matches scorer bonus when diacritics differ (Vinícius Júnior vs Vinicius Junior)", () => {
+    const result = calculatePredictionPoints({
+      predictedHome: 3,
+      predictedAway: 0,
+      actualHome: 3,
+      actualAway: 0,
+      predictedScorer: "Vinícius Júnior",
+      predictedScorerPlayerId: "499b188f-2130-41e6-be7c-a0ca54022ebd",
+      actualScorers: ["Matheus Cunha", "Vinicius Junior"],
+      actualScorerPlayerIds: ["7e290d1e-ef45-4f7a-af51-0c960ee23681"],
+      boostMultiplier: 1,
+    });
+    expect(result.scorerBonus).toBe(2);
+    expect(result.totalPoints).toBe(5);
+  });
+
+  it("falls back to name match when player id is missing from actual scorers", () => {
+    const result = calculatePredictionPoints({
+      predictedHome: 3,
+      predictedAway: 0,
+      actualHome: 3,
+      actualAway: 0,
+      predictedScorer: "Vinícius Júnior",
+      predictedScorerPlayerId: "499b188f-2130-41e6-be7c-a0ca54022ebd",
+      actualScorers: ["Matheus Cunha", "Vinicius Junior"],
+      actualScorerPlayerIds: ["7e290d1e-ef45-4f7a-af51-0c960ee23681"],
+      boostMultiplier: 2,
+    });
+    expect(result.scorerBonus).toBe(2);
+    expect(result.totalPoints).toBe(10);
+  });
 });

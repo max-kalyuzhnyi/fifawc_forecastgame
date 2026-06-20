@@ -49,7 +49,8 @@ export function calculatePredictionPoints(input: ScoreInput): ScoreBreakdown {
     if (input.actualScorerPlayerIds.includes(input.predictedScorerPlayerId)) {
       scorerBonus = 2;
     }
-  } else if (input.predictedScorer) {
+  }
+  if (scorerBonus === 0 && input.predictedScorer) {
     const normalized = normalizeScorerName(input.predictedScorer);
     const matched = input.actualScorers.some(
       (s) => normalizeScorerName(s) === normalized,

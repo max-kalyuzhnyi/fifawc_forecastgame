@@ -1,4 +1,10 @@
-// Case-insensitive comparison for scorer matching
+// Case-insensitive comparison for scorer matching (strips diacritics)
 export function normalizeScorerName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
+  return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
