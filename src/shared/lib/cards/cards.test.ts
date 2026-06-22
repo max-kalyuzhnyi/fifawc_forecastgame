@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { drawCardsFromPack } from "@/shared/lib/cards/drawCard";
-import { evaluateDailyPackGrants } from "@/shared/lib/cards/earnPacks";
+import {
+  evaluateDailyPackGrants,
+  selectSyncPackGrants,
+} from "@/shared/lib/cards/earnPacks";
 
 describe("evaluateDailyPackGrants", () => {
   it("grants daily, exact score, and goalscorer packs for a perfect match", () => {
@@ -78,6 +81,64 @@ describe("evaluateDailyPackGrants", () => {
       ]),
     );
     expect(grants.some((grant) => grant.reason === "exact_score")).toBe(false);
+  });
+
+  it("does not backfill packs for matches before card eligibility", () => {
+    const grants = evaluateDailyPackGrants({
+      matches: [
+        {
+          id: "old-match",
+          kickoffAt: "2026-06-15T18:00:00.000Z",
+          status: "finished",
+          homeScore: 2,
+          awayScore: 1,
+        },
+      ],
+      predictions: [
+        {
+          matchId: "old-match",
+          homeScore: 2,
+          awayScore: 1,
+          scorerName: "Messi",
+          boostMultiplier: 2,
+        },
+      ],
+      scorersByMatch: { "old-match": ["Messi"] },
+      eligibleFrom: "2026-06-16T00:00:00.000Z",
+      todayKey: "2026-06-16",
+    });
+
+    expect(grants).toEqual([]);
+  });
+});
+
+describe("selectSyncPackGrants", () => {
+  it("keeps daily packs blocked while one is unopened", () => {
+    const grants = selectSyncPackGrants(
+      [
+        { reason: "daily_picks", sourceDay: "2026-06-15", size: 3 },
+        { reason: "exact_score", sourceMatchId: "m1", size: 5 },
+      ],
+      { hasUnopenedDaily: true },
+    );
+
+    expect(grants).toEqual([
+      { reason: "exact_score", sourceMatchId: "m1", size: 5 },
+    ]);
+  });
+
+  it("allows only the next daily pack when none is unopened", () => {
+    const grants = selectSyncPackGrants(
+      [
+        { reason: "daily_picks", sourceDay: "2026-06-16", size: 3 },
+        { reason: "daily_picks", sourceDay: "2026-06-15", size: 3 },
+      ],
+      { hasUnopenedDaily: false },
+    );
+
+    expect(grants).toEqual([
+      { reason: "daily_picks", sourceDay: "2026-06-15", size: 3 },
+    ]);
   });
 });
 

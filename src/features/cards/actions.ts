@@ -5,6 +5,7 @@ import { drawCardsFromPack } from "@/shared/lib/cards/drawCard";
 import {
   countTotalDuplicates,
   evaluateDailyPackGrants,
+  selectSyncPackGrants,
 } from "@/shared/lib/cards/earnPacks";
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { EXCHANGE_TIERS, MAX_OPEN_CARD_REQUESTS, PACK_SIZES } from "@/shared/lib/cards/config";
@@ -201,7 +202,7 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
     supabase.from("players").select("id, name"),
     supabase
       .from("card_packs")
-      .select("id")
+      .select("id, created_at")
       .eq("user_id", userId)
       .eq("reason", "welcome")
       .limit(1)
@@ -225,31 +226,32 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
       players ?? [],
     );
 
-  let grants = evaluateDailyPackGrants({
-    matches: (matches ?? []).map((match) => ({
-      id: match.id,
-      kickoffAt: match.kickoff_at,
-      status: match.status,
-      homeScore: match.home_score,
-      awayScore: match.away_score,
-    })),
-    predictions: (predictions ?? []).map((prediction) => ({
-      matchId: prediction.match_id,
-      homeScore: prediction.home_score,
-      awayScore: prediction.away_score,
-      scorerName: prediction.scorer_name,
-      scorerPlayerId: prediction.scorer_player_id,
-      boostMultiplier: prediction.boost_multiplier,
-    })),
-    scorersByMatch,
-    scorerPlayerIdsByMatch,
-  });
+  let grants = welcomePack
+    ? evaluateDailyPackGrants({
+        matches: (matches ?? []).map((match) => ({
+          id: match.id,
+          kickoffAt: match.kickoff_at,
+          status: match.status,
+          homeScore: match.home_score,
+          awayScore: match.away_score,
+        })),
+        predictions: (predictions ?? []).map((prediction) => ({
+          matchId: prediction.match_id,
+          homeScore: prediction.home_score,
+          awayScore: prediction.away_score,
+          scorerName: prediction.scorer_name,
+          scorerPlayerId: prediction.scorer_player_id,
+          boostMultiplier: prediction.boost_multiplier,
+        })),
+        scorersByMatch,
+        scorerPlayerIdsByMatch,
+        eligibleFrom: welcomePack.created_at,
+      })
+    : [];
 
-  // Block new daily packs while an unopened daily pack exists.
-  const hasUnopenedDaily = (unopenedDailyPacks ?? []).length > 0;
-  if (hasUnopenedDaily) {
-    grants = grants.filter((grant) => grant.reason !== "daily_picks");
-  }
+  grants = selectSyncPackGrants(grants, {
+    hasUnopenedDaily: (unopenedDailyPacks ?? []).length > 0,
+  });
 
   let granted = 0;
 

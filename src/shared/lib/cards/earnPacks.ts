@@ -40,12 +40,20 @@ export function evaluateDailyPackGrants(input: {
   predictions: EarnPrediction[];
   scorersByMatch: Record<string, string[]>;
   scorerPlayerIdsByMatch?: Record<string, string[]>;
+  eligibleFrom?: string;
   todayKey?: string;
 }): EarnPackGrant[] {
   const todayKey = input.todayKey ?? getDateGroupKey(new Date().toISOString());
+  const eligibleFromMs = input.eligibleFrom
+    ? new Date(input.eligibleFrom).getTime()
+    : null;
   const matchesByDay = new Map<string, EarnMatch[]>();
 
   for (const match of input.matches) {
+    if (eligibleFromMs != null && new Date(match.kickoffAt).getTime() < eligibleFromMs) {
+      continue;
+    }
+
     const day = getDateGroupKey(match.kickoffAt);
     const list = matchesByDay.get(day) ?? [];
     list.push(match);
@@ -125,6 +133,22 @@ export function evaluateDailyPackGrants(input: {
   }
 
   return grants;
+}
+
+export function selectSyncPackGrants(
+  grants: EarnPackGrant[],
+  options: { hasUnopenedDaily: boolean },
+): EarnPackGrant[] {
+  const nonDailyGrants = grants.filter((grant) => grant.reason !== "daily_picks");
+  if (options.hasUnopenedDaily) {
+    return nonDailyGrants;
+  }
+
+  const nextDailyGrant = grants
+    .filter((grant) => grant.reason === "daily_picks")
+    .sort((a, b) => (a.sourceDay ?? "").localeCompare(b.sourceDay ?? ""))[0];
+
+  return nextDailyGrant ? [...nonDailyGrants, nextDailyGrant] : nonDailyGrants;
 }
 
 export function countTotalDuplicates(
