@@ -9,6 +9,7 @@ import {
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { EXCHANGE_TIERS, REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
 import type { CatalogCard } from "@/shared/lib/cards/types";
+import { isFullCardArtImageUrl } from "@/shared/lib/cards/imageUrl";
 import {
   getCurrentUserId,
   getCurrentUserTelegramId,
@@ -72,6 +73,7 @@ async function loadActiveCatalog(
       ? row.image_url
       : (row.image_url ??
         (row.player_id ? playerPhotoById.get(row.player_id) ?? null : null)),
+    isFullCardArt: isFullCardArtImageUrl(row.image_url),
     rarity: row.rarity,
     sortOrder: row.sort_order,
   }));

@@ -2,6 +2,7 @@ import type { CommonsPhotoCandidate, RankedCommonsPhotoCandidate } from "./types
 
 const MIN_SHORT_EDGE = 180;
 const MIN_BYTES_HINT = 15_000;
+const MIN_FACE_BYTES_HINT = 5_000;
 
 interface ScoreRule {
   pattern: RegExp;
@@ -220,6 +221,10 @@ export function pickBestCandidate(
   return { best, autoAccept: true, rejectionReason: null };
 }
 
-export function isCandidateBytesTooSmall(bytes: number): boolean {
+export function isCandidateBytesTooSmall(bytes: number, source?: string): boolean {
+  if (source === "fifarosters_face") {
+    return bytes < MIN_FACE_BYTES_HINT;
+  }
+
   return bytes < MIN_BYTES_HINT;
 }

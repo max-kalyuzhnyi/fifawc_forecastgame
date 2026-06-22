@@ -43,3 +43,12 @@ next-env.d.ts
 
 # generated import/review artifacts
 /scripts/output/
+
+# card design tooling (local-only, not synced)
+/scripts/not-used-card-photo-intermediate/
+/card_backgrounds/
+/New Folder With Items/
+/fifa_*_bg.png
+/fifa_card_background.png
+/fifa_cro_usa_mex.pdf
+/fifa_cro_usa_mex.key

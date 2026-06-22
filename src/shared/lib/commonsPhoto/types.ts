@@ -4,9 +4,13 @@ export type CommonsPhotoSource =
   | "commons_category"
   | "commons_search";
 
+export type FifaRostersPhotoSource = "fifarosters_face" | "fifarosters_dynamic";
+
+export type CardPhotoSource = CommonsPhotoSource | FifaRostersPhotoSource;
+
 export interface CommonsPhotoCandidate {
   fileTitle: string;
-  source: CommonsPhotoSource;
+  source: CardPhotoSource;
   sourceUrl: string;
   thumbUrl: string | null;
   width: number;
@@ -30,5 +34,7 @@ export interface PlayerPhotoReviewEntry {
   candidates: RankedCommonsPhotoCandidate[];
   autoAccept: boolean;
   selectedFileTitle: string | null;
+  /** Top-ranked candidate when manual pick is required. */
+  suggestedFileTitle?: string | null;
   rejectionReason: string | null;
 }

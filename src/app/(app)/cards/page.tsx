@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { CardsView } from "@/features/cards/ui/CardsView";
 import { syncEarnedPacks } from "@/features/cards/actions";
 import type { CatalogCard, GiftRequestEntry, UnseenGiftEntry } from "@/shared/lib/cards/types";
+import { isFullCardArtImageUrl } from "@/shared/lib/cards/imageUrl";
 import { REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
 import {
   getCurrentUserId,
@@ -37,6 +38,7 @@ function mapCatalogRow(
       ? row.image_url
       : (row.image_url ??
         (row.player_id ? playerPhotoById.get(row.player_id) ?? null : null)),
+    isFullCardArt: isFullCardArtImageUrl(row.image_url),
     rarity: row.rarity,
     sortOrder: row.sort_order,
   };

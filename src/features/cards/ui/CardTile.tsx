@@ -48,6 +48,7 @@ export function CardTile({
   const [failed, setFailed] = useState(false);
   const duplicates = Math.max(0, count - 1);
   const teamName = card.teamName ?? t("legend");
+  const isFullCardArt = card.isFullCardArt ?? false;
   // Keep unopened cards mysterious by not mounting the player image at all.
   const visibleImageUrl = showPhoto && !failed ? card.imageUrl : null;
 
@@ -66,7 +67,12 @@ export function CardTile({
       )}
       style={style}
     >
-      <div className="relative flex-1 overflow-hidden">
+      <div
+        className={cn(
+          "relative overflow-hidden",
+          isFullCardArt ? "h-full" : "flex-1",
+        )}
+      >
         {visibleImageUrl ? (
           <Image
             src={visibleImageUrl}
@@ -74,7 +80,10 @@ export function CardTile({
             fill
             unoptimized
             onError={() => setFailed(true)}
-            className="object-cover object-top"
+            className={cn(
+              "object-top",
+              isFullCardArt ? "object-contain" : "object-cover",
+            )}
           />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-1 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(15,23,42,0.2)_45%,rgba(2,6,23,0.7))] px-2 text-center">
@@ -88,7 +97,7 @@ export function CardTile({
         )}
         {!owned && <div className="absolute inset-0 bg-black/25" aria-hidden />}
       </div>
-      {visibleImageUrl && (
+      {visibleImageUrl && !isFullCardArt && (
         <div className="space-y-0.5 px-1.5 py-1.5 text-left">
           <p className="truncate text-[10px] font-semibold leading-tight text-white">
             {card.displayName}
