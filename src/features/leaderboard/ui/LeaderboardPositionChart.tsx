@@ -6,6 +6,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   STAGE_ORDER,
   type LeaderboardAnalytics,
+  type LeaderboardOverallEntry,
 } from "@/features/leaderboard/lib/buildAnalytics";
 import { formatStageLabel } from "@/features/leaderboard/lib/formatStageLabel";
 import { getInitials } from "@/features/matches/lib/voterInfo";
@@ -18,6 +19,81 @@ import {
 
 const STAGE_CHART_WIDTH = 80;
 const TREND_TOP_N = 5;
+
+/** Top-N at the latest finished stage, plus current user when outside the cutoff. */
+function buildTrendVisibleEntries(
+  overall: LeaderboardOverallEntry[],
+  positionSeries: LeaderboardAnalytics["positionSeries"],
+  stages: string[],
+  currentUserId: string | null | undefined,
+  isPreview: boolean,
+): LeaderboardOverallEntry[] {
+  if (isPreview) {
+    const topEntries = overall.slice(0, TREND_TOP_N);
+    const visibleIds = new Set(topEntries.map((entry) => entry.user_id));
+
+    if (currentUserId && !visibleIds.has(currentUserId)) {
+      const currentUserEntry = overall.find(
+        (entry) => entry.user_id === currentUserId,
+      );
+      if (currentUserEntry) {
+        return [...topEntries, currentUserEntry];
+      }
+    }
+
+    return topEntries;
+  }
+
+  const currentStageKey = stages.at(-1);
+  if (!currentStageKey) {
+    return overall.slice(0, TREND_TOP_N);
+  }
+
+  const overallById = new Map(overall.map((entry) => [entry.user_id, entry]));
+
+  // Rank users by cumulative position at the latest finished stage.
+  const stageTop = Object.entries(positionSeries)
+    .map(([userId, series]) => {
+      const point = series.find(
+        (seriesPoint) => seriesPoint.stageKey === currentStageKey,
+      );
+      if (!point || point.position > TREND_TOP_N) {
+        return null;
+      }
+
+      return { userId, position: point.position };
+    })
+    .filter((entry): entry is { userId: string; position: number } => entry != null)
+    .sort((a, b) => a.position - b.position);
+
+  const topEntries = stageTop
+    .map(({ userId, position }) => {
+      const entry = overallById.get(userId);
+      if (!entry) {
+        return null;
+      }
+
+      // Anonymous labels should reflect stage rank, not live-projected overall rank.
+      return { ...entry, rank: position };
+    })
+    .filter((entry): entry is LeaderboardOverallEntry => entry != null);
+
+  const visibleIds = new Set(topEntries.map((entry) => entry.user_id));
+
+  if (currentUserId && !visibleIds.has(currentUserId)) {
+    const currentUserEntry = overallById.get(currentUserId);
+    if (currentUserEntry) {
+      const currentUserPoint = positionSeries[currentUserId]?.find(
+        (seriesPoint) => seriesPoint.stageKey === currentStageKey,
+      );
+      const stageRank = currentUserPoint?.position ?? overall.length;
+
+      return [...topEntries, { ...currentUserEntry, rank: stageRank }];
+    }
+  }
+
+  return topEntries;
+}
 
 interface LeaderboardPositionChartProps {
   analytics: Pick<
@@ -109,21 +185,17 @@ export function LeaderboardPositionChart({
     [isPreview, stages],
   );
 
-  const visibleEntries = useMemo(() => {
-    const topEntries = overall.slice(0, TREND_TOP_N);
-    const visibleIds = new Set(topEntries.map((entry) => entry.user_id));
-
-    if (currentUserId && !visibleIds.has(currentUserId)) {
-      const currentUserEntry = overall.find(
-        (entry) => entry.user_id === currentUserId,
-      );
-      if (currentUserEntry) {
-        return [...topEntries, currentUserEntry];
-      }
-    }
-
-    return topEntries;
-  }, [overall, currentUserId]);
+  const visibleEntries = useMemo(
+    () =>
+      buildTrendVisibleEntries(
+        overall,
+        positionSeries,
+        stages,
+        currentUserId,
+        isPreview,
+      ),
+    [overall, positionSeries, stages, currentUserId, isPreview],
+  );
 
   const playerMeta = useMemo<PlayerMeta[]>(
     () =>

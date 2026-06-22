@@ -6,6 +6,7 @@ import type {
   LeaderboardNominees,
   NomineeEntry,
 } from "@/features/leaderboard/lib/buildAnalytics";
+import { buildLeaderboardDisplayItems } from "@/features/leaderboard/lib/filterLeaderboardEntries";
 import { LeaderboardRankCell } from "@/features/leaderboard/ui/LeaderboardRankCell";
 import { getInitials } from "@/features/matches/lib/voterInfo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +28,17 @@ const NOMINEE_CATEGORIES: NomineeCategory[] = [
 
 const SPECIALS_TOP_N = 3;
 
+function NomineeEllipsisRow({ label }: { label: string }) {
+  return (
+    <div
+      className="border-t border-white/[0.08] px-3 py-2 text-center text-[13px] font-medium text-muted-foreground"
+      aria-hidden
+    >
+      {label}
+    </div>
+  );
+}
+
 function NomineeSection({
   category,
   entries,
@@ -39,7 +51,17 @@ function NomineeSection({
   canSeePlayerNames: boolean;
 }) {
   const t = useTranslations("leaderboard.nominees");
+  const tLeaderboard = useTranslations("leaderboard");
   const tCommon = useTranslations("common");
+
+  const displayItems = useMemo(
+    () =>
+      buildLeaderboardDisplayItems(entries, {
+        topN: SPECIALS_TOP_N,
+        currentUserId,
+      }),
+    [entries, currentUserId],
+  );
 
   const rankLabels = useMemo(
     () => ({
@@ -73,7 +95,17 @@ function NomineeSection({
             <span className="text-right">{t(`${category}.valueLabel`)}</span>
           </div>
 
-          {entries.map((entry) => {
+          {displayItems.map((item, index) => {
+            if (item.type === "ellipsis") {
+              return (
+                <NomineeEllipsisRow
+                  key={`ellipsis-${index}`}
+                  label={tLeaderboard("rankGap")}
+                />
+              );
+            }
+
+            const entry = item.entry;
             const isCurrentUser = entry.user_id === currentUserId;
 
             return (
@@ -122,17 +154,30 @@ function NomineeSection({
             <span className="text-right">{t(`${category}.valueLabel`)}</span>
           </div>
 
-          {entries.map((entry) => (
-            <div
-              key={entry.user_id}
-              className="grid grid-cols-[2rem_1fr] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
-            >
-              <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
-              <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
-                {entry.value}
-              </p>
-            </div>
-          ))}
+          {displayItems.map((item, index) => {
+            if (item.type === "ellipsis") {
+              return (
+                <NomineeEllipsisRow
+                  key={`ellipsis-${index}`}
+                  label={tLeaderboard("rankGap")}
+                />
+              );
+            }
+
+            const entry = item.entry;
+
+            return (
+              <div
+                key={entry.user_id}
+                className="grid grid-cols-[2rem_1fr] items-center gap-x-3 border-t border-white/[0.08] px-3 py-2.5"
+              >
+                <LeaderboardRankCell rank={entry.rank} labels={rankLabels} />
+                <p className="text-right text-[17px] font-bold leading-none tabular-nums text-foreground">
+                  {entry.value}
+                </p>
+              </div>
+            );
+          })}
         </>
       )}
     </section>
@@ -156,7 +201,7 @@ export function LeaderboardNomineesTab({
         <NomineeSection
           key={category}
           category={category}
-          entries={nominees[category].slice(0, SPECIALS_TOP_N)}
+          entries={nominees[category]}
           currentUserId={currentUserId}
           canSeePlayerNames={canSeePlayerNames}
         />
