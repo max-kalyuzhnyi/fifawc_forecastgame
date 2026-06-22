@@ -23,6 +23,7 @@ import {
   updateCardRarity,
   updateLegendCardName,
 } from "@/features/cards/admin-actions";
+import type { CardAdminStats } from "@/features/cards/admin-actions";
 import type { CardRarity } from "@/shared/types/database";
 
 interface AdminCardRow {
@@ -36,6 +37,7 @@ interface AdminCardRow {
 
 interface CardsAdminTabProps {
   cards: AdminCardRow[];
+  stats: CardAdminStats;
   players: {
     id: string;
     name: string;
@@ -45,7 +47,7 @@ interface CardsAdminTabProps {
   }[];
 }
 
-export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
+export function CardsAdminTab({ cards, stats, players }: CardsAdminTabProps) {
   const t = useTranslations("cards.admin");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -126,6 +128,21 @@ export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
 
   return (
     <div className="space-y-6 pb-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("statsTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            {t("usersActivated", { count: stats.usersActivated })}
+            {" · "}
+            {t("usersRevealedDailyPack", {
+              count: stats.usersRevealedDailyPack,
+            })}
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t("resetTitle")}</CardTitle>

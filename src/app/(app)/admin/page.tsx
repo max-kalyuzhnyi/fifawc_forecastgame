@@ -6,6 +6,7 @@ import { findNextMatch } from "@/features/admin/lib/findNextMatch";
 import { splitPickers } from "@/features/admin/lib/splitPickers";
 import { createClient } from "@/shared/lib/supabase/server";
 import { buildMatchScorers } from "@/shared/lib/scorers";
+import { getCardAdminStats } from "@/features/cards/admin-actions";
 import { getCurrentUserId, isAdmin } from "@/shared/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export default async function AdminPage() {
     { data: adminUsers },
     { data: matchEvents },
     { data: cards },
+    cardStats,
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -57,6 +59,7 @@ export default async function AdminPage() {
       .select("id, player_id, display_name, image_url, rarity, is_legend, team_id")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
+    getCardAdminStats(),
   ]);
 
   const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
@@ -107,6 +110,7 @@ export default async function AdminPage() {
         predictions={predictionList}
         pickers={pickers}
         currentUserId={currentUserId}
+        cardStats={cardStats}
         cards={(cards ?? []).map((card) => ({
           id: card.id,
           displayName: card.display_name,

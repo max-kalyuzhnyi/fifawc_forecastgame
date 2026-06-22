@@ -14,6 +14,7 @@ import { ResultsTab } from "@/features/admin/ui/ResultsTab";
 import { UsersTab } from "@/features/admin/ui/UsersTab";
 import { PicksTab } from "@/features/admin/ui/PicksTab";
 import { TeamsTab } from "@/features/admin/ui/TeamsTab";
+import type { CardAdminStats } from "@/features/cards/admin-actions";
 import { CardsAdminTab } from "@/features/cards/ui/CardsAdminTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -27,6 +28,7 @@ interface AdminTabsProps {
   predictions: AdminPrediction[];
   pickers: NextMatchPickers | null;
   currentUserId: string | null;
+  cardStats: CardAdminStats;
   cards: {
     id: string;
     displayName: string;
@@ -47,6 +49,7 @@ export function AdminTabs({
   predictions,
   pickers,
   currentUserId,
+  cardStats,
   cards,
 }: AdminTabsProps) {
   const t = useTranslations("admin");
@@ -85,6 +88,7 @@ export function AdminTabs({
       <TabsContent value="cards" className="min-h-0 overflow-y-auto">
         <CardsAdminTab
           cards={cards}
+          stats={cardStats}
           players={players.map((player) => ({
             id: player.id,
             name: player.name,

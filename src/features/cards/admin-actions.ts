@@ -289,6 +289,58 @@ export async function getLegendsTeamLabel(): Promise<string> {
   return LEGENDS_TEAM_NAME;
 }
 
+export interface CardAdminStats {
+  usersActivated: number;
+  usersRevealedDailyPack: number;
+}
+
+// Engagement counts from card_packs; service role bypasses per-user RLS.
+export async function getCardAdminStats(): Promise<CardAdminStats> {
+  const adminCheck = await assertAdmin();
+  if ("error" in adminCheck) {
+    return { usersActivated: 0, usersRevealedDailyPack: 0 };
+  }
+
+  const supabase = createAdminClient();
+  const rows: { user_id: string; reason: string; status: string }[] = [];
+  const pageSize = 1000;
+
+  for (let from = 0; ; from += pageSize) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from("card_packs")
+      .select("user_id, reason, status")
+      .in("reason", ["welcome", "daily_picks"])
+      .range(from, to);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    rows.push(...(data ?? []));
+    if (!data || data.length < pageSize) {
+      break;
+    }
+  }
+
+  const welcomeUsers = new Set<string>();
+  const dailyOpenedUsers = new Set<string>();
+
+  for (const row of rows) {
+    if (row.reason === "welcome") {
+      welcomeUsers.add(row.user_id);
+    }
+    if (row.reason === "daily_picks" && row.status === "opened") {
+      dailyOpenedUsers.add(row.user_id);
+    }
+  }
+
+  return {
+    usersActivated: welcomeUsers.size,
+    usersRevealedDailyPack: dailyOpenedUsers.size,
+  };
+}
+
 export async function resetAdminCardCollectionState(): Promise<
   | { deletedPacks: number; deletedCards: number }
   | { error: string }

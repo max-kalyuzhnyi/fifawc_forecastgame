@@ -448,7 +448,10 @@
       "resetDescription": "Delete all packs and owned cards for admin users. Opened cards will be hidden again.",
       "resetButton": "Reset admin cards",
       "resetConfirm": "Delete all admin packs and owned cards?",
-      "resetSuccess": "Deleted {packs} packs and {cards} owned card rows for admins."
+      "resetSuccess": "Deleted {packs} packs and {cards} owned card rows for admins.",
+      "statsTitle": "Engagement",
+      "usersActivated": "{count, plural, one {# user activated} other {# users activated}}",
+      "usersRevealedDailyPack": "{count, plural, one {# user revealed daily pack} other {# users revealed daily pack}}"
     }
   },
   "errors": {
