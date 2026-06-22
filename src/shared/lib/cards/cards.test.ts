@@ -3,7 +3,7 @@ import { drawCardsFromPack } from "@/shared/lib/cards/drawCard";
 import { evaluateDailyPackGrants } from "@/shared/lib/cards/earnPacks";
 
 describe("evaluateDailyPackGrants", () => {
-  it("grants cumulative packs for a perfect day", () => {
+  it("grants daily, exact score, and goalscorer packs for a perfect match", () => {
     const grants = evaluateDailyPackGrants({
       matches: [
         {
@@ -30,10 +30,54 @@ describe("evaluateDailyPackGrants", () => {
     expect(grants).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ reason: "daily_picks", size: 3 }),
-        expect.objectContaining({ reason: "scored", size: 5 }),
-        expect.objectContaining({ reason: "boost_scorer", size: 7 }),
+        expect.objectContaining({
+          reason: "exact_score",
+          size: 5,
+          sourceMatchId: "m1",
+        }),
+        expect.objectContaining({
+          reason: "goalscorer",
+          size: 2,
+          sourceMatchId: "m1",
+        }),
       ]),
     );
+  });
+
+  it("grants only goalscorer when result is wrong but scorer hits", () => {
+    const grants = evaluateDailyPackGrants({
+      matches: [
+        {
+          id: "m2",
+          kickoffAt: "2026-06-15T18:00:00.000Z",
+          status: "finished",
+          homeScore: 2,
+          awayScore: 1,
+        },
+      ],
+      predictions: [
+        {
+          matchId: "m2",
+          homeScore: 1,
+          awayScore: 0,
+          scorerName: "Messi",
+          boostMultiplier: 1,
+        },
+      ],
+      scorersByMatch: { m2: ["Messi"] },
+      todayKey: "2026-06-16",
+    });
+
+    expect(grants).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          reason: "goalscorer",
+          size: 2,
+          sourceMatchId: "m2",
+        }),
+      ]),
+    );
+    expect(grants.some((grant) => grant.reason === "exact_score")).toBe(false);
   });
 });
 

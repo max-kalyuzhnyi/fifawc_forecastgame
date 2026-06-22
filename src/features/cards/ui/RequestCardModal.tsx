@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { createCardRequest } from "@/features/cards/actions";
-import { REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
 import type { CatalogCard } from "@/shared/lib/cards/types";
 import type { CardRarity } from "@/shared/types/database";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
@@ -65,43 +64,13 @@ function CardHeroPreview({ card }: { card: CatalogCard }) {
   );
 }
 
-function formatCooldown(ms: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return [hours, minutes, seconds]
-    .map((value) => String(value).padStart(2, "0"))
-    .join(":");
-}
-
-function useCooldownRemaining(nextRequestAt: string | null): number {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!nextRequestAt) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => window.clearInterval(interval);
-  }, [nextRequestAt]);
-
-  if (!nextRequestAt) {
-    return 0;
-  }
-
-  return Math.max(0, new Date(nextRequestAt).getTime() - now);
-}
-
 interface RequestCardModalProps {
   card: CatalogCard | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hasOpenRequest: boolean;
-  nextRequestAt: string | null;
+  openRequestCount: number;
+  maxOpenRequests: number;
 }
 
 export function RequestCardModal({
@@ -109,17 +78,13 @@ export function RequestCardModal({
   open,
   onOpenChange,
   hasOpenRequest,
-  nextRequestAt,
+  openRequestCount,
+  maxOpenRequests,
 }: RequestCardModalProps) {
   const t = useTranslations("cards");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [optimisticNextRequestAt, setOptimisticNextRequestAt] = useState<
-    string | null
-  >(null);
-  const effectiveNextRequestAt = optimisticNextRequestAt ?? nextRequestAt;
-  const cooldownRemaining = useCooldownRemaining(effectiveNextRequestAt);
-  const onCooldown = cooldownRemaining > 0;
+  const atRequestLimit = openRequestCount >= maxOpenRequests;
 
   if (!card) {
     return null;
@@ -129,28 +94,22 @@ export function RequestCardModal({
     startTransition(async () => {
       const result = await createCardRequest(card!.id);
       if ("error" in result) {
-        if ("nextAvailableAt" in result && result.nextAvailableAt) {
-          setOptimisticNextRequestAt(result.nextAvailableAt);
-        }
         return;
       }
-      setOptimisticNextRequestAt(
-        new Date(Date.now() + REQUEST_COOLDOWN_MS).toISOString(),
-      );
       router.refresh();
       onOpenChange(false);
     });
   }
 
-  const requestDisabled = isPending || hasOpenRequest || onCooldown;
+  const requestDisabled = isPending || hasOpenRequest || atRequestLimit;
 
   const actionButton = hasOpenRequest ? (
     <Button className="h-14 w-full text-base font-semibold" size="xl" variant="secondary" disabled>
       {t("requested")}
     </Button>
-  ) : onCooldown ? (
+  ) : atRequestLimit ? (
     <Button className="h-14 w-full text-base font-semibold" size="xl" variant="secondary" disabled>
-      {t("cooldown", { time: formatCooldown(cooldownRemaining) })}
+      {t("requestLimit", { max: maxOpenRequests })}
     </Button>
   ) : (
     <Button

@@ -373,7 +373,8 @@
       "requests": "Prośby"
     },
     "showOnlyRevealed": "Pokaż tylko odkryte karty",
-    "cooldown": "Następna prośba za {time}",
+    "howToGetCards": "Jak zdobyć karty",
+    "requestLimit": "Maks. {max} otwartych próśb",
     "yourRequestsTitle": "Twoje prośby",
     "othersRequestsTitle": "Od innych graczy",
     "noOthersRequests": "Brak próśb od innych graczy.",
@@ -399,12 +400,28 @@
     "giftFrom": "Prezent od {name}",
     "awesome": "Super!",
     "packReason": {
+      "welcome": "Paczka powitalna · {count} kart",
       "dailyPicks": "Wszystkie typy dnia · {count} kart",
+      "exactScore": "Dokładny wynik · {count} kart",
+      "goalscorer": "Strzelec · {count} kart",
       "scored": "Zdobyte punkty · {count} kart",
       "boostScorer": "Boost + strzelec · {count} kart",
       "exchange3": "Wymiana duplikatów · {count} kart",
       "exchange5": "Wymiana duplikatów · {count} kart",
       "default": "{count} kart"
+    },
+    "howTo": {
+      "title": "Jak zdobyć karty",
+      "description": "Zdobywaj paczki za typy i wymiany. Otwieraj paczki, aby odkryć karty.",
+      "welcome": "Paczka powitalna: {count} kart przy pierwszej wizycie.",
+      "daily": "Paczka dzienna: {count} kart, gdy obstawisz wszystkie mecze dnia. Otwórz bieżącą paczkę dzienną, zanim zdobędziesz kolejną.",
+      "exactScore": "Dokładny wynik: {count} kart za mecz, gdy trafisz dokładny wynik.",
+      "goalscorer": "Strzelec: {count} kart za mecz, gdy twój wybrany strzelec strzeli.",
+      "exchange3": "Wymień {duplicates} duplikaty na paczkę z {count} kartami.",
+      "exchange5": "Wymień {duplicates} duplikatów na paczkę z {count} kartami.",
+      "requests": "Proś o brakujące karty od innych. Możesz mieć do {max} otwartych próśb naraz.",
+      "gifts": "Podaruj duplikat, jeśli masz co najmniej 2 kopie danej karty.",
+      "close": "Zamknij"
     },
     "rarity": {
       "common": "Zwykła",
@@ -426,7 +443,12 @@
         "common": "Zwykła",
         "rare": "Rzadka",
         "legendary": "Legendarna"
-      }
+      },
+      "resetTitle": "Reset kolekcji adminów",
+      "resetDescription": "Usuń wszystkie paczki i posiadane karty adminów. Odkryte karty znów będą ukryte.",
+      "resetButton": "Resetuj karty adminów",
+      "resetConfirm": "Usunąć wszystkie paczki i karty adminów?",
+      "resetSuccess": "Usunięto paczek: {packs}, wierszy kart: {cards}."
     }
   },
   "errors": {

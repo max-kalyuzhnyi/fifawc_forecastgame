@@ -288,3 +288,53 @@ export async function uploadCardPhoto(
 export async function getLegendsTeamLabel(): Promise<string> {
   return LEGENDS_TEAM_NAME;
 }
+
+export async function resetAdminCardCollectionState(): Promise<
+  | { deletedPacks: number; deletedCards: number }
+  | { error: string }
+> {
+  const adminCheck = await assertAdmin();
+  if ("error" in adminCheck) {
+    return adminCheck;
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: admins, error: adminsError } = await supabase
+    .from("admin_users")
+    .select("user_id");
+
+  if (adminsError) {
+    return { error: adminsError.message };
+  }
+
+  const adminIds = (admins ?? []).map((row) => row.user_id);
+  if (adminIds.length === 0) {
+    return { deletedPacks: 0, deletedCards: 0 };
+  }
+
+  const { count: packCount, error: packsError } = await supabase
+    .from("card_packs")
+    .delete({ count: "exact" })
+    .in("user_id", adminIds);
+
+  if (packsError) {
+    return { error: packsError.message };
+  }
+
+  const { count: cardCount, error: cardsError } = await supabase
+    .from("user_cards")
+    .delete({ count: "exact" })
+    .in("user_id", adminIds);
+
+  if (cardsError) {
+    return { error: cardsError.message };
+  }
+
+  revalidatePath(CARDS_PATH);
+  revalidatePath(ADMIN_PATH);
+  return {
+    deletedPacks: packCount ?? 0,
+    deletedCards: cardCount ?? 0,
+  };
+}

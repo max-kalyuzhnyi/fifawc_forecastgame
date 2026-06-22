@@ -21,7 +21,10 @@ interface PackOpenDrawerProps {
 }
 
 const reasonLabels: Record<string, string> = {
+  welcome: "packReason.welcome",
   daily_picks: "packReason.dailyPicks",
+  exact_score: "packReason.exactScore",
+  goalscorer: "packReason.goalscorer",
   scored: "packReason.scored",
   boost_scorer: "packReason.boostScorer",
   exchange_3: "packReason.exchange3",

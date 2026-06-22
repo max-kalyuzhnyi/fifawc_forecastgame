@@ -33,7 +33,8 @@ interface CardsViewProps {
   unseenGifts: UnseenGiftEntry[];
   currentUserId: string;
   openRequestCardIds: string[];
-  nextRequestAt: string | null;
+  openRequestCount: number;
+  maxOpenRequests: number;
 }
 
 export function CardsView({
@@ -44,7 +45,8 @@ export function CardsView({
   unseenGifts,
   currentUserId,
   openRequestCardIds,
-  nextRequestAt,
+  openRequestCount,
+  maxOpenRequests,
 }: CardsViewProps) {
   const t = useTranslations("cards");
   const [requestCard, setRequestCard] = useState<CatalogCard | null>(null);
@@ -124,7 +126,8 @@ export function CardsView({
         hasOpenRequest={
           requestCard != null && openRequestSet.has(requestCard.id)
         }
-        nextRequestAt={nextRequestAt}
+        openRequestCount={openRequestCount}
+        maxOpenRequests={maxOpenRequests}
       />
 
       <Drawer

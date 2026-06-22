@@ -7,7 +7,7 @@ import {
   evaluateDailyPackGrants,
 } from "@/shared/lib/cards/earnPacks";
 import { buildMatchScorers } from "@/shared/lib/scorers";
-import { EXCHANGE_TIERS, REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
+import { EXCHANGE_TIERS, MAX_OPEN_CARD_REQUESTS, PACK_SIZES } from "@/shared/lib/cards/config";
 import type { CatalogCard } from "@/shared/lib/cards/types";
 import { isFullCardArtImageUrl } from "@/shared/lib/cards/imageUrl";
 import {
@@ -177,23 +177,43 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
   const { userId } = access;
   const supabase = await createClient();
 
-  const [{ data: matches }, { data: predictions }, { data: events }, { data: players }] =
-    await Promise.all([
-      supabase
-        .from("matches")
-        .select("id, kickoff_at, status, home_score, away_score"),
-      supabase
-        .from("predictions")
-        .select(
-          "match_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
-        )
-        .eq("user_id", userId),
-      supabase
-        .from("match_events")
-        .select("match_id, type, player_name")
-        .in("type", ["goal", "penalty"]),
-      supabase.from("players").select("id, name"),
-    ]);
+  const [
+    { data: matches },
+    { data: predictions },
+    { data: events },
+    { data: players },
+    { data: welcomePack },
+    { data: unopenedDailyPacks },
+  ] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, kickoff_at, status, home_score, away_score"),
+    supabase
+      .from("predictions")
+      .select(
+        "match_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
+      )
+      .eq("user_id", userId),
+    supabase
+      .from("match_events")
+      .select("match_id, type, player_name")
+      .in("type", ["goal", "penalty"]),
+    supabase.from("players").select("id, name"),
+    supabase
+      .from("card_packs")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("reason", "welcome")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("card_packs")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("reason", "daily_picks")
+      .eq("status", "unopened")
+      .limit(1),
+  ]);
 
   const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
     buildMatchScorers(
@@ -205,7 +225,7 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
       players ?? [],
     );
 
-  const grants = evaluateDailyPackGrants({
+  let grants = evaluateDailyPackGrants({
     matches: (matches ?? []).map((match) => ({
       id: match.id,
       kickoffAt: match.kickoff_at,
@@ -225,14 +245,35 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
     scorerPlayerIdsByMatch,
   });
 
+  // Block new daily packs while an unopened daily pack exists.
+  const hasUnopenedDaily = (unopenedDailyPacks ?? []).length > 0;
+  if (hasUnopenedDaily) {
+    grants = grants.filter((grant) => grant.reason !== "daily_picks");
+  }
+
   let granted = 0;
+
+  // One-time welcome pack for every user on first cards visit.
+  if (!welcomePack) {
+    const { error } = await supabase.from("card_packs").insert({
+      user_id: userId,
+      reason: "welcome",
+      size: PACK_SIZES.welcome,
+      status: "unopened",
+    });
+
+    if (!error) {
+      granted += 1;
+    }
+  }
 
   for (const grant of grants) {
     const { error } = await supabase.from("card_packs").insert({
       user_id: userId,
       reason: grant.reason,
       size: grant.size,
-      source_day: grant.sourceDay,
+      source_day: grant.sourceDay ?? null,
+      source_match_id: grant.sourceMatchId ?? null,
       status: "unopened",
     });
 
@@ -373,10 +414,7 @@ export async function exchangeDuplicates(
 
 export async function createCardRequest(
   cardId: string,
-): Promise<
-  | { success: true }
-  | { error: string; nextAvailableAt?: string }
-> {
+): Promise<{ success: true } | { error: string }> {
   const access = await assertCardsAccess();
   if ("error" in access) {
     return access;
@@ -385,24 +423,18 @@ export async function createCardRequest(
   const { userId } = access;
   const supabase = await createClient();
 
-  const { data: lastRequest } = await supabase
+  const { count: openRequestCount, error: countError } = await supabase
     .from("card_gift_requests")
-    .select("created_at")
+    .select("id", { count: "exact", head: true })
     .eq("requester_user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .eq("status", "open");
 
-  if (lastRequest) {
-    const nextAvailableAt = new Date(
-      new Date(lastRequest.created_at).getTime() + REQUEST_COOLDOWN_MS,
-    );
-    if (Date.now() < nextAvailableAt.getTime()) {
-      return {
-        error: "Request cooldown active",
-        nextAvailableAt: nextAvailableAt.toISOString(),
-      };
-    }
+  if (countError) {
+    return { error: countError.message };
+  }
+
+  if ((openRequestCount ?? 0) >= MAX_OPEN_CARD_REQUESTS) {
+    return { error: "Maximum open requests reached" };
   }
 
   const { data: owned } = await supabase

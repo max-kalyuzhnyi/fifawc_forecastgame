@@ -1,7 +1,10 @@
 export type Locale = "en" | "ru" | "pl";
 export type CardRarity = "common" | "rare" | "legendary";
 export type CardPackReason =
+  | "welcome"
   | "daily_picks"
+  | "exact_score"
+  | "goalscorer"
   | "scored"
   | "boost_scorer"
   | "exchange_3"
@@ -328,6 +331,7 @@ export interface Database {
           size: number;
           status: CardPackStatus;
           source_day: string | null;
+          source_match_id: string | null;
           created_at: string;
           opened_at: string | null;
         };
@@ -338,6 +342,7 @@ export interface Database {
           size: number;
           status?: CardPackStatus;
           source_day?: string | null;
+          source_match_id?: string | null;
           created_at?: string;
           opened_at?: string | null;
         };

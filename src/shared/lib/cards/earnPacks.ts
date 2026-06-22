@@ -23,10 +23,16 @@ export interface EarnPrediction {
   boostMultiplier: number;
 }
 
+export type EarnablePackReason = Exclude<
+  CardPackReason,
+  "exchange_3" | "exchange_5" | "scored" | "boost_scorer"
+>;
+
 export interface EarnPackGrant {
-  reason: Exclude<CardPackReason, "exchange_3" | "exchange_5">;
-  sourceDay: string;
+  reason: EarnablePackReason;
   size: number;
+  sourceDay?: string;
+  sourceMatchId?: string;
 }
 
 export function evaluateDailyPackGrants(input: {
@@ -73,9 +79,6 @@ export function evaluateDailyPackGrants(input: {
       });
     }
 
-    let dayPoints = 0;
-    let hasBoostScorerHit = false;
-
     for (const match of dayMatches) {
       if (match.status !== "finished") {
         continue;
@@ -102,31 +105,22 @@ export function evaluateDailyPackGrants(input: {
         boostMultiplier: prediction.boostMultiplier as 1 | 2,
       });
 
-      dayPoints += breakdown.totalPoints;
-
-      if (
-        prediction.boostMultiplier === 2 &&
-        breakdown.totalPoints > 0 &&
-        breakdown.scorerBonus > 0
-      ) {
-        hasBoostScorerHit = true;
+      // Exact score and goalscorer are separate per-match packs; both can apply.
+      if (breakdown.basePoints === 3) {
+        grants.push({
+          reason: "exact_score",
+          sourceMatchId: match.id,
+          size: PACK_SIZES.exact_score,
+        });
       }
-    }
 
-    if (dayPoints > 0) {
-      grants.push({
-        reason: "scored",
-        sourceDay: day,
-        size: PACK_SIZES.scored,
-      });
-    }
-
-    if (hasBoostScorerHit) {
-      grants.push({
-        reason: "boost_scorer",
-        sourceDay: day,
-        size: PACK_SIZES.boost_scorer,
-      });
+      if (breakdown.scorerBonus > 0) {
+        grants.push({
+          reason: "goalscorer",
+          sourceMatchId: match.id,
+          size: PACK_SIZES.goalscorer,
+        });
+      }
     }
   }
 

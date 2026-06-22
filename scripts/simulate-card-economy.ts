@@ -23,8 +23,8 @@ const RARITY_COUNTS = {
 
 const SIMULATIONS = 500;
 const REWARD_DAYS = 30;
-const PERFECT_DAY_CARDS =
-  PACK_SIZES.daily_picks + PACK_SIZES.scored + PACK_SIZES.boost_scorer;
+const PERFECT_MATCH_CARDS =
+  PACK_SIZES.daily_picks + PACK_SIZES.exact_score + PACK_SIZES.goalscorer;
 
 function buildCatalog(): { id: string; rarity: "common" | "rare" | "legendary" }[] {
   const catalog: { id: string; rarity: "common" | "rare" | "legendary" }[] = [];
@@ -70,7 +70,7 @@ function main(): void {
   console.log(`Rarity split: common=${RARITY_COUNTS.common}, rare=${RARITY_COUNTS.rare}, legendary=${RARITY_COUNTS.legendary}`);
   console.log(`Draw probabilities: common=${RARITY_DRAW_PROBABILITIES.common}, rare=${RARITY_DRAW_PROBABILITIES.rare}, legendary=${RARITY_DRAW_PROBABILITIES.legendary}`);
   console.log(`Unowned pity weight: ${UNOWNED_PITY_WEIGHT}`);
-  console.log(`Perfect day pack total: ${PERFECT_DAY_CARDS} cards`);
+  console.log(`Perfect match pack total: ${PERFECT_MATCH_CARDS} cards`);
   console.log(`Coupon collector (uniform): ~${Math.round(TOTAL_CARDS * Math.log(TOTAL_CARDS) + 0.577 * TOTAL_CARDS)} draws\n`);
 
   const scenarios = [

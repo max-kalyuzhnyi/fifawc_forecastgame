@@ -3,7 +3,7 @@ import { CardsView } from "@/features/cards/ui/CardsView";
 import { syncEarnedPacks } from "@/features/cards/actions";
 import type { CatalogCard, GiftRequestEntry, UnseenGiftEntry } from "@/shared/lib/cards/types";
 import { isFullCardArtImageUrl } from "@/shared/lib/cards/imageUrl";
-import { REQUEST_COOLDOWN_MS } from "@/shared/lib/cards/config";
+import { MAX_OPEN_CARD_REQUESTS } from "@/shared/lib/cards/config";
 import {
   getCurrentUserId,
   isCardsEnabledForCurrentUser,
@@ -67,7 +67,6 @@ export default async function CardsPage() {
     { data: requests },
     { data: unseenGifts },
     { data: ownOpenRequests },
-    { data: latestOwnRequest },
     { data: profiles },
   ] = await Promise.all([
     supabase
@@ -104,13 +103,6 @@ export default async function CardsPage() {
       .select("card_id")
       .eq("requester_user_id", userId)
       .eq("status", "open"),
-    supabase
-      .from("card_gift_requests")
-      .select("created_at")
-      .eq("requester_user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     supabase.from("profiles").select("id, display_name"),
   ]);
 
@@ -150,14 +142,7 @@ export default async function CardsPage() {
     })
     .filter((gift): gift is UnseenGiftEntry => gift != null);
 
-  const nextRequestAt =
-    latestOwnRequest &&
-    new Date(latestOwnRequest.created_at).getTime() + REQUEST_COOLDOWN_MS >
-      Date.now()
-      ? new Date(
-          new Date(latestOwnRequest.created_at).getTime() + REQUEST_COOLDOWN_MS,
-        ).toISOString()
-      : null;
+  const openRequestCount = ownOpenRequests?.length ?? 0;
 
   return (
     <CardsView
@@ -179,7 +164,8 @@ export default async function CardsPage() {
       unseenGifts={unseen}
       currentUserId={userId}
       openRequestCardIds={(ownOpenRequests ?? []).map((row) => row.card_id)}
-      nextRequestAt={nextRequestAt}
+      openRequestCount={openRequestCount}
+      maxOpenRequests={MAX_OPEN_CARD_REQUESTS}
     />
   );
 }

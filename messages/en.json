@@ -373,7 +373,8 @@
       "requests": "Requests"
     },
     "showOnlyRevealed": "Show only revealed cards",
-    "cooldown": "Next request in {time}",
+    "howToGetCards": "How to get cards",
+    "requestLimit": "Max {max} open requests",
     "yourRequestsTitle": "Your requests",
     "othersRequestsTitle": "From other players",
     "noOthersRequests": "No requests from other players yet.",
@@ -399,12 +400,28 @@
     "giftFrom": "A gift from {name}",
     "awesome": "Awesome!",
     "packReason": {
+      "welcome": "Welcome pack · {count} cards",
       "dailyPicks": "Daily picks · {count} cards",
+      "exactScore": "Exact score · {count} cards",
+      "goalscorer": "Goalscorer hit · {count} cards",
       "scored": "Scored points · {count} cards",
       "boostScorer": "Boost + scorer · {count} cards",
       "exchange3": "Duplicate trade · {count} cards",
       "exchange5": "Duplicate trade · {count} cards",
       "default": "{count} cards"
+    },
+    "howTo": {
+      "title": "How to get cards",
+      "description": "Earn packs from predictions and trades. Open packs to reveal cards.",
+      "welcome": "Welcome pack: {count} cards on your first visit.",
+      "daily": "Daily pack: {count} cards when you pick all matches on a day. Open your current daily pack before earning the next one.",
+      "exactScore": "Exact score: {count} cards per match when you predict the exact final score.",
+      "goalscorer": "Goalscorer: {count} cards per match when your picked scorer scores.",
+      "exchange3": "Trade {duplicates} duplicate cards for a {count}-card pack.",
+      "exchange5": "Trade {duplicates} duplicate cards for a {count}-card pack.",
+      "requests": "Request missing cards from other players. You can have up to {max} open requests at once.",
+      "gifts": "Gift a duplicate to another player if you have at least 2 copies of that card.",
+      "close": "Close"
     },
     "rarity": {
       "common": "Common",
@@ -426,7 +443,12 @@
         "common": "Common",
         "rare": "Rare",
         "legendary": "Legendary"
-      }
+      },
+      "resetTitle": "Reset admin collection",
+      "resetDescription": "Delete all packs and owned cards for admin users. Opened cards will be hidden again.",
+      "resetButton": "Reset admin cards",
+      "resetConfirm": "Delete all admin packs and owned cards?",
+      "resetSuccess": "Deleted {packs} packs and {cards} owned card rows for admins."
     }
   },
   "errors": {

@@ -25,13 +25,15 @@ export const TEAM_RARITY_SPLIT: Record<CardRarity, number> = {
   legendary: 2,
 };
 
+/** Pack sizes for earnable reasons (exchange tiers use EXCHANGE_TIERS) */
 export const PACK_SIZES: Record<
-  Exclude<CardPackReason, "exchange_3" | "exchange_5">,
+  Exclude<CardPackReason, "exchange_3" | "exchange_5" | "scored" | "boost_scorer">,
   number
 > = {
+  welcome: 5,
   daily_picks: 3,
-  scored: 5,
-  boost_scorer: 7,
+  exact_score: 5,
+  goalscorer: 2,
 };
 
 export const EXCHANGE_TIERS = {
@@ -51,5 +53,5 @@ export const UNOWNED_PITY_WEIGHT = 4;
 
 export const LEGENDS_TEAM_NAME = "Legends OTB";
 
-/** Rolling cooldown between card gift requests */
-export const REQUEST_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+/** Max simultaneous open card gift requests per user */
+export const MAX_OPEN_CARD_REQUESTS = 3;

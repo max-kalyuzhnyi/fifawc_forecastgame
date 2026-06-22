@@ -18,6 +18,7 @@ import {
 import {
   createLegendCard,
   deleteLegendCard,
+  resetAdminCardCollectionState,
   uploadCardPhoto,
   updateCardRarity,
   updateLegendCardName,
@@ -49,6 +50,7 @@ export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [legendName, setLegendName] = useState("");
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const nationalCards = cards.filter((card) => !card.isLegend);
@@ -100,8 +102,50 @@ export function CardsAdminTab({ cards, players }: CardsAdminTabProps) {
     });
   }
 
+  function handleResetAdminCollection(): void {
+    if (!window.confirm(t("resetConfirm"))) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await resetAdminCardCollectionState();
+      if ("error" in result) {
+        setResetMessage(result.error);
+        return;
+      }
+
+      setResetMessage(
+        t("resetSuccess", {
+          packs: result.deletedPacks,
+          cards: result.deletedCards,
+        }),
+      );
+      router.refresh();
+    });
+  }
+
   return (
     <div className="space-y-6 pb-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("resetTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t("resetDescription")}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isPending}
+            onClick={handleResetAdminCollection}
+          >
+            {t("resetButton")}
+          </Button>
+          {resetMessage && (
+            <p className="text-sm text-muted-foreground">{resetMessage}</p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t("legendsTitle")}</CardTitle>
