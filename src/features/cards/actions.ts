@@ -282,9 +282,8 @@ export async function syncEarnedPacks(): Promise<{ granted: number } | { error: 
     }
   }
 
-  if (granted > 0) {
-    revalidatePath(CARDS_PATH);
-  }
+  // No revalidatePath here: the cards page calls this during render and then
+  // reads the freshly granted packs in the same request.
 
   return { granted };
 }
