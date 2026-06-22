@@ -97,16 +97,6 @@ export function CardTile({
         )}
         {!owned && <div className="absolute inset-0 bg-black/25" aria-hidden />}
       </div>
-      {visibleImageUrl && !isFullCardArt && (
-        <div className="space-y-0.5 px-1.5 py-1.5 text-left">
-          <p className="truncate text-[10px] font-semibold leading-tight text-white">
-            {card.displayName}
-          </p>
-          <p className="truncate text-[9px] text-white/60">
-            {teamName}
-          </p>
-        </div>
-      )}
       {duplicates > 0 && (
         <span className="absolute top-1 right-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
           +{duplicates}
