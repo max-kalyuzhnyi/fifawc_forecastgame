@@ -89,3 +89,11 @@ export function getDateGroupKey(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+// Booster "day" must be identical for every user regardless of device timezone,
+// so it is keyed on the kickoff instant in UTC (not local-tz accessors). This is
+// the canonical key used by the x2 per-day limit and its DB unique index.
+export function getBoostDayKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getCurrentUserId } from "@/shared/lib/auth";
+import { getBoostDayKey } from "@/shared/lib/formatDate";
 
 const predictionSchema = z.object({
   match_id: z.string().uuid(),
@@ -11,11 +12,6 @@ const predictionSchema = z.object({
   away_score: z.coerce.number().int().min(0).max(10),
   scorer_player_id: z.string().uuid().optional().or(z.literal("")),
   boost_multiplier: z.coerce.number().int().refine((v) => [1, 2].includes(v)),
-  boost_day: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .or(z.literal("")),
 });
 
 export async function savePrediction(
@@ -31,7 +27,6 @@ export async function savePrediction(
     away_score: formData.get("away_score"),
     scorer_player_id: formData.get("scorer_player_id") || undefined,
     boost_multiplier: formData.get("boost_multiplier"),
-    boost_day: formData.get("boost_day") || undefined,
   });
 
   if (!parsed.success) {
@@ -40,12 +35,6 @@ export async function savePrediction(
 
   const supabase = await createClient();
   const { match_id, home_score, away_score, boost_multiplier } = parsed.data;
-  const boost_day =
-    boost_multiplier === 2 ? parsed.data.boost_day || null : null;
-
-  if (boost_multiplier === 2 && !boost_day) {
-    return { error: "Boost day is required when using x2" };
-  }
 
   let scorer_player_id = parsed.data.scorer_player_id || null;
   let scorer_name: string | null = null;
@@ -71,6 +60,12 @@ export async function savePrediction(
   if (new Date(match.kickoff_at) <= new Date()) {
     return { error: "Predictions are locked after kickoff" };
   }
+
+  // Derive the booster day on the server from the kickoff instant in UTC so it is
+  // timezone-invariant; never trust the client-supplied value (a user changing
+  // timezone could otherwise produce two distinct day keys for the same match-day).
+  const boost_day =
+    boost_multiplier === 2 ? getBoostDayKey(match.kickoff_at) : null;
 
   if (boost_multiplier === 2 && boost_day) {
     const { data: existingBoost } = await supabase

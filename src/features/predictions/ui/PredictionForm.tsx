@@ -23,7 +23,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreWheelPicker } from "@/components/ui/wheel-picker";
 import { cn } from "@/lib/utils";
-import { getDateGroupKey } from "@/shared/lib/formatDate";
+import { getBoostDayKey } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { sortPlayersForScorerSelect } from "@/shared/lib/sortPlayers";
 import { PlayerAvatar } from "@/shared/ui/PlayerAvatar";
@@ -220,7 +220,7 @@ export function PredictionForm({
 }: PredictionFormProps) {
   const t = useTranslations("predictions");
   const router = useRouter();
-  const boostDay = getDateGroupKey(kickoffAt);
+  const boostDay = getBoostDayKey(kickoffAt);
   const initialKey = initial
     ? `${initial.home_score}:${initial.away_score}:${initial.scorer_player_id ?? ""}:${initial.boost_multiplier}`
     : "";

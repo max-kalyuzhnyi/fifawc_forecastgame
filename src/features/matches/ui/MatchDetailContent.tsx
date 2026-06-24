@@ -32,7 +32,7 @@ import { PredictionForm } from "@/features/predictions/ui/PredictionForm";
 import {
   formatMatchKickoffDate,
   formatMatchTime,
-  getDateGroupKey,
+  getBoostDayKey,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
@@ -246,7 +246,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
     boostUsed ??
     getBoostUsedForDay(
       predictionMap ?? {},
-      getDateGroupKey(match.kickoff_at),
+      getBoostDayKey(match.kickoff_at),
       match.id,
     );
   const currentBoost =
