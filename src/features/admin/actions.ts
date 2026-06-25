@@ -12,6 +12,7 @@ import type {
   AdminProfile,
 } from "@/features/admin/lib/types";
 import { createClient } from "@/shared/lib/supabase/server";
+import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
 import { isAdmin } from "@/shared/lib/auth";
 import {
   buildPickReminderMessage,
@@ -257,12 +258,18 @@ async function loadCommunicationData(): Promise<{
   matches: AdminMatch[];
 }> {
   const supabase = await createClient();
-  const [{ data: profiles }, { data: predictions }, { data: matches }] =
+  const [{ data: profiles }, predictions, { data: matches }] =
     await Promise.all([
       supabase
         .from("profiles")
         .select("id, display_name, photo_url, telegram_id, locale, timezone"),
-      supabase.from("predictions").select("user_id, match_id"),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("predictions")
+          .select("user_id, match_id")
+          .order("id", { ascending: true })
+          .range(from, to),
+      ),
       supabase
         .from("matches")
         .select(
@@ -272,7 +279,7 @@ async function loadCommunicationData(): Promise<{
 
   return {
     profiles: (profiles ?? []) as AdminProfile[],
-    predictions: (predictions ?? []) as AdminPrediction[],
+    predictions: predictions as AdminPrediction[],
     matches: (matches ?? []) as AdminMatch[],
   };
 }

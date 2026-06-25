@@ -17,6 +17,7 @@ import { loadUserPredictionMap } from "@/features/predictions/lib/loadUserPredic
 import { MatchesView } from "@/features/matches/ui/MatchesView";
 import { getUpsets } from "@/shared/lib/onside/client";
 import { buildUpsetMatchIds } from "@/shared/lib/onside/upsets";
+import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import {
@@ -41,28 +42,38 @@ export default async function MatchesPage() {
 
   const [
     predictions,
-    { data: allPredictions },
+    allPredictions,
     { data: profiles },
     { data: players },
     { data: teams },
-    { data: matchEvents },
+    matchEvents,
   ] = await Promise.all([
     userId
       ? loadUserPredictionMap(supabase, userId)
       : Promise.resolve({} as Record<string, PredictionDetail>),
-    supabase
-      .from("predictions")
-      .select(
-        "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
-      ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("predictions")
+        .select(
+          "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
+        )
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
     supabase.from("profiles").select("id, display_name, photo_url"),
     fetchPlayersByTeamIds(supabase, teamIds).then((data) => ({ data })),
     supabase.from("teams").select("name, primary_color"),
-    supabase.from("match_events").select("*").order("minute", { ascending: true }),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("match_events")
+        .select("*")
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   const eventsByMatch: Record<string, MatchEvent[]> = {};
-  for (const event of matchEvents ?? []) {
+  for (const event of [...matchEvents].sort((a, b) => a.minute - b.minute)) {
     const list = eventsByMatch[event.match_id] ?? [];
     list.push(event as MatchEvent);
     eventsByMatch[event.match_id] = list;
@@ -71,7 +82,7 @@ export default async function MatchesPage() {
   const predictionMap = predictions;
 
   const voterMap = Object.fromEntries(
-    buildVoterMap(allPredictions ?? [], profiles ?? []),
+    buildVoterMap(allPredictions, profiles ?? []),
   );
 
   const playersByMatch = buildPlayersByMatch(
@@ -80,13 +91,13 @@ export default async function MatchesPage() {
   );
 
   const predictionsByMatch = buildPredictionsByMatch(
-    allPredictions ?? [],
+    allPredictions,
     profiles ?? [],
   );
 
   const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
     buildMatchScorers(
-      (matchEvents ?? []).map((event) => ({
+      matchEvents.map((event) => ({
         matchId: event.match_id,
         type: event.type,
         playerName: event.player_name,

@@ -4,6 +4,7 @@ import { AdminTabs } from "@/features/admin/ui/AdminTabs";
 import { buildUserPicks } from "@/features/admin/lib/buildUserPicks";
 import { findNextMatch } from "@/features/admin/lib/findNextMatch";
 import { splitPickers } from "@/features/admin/lib/splitPickers";
+import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
 import { createClient } from "@/shared/lib/supabase/server";
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { getCardAdminStats } from "@/features/cards/admin-actions";
@@ -21,11 +22,11 @@ export default async function AdminPage() {
   const [
     { data: matches },
     { data: teams },
-    { data: players },
+    players,
     { data: profiles },
-    { data: predictions },
+    predictions,
     { data: adminUsers },
-    { data: matchEvents },
+    matchEvents,
     { data: cards },
     cardStats,
   ] = await Promise.all([
@@ -36,24 +37,35 @@ export default async function AdminPage() {
       )
       .order("kickoff_at", { ascending: true }),
     supabase.from("teams").select("id, name, primary_color").order("name"),
-    supabase
-      .from("players")
-      .select("id, team_id, name, position, shirt_number, photo_url")
-      .order("name"),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("players")
+        .select("id, team_id, name, position, shirt_number, photo_url")
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
     supabase
       .from("profiles")
       .select("id, display_name, photo_url, telegram_id, locale, timezone")
       .order("display_name"),
-    supabase
-      .from("predictions")
-      .select(
-        "id, user_id, match_id, home_score, away_score, scorer_player_id, scorer_name, boost_multiplier, round_key",
-      ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("predictions")
+        .select(
+          "id, user_id, match_id, home_score, away_score, scorer_player_id, scorer_name, boost_multiplier, round_key",
+        )
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
     supabase.from("admin_users").select("user_id"),
-    supabase
-      .from("match_events")
-      .select("match_id, type, player_name")
-      .in("type", ["goal", "penalty"]),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("match_events")
+        .select("match_id, type, player_name")
+        .in("type", ["goal", "penalty"])
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
     supabase
       .from("cards")
       .select("id, player_id, display_name, image_url, rarity, is_legend, team_id")
@@ -64,11 +76,11 @@ export default async function AdminPage() {
 
   const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
   const playerPhotoById = new Map(
-    (players ?? []).map((player) => [player.id, player.photo_url]),
+    players.map((player) => [player.id, player.photo_url]),
   );
 
   const { namesByMatch: scorersByMatch } = buildMatchScorers(
-    (matchEvents ?? []).map((event) => ({
+    matchEvents.map((event) => ({
       matchId: event.match_id,
       type: event.type,
       playerName: event.player_name,
@@ -79,7 +91,7 @@ export default async function AdminPage() {
   const adminUserIds = new Set((adminUsers ?? []).map((row) => row.user_id));
   const matchList = matches ?? [];
   const profileList = profiles ?? [];
-  const predictionList = predictions ?? [];
+  const predictionList = predictions;
 
   const users = buildUserPicks(
     profileList,
@@ -103,7 +115,7 @@ export default async function AdminPage() {
       <AdminTabs
         teams={teams ?? []}
         matches={matchList}
-        players={players ?? []}
+        players={players}
         scorersByMatch={scorersByMatch}
         users={users}
         profiles={profileList}

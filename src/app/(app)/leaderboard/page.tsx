@@ -1,6 +1,7 @@
 import { buildLeaderboardAnalytics } from "@/features/leaderboard/lib/buildAnalytics";
 import { LeaderboardTabs } from "@/features/leaderboard/ui/LeaderboardTabs";
 import { getCurrentUserId } from "@/shared/lib/auth";
+import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
 import { createClient } from "@/shared/lib/supabase/server";
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { getTranslations } from "next-intl/server";
@@ -15,40 +16,54 @@ export default async function LeaderboardPage() {
 
   const [
     { data: matches },
-    { data: predictions },
+    predictions,
     { data: profiles },
-    { data: matchEvents },
-    { data: players },
+    matchEvents,
+    players,
   ] = await Promise.all([
     supabase
       .from("matches")
       .select("id, round_key, status, home_score, away_score"),
-    supabase
-      .from("predictions")
-      .select(
-        "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
-      ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("predictions")
+        .select(
+          "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
+        )
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
     supabase.from("profiles").select("id, display_name, photo_url"),
-    supabase
-      .from("match_events")
-      .select("match_id, type, player_name")
-      .in("type", ["goal", "penalty"]),
-    supabase.from("players").select("id, name"),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("match_events")
+        .select("match_id, type, player_name")
+        .in("type", ["goal", "penalty"])
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("players")
+        .select("id, name")
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
     buildMatchScorers(
-      (matchEvents ?? []).map((event) => ({
+      matchEvents.map((event) => ({
         matchId: event.match_id,
         type: event.type,
         playerName: event.player_name,
       })),
-      players ?? [],
+      players,
     );
 
   const analytics = buildLeaderboardAnalytics({
     matches: matches ?? [],
-    predictions: (predictions ?? []).map((prediction) => ({
+    predictions: predictions.map((prediction) => ({
       ...prediction,
       boost_multiplier: prediction.boost_multiplier as BoostMultiplier,
     })),
