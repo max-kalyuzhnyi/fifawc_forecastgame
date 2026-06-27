@@ -194,30 +194,26 @@ export function BracketOverlay() {
       aria-label={t("title")}
     >
       <header className="safe-top shrink-0 px-4 pt-2 pb-3">
-        <div className="relative flex items-center justify-center">
-          <button
-            type="button"
-            onClick={closeBracket}
-            className="absolute left-0 flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition-[transform,background-color] duration-200 hover:bg-white/15 active:scale-95 motion-reduce:transition-none"
-            aria-label={t("close")}
-          >
-            <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
-          </button>
-
-          <div className="flex flex-col items-center gap-1.5">
-            <div className="relative size-10 overflow-hidden rounded-full">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="relative size-9 shrink-0 overflow-hidden rounded-full">
               <Image
                 src="/fifa-logo.png"
                 alt=""
                 fill
                 className="object-contain"
-                sizes="40px"
+                sizes="36px"
                 priority
               />
             </div>
-            <p className="text-[13px] font-semibold tracking-wide text-white/90">
-              {t("tournamentTitle")}
-            </p>
+            <button
+              type="button"
+              onClick={closeBracket}
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-[transform,background-color] duration-200 hover:bg-white/15 active:scale-95 motion-reduce:transition-none"
+              aria-label={t("close")}
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+            </button>
           </div>
         </div>
       </header>
