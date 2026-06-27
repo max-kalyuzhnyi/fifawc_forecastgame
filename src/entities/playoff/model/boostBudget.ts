@@ -2,21 +2,12 @@ import { isGroupRoundKey } from "@/entities/match/model/types";
 
 export type PlayoffTier = 1 | 2 | 3 | 4;
 
-const BASELINE_BUDGET: Record<string, number> = {
-  round_of_32: 4,
-  round_of_16: 2,
-  quarter_final: 1,
-  semi_final: 0,
-};
-
-const TIER_BONUSES: Record<
-  PlayoffTier,
-  Partial<Record<string, number>>
-> = {
-  1: { semi_final: 1 },
-  2: { quarter_final: 2 },
-  3: { round_of_16: 3 },
-  4: { round_of_32: 1 },
+// Cumulative ladder per spec: each tier inherits lower tiers and adds one more stage.
+const TIER_BUDGET: Record<PlayoffTier, Record<string, number>> = {
+  1: { round_of_32: 5, round_of_16: 3, quarter_final: 2, semi_final: 1 },
+  2: { round_of_32: 5, round_of_16: 3, quarter_final: 2, semi_final: 0 },
+  3: { round_of_32: 5, round_of_16: 3, quarter_final: 1, semi_final: 0 },
+  4: { round_of_32: 5, round_of_16: 2, quarter_final: 1, semi_final: 0 },
 };
 
 export function getTierFromRank(rank: number): PlayoffTier {
@@ -38,9 +29,7 @@ export function getStageBoostBudget(
     return 0;
   }
 
-  const baseline = BASELINE_BUDGET[roundKey] ?? 0;
-  const bonus = TIER_BONUSES[tier][roundKey] ?? 0;
-  return baseline + bonus;
+  return TIER_BUDGET[tier][roundKey] ?? 0;
 }
 
 export function getBoostBudgetMatrix(): Record<
