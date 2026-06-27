@@ -9,7 +9,8 @@
     "leaderboard": "Leaderboard",
     "settings": "Settings",
     "cards": "Cards",
-    "admin": "Admin"
+    "admin": "Admin",
+    "brackets": "Brackets"
   },
   "common": {
     "save": "Save",
@@ -58,12 +59,16 @@
   "matches": {
     "scheduleTabs": "Match schedule",
     "tabPast": "Past",
+    "tabPlayoff": "Playoff",
+    "tabGroup": "Group",
     "tabUpcoming3days": "Next 3 days",
     "tabFuture": "Future",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "emptyTitle": "No matches",
     "emptyPast": "Nothing in past games.",
+    "emptyPlayoff": "No upcoming playoff matches.",
+    "emptyGroup": "No group-stage matches.",
     "emptyUpcoming3days": "Nothing in the next 3 days.",
     "emptyFuture": "Nothing scheduled further out.",
     "missed": "Missed",
@@ -114,6 +119,7 @@
       "PTS": "PTS"
     },
     "statistics": "Statistics",
+    "previousMatches": "Previous matches",
     "modelPrediction": "AI model prediction",
     "winProbability": "Win probability",
     "favourite": "Favourite",
@@ -173,6 +179,7 @@
     "boostNone": "None",
     "boostX2": "🔥 x2",
     "boostPerDay": "One boost per day",
+    "boostPerStage": "x2 left this round: {remaining}/{total}",
     "close": "Close",
     "position": {
       "GK": "Goalkeeper",
@@ -192,6 +199,8 @@
     "rank2": "2nd place",
     "rank3": "3rd place",
     "tabOverall": "Overall",
+    "tabPlayoff": "Playoff",
+    "groupRankBadge": "Group rank #{rank}",
     "tabStages": "By stage",
     "tabChart": "Trend",
     "tabSpecials": "Specials",
@@ -452,6 +461,59 @@
       "statsTitle": "Engagement",
       "usersActivated": "{count, plural, one {# user activated} other {# users activated}}",
       "usersRevealedDailyPack": "{count, plural, one {# user revealed daily pack} other {# users revealed daily pack}}"
+    }
+  },
+  "brackets": {
+    "title": "Brackets",
+    "tournamentTitle": "FIFA World Cup 2026",
+    "close": "Close brackets",
+    "loading": "Loading bracket…",
+    "loadError": "Could not load bracket data. Try again later.",
+    "pts": "PTS",
+    "tbd": "TBD",
+    "final": "Final",
+    "thirdPlace": "Third Place Match",
+    "prevStage": "Previous stage",
+    "nextStage": "Next stage",
+    "stages": {
+      "groups": "Group stage",
+      "round_of_32": "Round of 32",
+      "round_of_16": "Round of 16",
+      "quarter_final": "Quarter-finals",
+      "semi_final": "Semi-finals",
+      "final": "Final"
+    }
+  },
+  "playoff": {
+    "howTo": {
+      "trigger": "How it works",
+      "title": "Playoff scoring",
+      "description": "Playoff picks start fresh. Group-stage rank sets your boost tier.",
+      "close": "Got it",
+      "weightsTitle": "Round weights",
+      "boostsTitle": "x2 boost budget by stage",
+      "boostsIntro": "Your group-stage finish sets a tier with extra boosts on later rounds.",
+      "boostsNote": "Third-place and final matches do not allow boosts.",
+      "tiersIntro": "Tiers: top 3 = T1, ranks 4–8 = T2, ranks 9–14 = T3, everyone else = T4.",
+      "tierColumn": "Tier",
+      "roundOf32": "R32",
+      "roundOf16": "R16",
+      "quarterFinal": "QF",
+      "semiFinal": "SF",
+      "tiers": {
+        "t1": "T1 · Top 3",
+        "t2": "T2 · 4–8",
+        "t3": "T3 · 9–14",
+        "t4": "T4 · 15+"
+      },
+      "rounds": {
+        "round_of_32": "Round of 32",
+        "round_of_16": "Round of 16",
+        "quarter_final": "Quarter-finals",
+        "semi_final": "Semi-finals",
+        "third_place": "Third place",
+        "final": "Final"
+      }
     }
   },
   "errors": {

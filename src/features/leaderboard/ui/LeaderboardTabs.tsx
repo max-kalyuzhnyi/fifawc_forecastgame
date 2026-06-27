@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { LeaderboardAnalytics } from "@/features/leaderboard/lib/buildAnalytics";
 import { LeaderboardNomineesTab } from "@/features/leaderboard/ui/LeaderboardNomineesTab";
 import { LeaderboardOverallTable } from "@/features/leaderboard/ui/LeaderboardOverallTable";
+import { LeaderboardPlayoffTable } from "@/features/leaderboard/ui/LeaderboardPlayoffTable";
 import { LeaderboardPositionChart } from "@/features/leaderboard/ui/LeaderboardPositionChart";
 import { LeaderboardStageTable } from "@/features/leaderboard/ui/LeaderboardStageTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,15 +14,61 @@ interface LeaderboardTabsProps {
   analytics: LeaderboardAnalytics;
   currentUserId?: string | null;
   canSeePlayerNames: boolean;
+  showPlayoffUi?: boolean;
 }
 
 export function LeaderboardTabs({
   analytics,
   currentUserId,
   canSeePlayerNames,
+  showPlayoffUi = false,
 }: LeaderboardTabsProps) {
   const t = useTranslations("leaderboard");
-  const [activeTab, setActiveTab] = useState("overall");
+  const [activeTab, setActiveTab] = useState(
+    showPlayoffUi ? "playoff" : "overall",
+  );
+
+  if (showPlayoffUi) {
+    return (
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col"
+      >
+        <div className="shrink-0 border-b border-white/[0.08] px-3 py-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="playoff">{t("tabPlayoff")}</TabsTrigger>
+            <TabsTrigger value="specials">{t("tabSpecials")}</TabsTrigger>
+            <TabsTrigger value="overall">{t("tabOverall")}</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <div className="mt-0">
+          {activeTab === "playoff" && (
+            <LeaderboardPlayoffTable
+              entries={analytics.playoffOverall}
+              currentUserId={currentUserId}
+              canSeePlayerNames={canSeePlayerNames}
+            />
+          )}
+          {activeTab === "specials" && (
+            <LeaderboardNomineesTab
+              nominees={analytics.nominees}
+              currentUserId={currentUserId}
+              canSeePlayerNames={canSeePlayerNames}
+            />
+          )}
+          {activeTab === "overall" && (
+            <LeaderboardOverallTable
+              entries={analytics.overall}
+              currentUserId={currentUserId}
+              canSeePlayerNames={canSeePlayerNames}
+            />
+          )}
+        </div>
+      </Tabs>
+    );
+  }
 
   return (
     <Tabs

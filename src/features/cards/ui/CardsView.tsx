@@ -140,7 +140,7 @@ export function CardsView({
           frameless
           hideHandle
           overlayClassName="bg-black/75"
-          className="items-center justify-center data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-none"
+          className="items-center justify-center p-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-none"
         >
           {previewCard && (
             <>
@@ -152,7 +152,7 @@ export function CardsView({
                 {t(`rarity.${previewCard.rarity}`)}
               </DrawerDescription>
               <div className="flex min-h-[70dvh] items-center justify-center px-4 py-8">
-                <CardTile card={previewCard} owned size="xl" />
+                <CardTile card={previewCard} owned bare size="xl" />
               </div>
             </>
           )}

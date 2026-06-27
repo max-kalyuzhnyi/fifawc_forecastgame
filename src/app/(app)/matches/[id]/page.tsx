@@ -13,6 +13,7 @@ import {
 import { buildMatchScorers } from "@/shared/lib/scorers";
 import { MatchDetailContent } from "@/features/matches/ui/MatchDetailContent";
 import { buildVoterMap } from "@/features/matches/lib/voterInfo";
+import { buildPreviousMatchesForMatch } from "@/features/matches/lib/previousMatches";
 import {
   buildPlayersByMatch,
   fetchPlayersByTeamIds,
@@ -58,6 +59,8 @@ export default async function MatchDetailPage({
     { data: teams },
     { data: matchEvents },
     { data: liveMatches },
+    { data: finishedMatches },
+    { data: userTierRow },
   ] = await Promise.all([
     userId
       ? loadUserPredictionMap(supabase, userId)
@@ -85,6 +88,14 @@ export default async function MatchDetailPage({
       .from("matches")
       .select("home_team_name, away_team_name, home_score, away_score, status")
       .eq("status", "live"),
+    supabase.from("matches").select("*").eq("status", "finished"),
+    userId
+      ? supabase
+          .from("playoff_tiers")
+          .select("tier")
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { tier: number } | null }),
   ]);
 
   const groupStanding = buildGroupStandings([typedMatch]).find(
@@ -111,6 +122,10 @@ export default async function MatchDetailPage({
     );
   const teamColors = buildTeamColorsMap(teams ?? []);
   const liveScoreByTeam = buildLiveScoreByTeam((liveMatches ?? []) as Match[]);
+  const previousMatches = buildPreviousMatchesForMatch(
+    typedMatch,
+    (finishedMatches ?? []) as Match[],
+  );
 
   const upsetsResponse = await getUpsets();
   const upsetMatchIds = upsetsResponse
@@ -139,8 +154,9 @@ export default async function MatchDetailPage({
         liveScoreByTeam={liveScoreByTeam}
         currentUserId={userId}
         teamColors={teamColors}
-        expanded
+        previousMatches={previousMatches}
         isUpsetWatch={isMatchUpsetWatch(typedMatch, upsetMatchIds)}
+        userTier={userTierRow?.tier ?? 4}
       />
     </div>
   );

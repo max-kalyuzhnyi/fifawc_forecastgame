@@ -26,6 +26,17 @@ const FD_TO_OUR_TEAM_NAME: Record<string, string> = {
   "Congo DR": "DR Congo",
 };
 
+const FD_STAGE_TO_ROUND_KEY: Record<string, string> = {
+  LAST_32: "round_of_32",
+  LAST_16: "round_of_16",
+  QUARTER_FINALS: "quarter_final",
+  SEMI_FINALS: "semi_final",
+  THIRD_PLACE: "third_place",
+  FINAL: "final",
+};
+
+const KNOCKOUT_KICKOFF_TOLERANCE_MS = 75 * 60 * 1000;
+
 type MatchStatus = "scheduled" | "live" | "finished";
 
 interface FdPerson {
@@ -97,7 +108,10 @@ interface FdMatch {
 interface DbMatch {
   id: string;
   fd_match_id: number | null;
+  round_key: string;
   kickoff_at: string;
+  home_team_id: string | null;
+  away_team_id: string | null;
   home_team_name: string;
   away_team_name: string;
   venue: string | null;
@@ -129,6 +143,30 @@ function normalizeFdTeamName(name: string): string {
   return FD_TO_OUR_TEAM_NAME[name] ?? name;
 }
 
+function isPlaceholderTeamName(name: string): boolean {
+  if (/[\/]/.test(name)) return true;
+  return /^[WL]?\d+[A-L]?$/.test(name) || /^\d[A-L]$/.test(name);
+}
+
+function isResolvableFdTeamName(name: string | null | undefined): boolean {
+  return name != null && name.trim() !== "";
+}
+
+function resolveTeamSide(
+  dbTeamName: string,
+  fdTeamName: string | null | undefined,
+  teamsByName: Map<string, string>,
+): { name: string; teamId: string | null } | null {
+  if (!isPlaceholderTeamName(dbTeamName)) return null;
+  if (!isResolvableFdTeamName(fdTeamName)) return null;
+
+  const resolvedName = normalizeFdTeamName(fdTeamName!);
+  return {
+    name: resolvedName,
+    teamId: teamsByName.get(resolvedName) ?? null,
+  };
+}
+
 function mapFdStatus(status: string): MatchStatus {
   switch (status) {
     case "IN_PLAY":
@@ -140,10 +178,6 @@ function mapFdStatus(status: string): MatchStatus {
     default:
       return "scheduled";
   }
-}
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function kickoffWithinTolerance(
@@ -300,6 +334,20 @@ function findDbMatch(
   );
   if (byTeamsAndTime) return byTeamsAndTime;
 
+  const roundKey = FD_STAGE_TO_ROUND_KEY[fdMatch.stage];
+  if (roundKey) {
+    const byStageAndKickoff = dbMatches.find(
+      (m) =>
+        m.round_key === roundKey &&
+        kickoffWithinTolerance(
+          fdMatch.utcDate,
+          m.kickoff_at,
+          KNOCKOUT_KICKOFF_TOLERANCE_MS,
+        ),
+    );
+    if (byStageAndKickoff) return byStageAndKickoff;
+  }
+
   return dbMatches.find(
     (m) =>
       kickoffWithinTolerance(fdMatch.utcDate, m.kickoff_at) &&
@@ -311,10 +359,8 @@ function findDbMatch(
 
 async function fetchFdMatches(
   token: string,
-  dateFrom: string,
-  dateTo: string,
 ): Promise<{ matches: FdMatch[]; requestsLeft: number | null }> {
-  const url = `${FD_API_BASE}/competitions/${WC_COMPETITION}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+  const url = `${FD_API_BASE}/competitions/${WC_COMPETITION}/matches`;
   const response = await fetch(url, {
     headers: fdHeaders(token),
   });
@@ -383,18 +429,8 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const tomorrow = new Date(now);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-
   try {
-    const { matches: fdMatches, requestsLeft } = await fetchFdMatches(
-      fdToken,
-      formatDate(yesterday),
-      formatDate(tomorrow),
-    );
+    const { matches: fdMatches, requestsLeft } = await fetchFdMatches(fdToken);
 
     if (requestsLeft !== null && requestsLeft <= 2) {
       return new Response(
@@ -408,15 +444,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: dbMatches, error: dbError } = await supabase
-      .from("matches")
-      .select(
-        "id, fd_match_id, kickoff_at, home_team_name, away_team_name, venue, fd_last_updated",
-      );
+    const [{ data: dbMatches, error: dbError }, { data: teams, error: teamsError }] =
+      await Promise.all([
+        supabase
+          .from("matches")
+          .select(
+            "id, fd_match_id, round_key, kickoff_at, home_team_id, away_team_id, home_team_name, away_team_name, venue, fd_last_updated",
+          ),
+        supabase.from("teams").select("id, name"),
+      ]);
 
     if (dbError) {
       throw dbError;
     }
+    if (teamsError) {
+      throw teamsError;
+    }
+
+    const teamsByName = new Map(
+      (teams ?? []).map((team) => [team.name, team.id]),
+    );
 
     let updated = 0;
     let skipped = 0;
@@ -441,9 +488,22 @@ Deno.serve(async (req) => {
         }
       }
 
+      const homeResolved = resolveTeamSide(
+        dbMatch.home_team_name,
+        effectiveMatch.homeTeam.name,
+        teamsByName,
+      );
+      const awayResolved = resolveTeamSide(
+        dbMatch.away_team_name,
+        effectiveMatch.awayTeam.name,
+        teamsByName,
+      );
+
       if (
         dbMatch.fd_last_updated &&
-        dbMatch.fd_last_updated === effectiveMatch.lastUpdated
+        dbMatch.fd_last_updated === effectiveMatch.lastUpdated &&
+        !homeResolved &&
+        !awayResolved
       ) {
         skipped++;
         continue;
@@ -467,6 +527,15 @@ Deno.serve(async (req) => {
 
       if (homeLineup) updatePayload.home_lineup = homeLineup;
       if (awayLineup) updatePayload.away_lineup = awayLineup;
+
+      if (homeResolved) {
+        updatePayload.home_team_name = homeResolved.name;
+        updatePayload.home_team_id = homeResolved.teamId;
+      }
+      if (awayResolved) {
+        updatePayload.away_team_name = awayResolved.name;
+        updatePayload.away_team_id = awayResolved.teamId;
+      }
 
       const { error: updateError } = await supabase
         .from("matches")

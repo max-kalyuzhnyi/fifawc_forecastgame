@@ -275,6 +275,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["match_scorers"]["Insert"]>;
         Relationships: [];
       };
+      playoff_tiers: {
+        Row: {
+          user_id: string;
+          group_rank: number;
+          tier: number;
+          group_points: number;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          group_rank: number;
+          tier: number;
+          group_points?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["playoff_tiers"]["Insert"]>;
+        Relationships: [];
+      };
       cards: {
         Row: {
           id: string;

@@ -117,4 +117,34 @@ describe("calculatePredictionPoints", () => {
     expect(result.scorerBonus).toBe(2);
     expect(result.totalPoints).toBe(10);
   });
+
+  it("applies round weight before boost multiplier", () => {
+    const result = calculatePredictionPoints({
+      predictedHome: 2,
+      predictedAway: 1,
+      actualHome: 2,
+      actualAway: 1,
+      predictedScorer: null,
+      actualScorers: [],
+      boostMultiplier: 2,
+      roundWeight: 3,
+    });
+    expect(result.basePoints).toBe(3);
+    expect(result.roundWeight).toBe(3);
+    expect(result.totalPoints).toBe(18);
+  });
+
+  it("defaults round weight to 1", () => {
+    const result = calculatePredictionPoints({
+      predictedHome: 1,
+      predictedAway: 0,
+      actualHome: 1,
+      actualAway: 0,
+      predictedScorer: null,
+      actualScorers: [],
+      boostMultiplier: 1,
+    });
+    expect(result.roundWeight).toBe(1);
+    expect(result.totalPoints).toBe(3);
+  });
 });

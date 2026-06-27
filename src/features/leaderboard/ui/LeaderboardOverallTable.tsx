@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { LeaderboardOverallEntry } from "@/features/leaderboard/lib/buildAnalytics";
 import { buildLeaderboardDisplayItems } from "@/features/leaderboard/lib/filterLeaderboardEntries";
@@ -13,6 +14,7 @@ interface LeaderboardOverallTableProps {
   entries: LeaderboardOverallEntry[];
   currentUserId?: string | null;
   canSeePlayerNames: boolean;
+  renderNameAccessory?: (entry: LeaderboardOverallEntry) => ReactNode;
 }
 
 function LeaderboardPointsCell({
@@ -53,6 +55,7 @@ export function LeaderboardOverallTable({
   entries,
   currentUserId,
   canSeePlayerNames,
+  renderNameAccessory,
 }: LeaderboardOverallTableProps) {
   const t = useTranslations("leaderboard");
   const tCommon = useTranslations("common");
@@ -155,6 +158,7 @@ export function LeaderboardOverallTable({
                 <p className="truncate text-[13px] font-medium leading-tight">
                   {entry.display_name}
                 </p>
+                {renderNameAccessory?.(entry)}
                 {isCurrentUser && (
                   <Badge
                     variant="secondary"

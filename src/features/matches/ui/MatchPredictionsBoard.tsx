@@ -1,6 +1,7 @@
 "use client";
 
 import type { Match } from "@/entities/match/model/types";
+import { getRoundWeight } from "@/entities/match/model/types";
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import { getInitials } from "@/features/matches/lib/voterInfo";
@@ -49,6 +50,7 @@ export function MatchPredictionsBoard({
             actualScorers,
             actualScorerPlayerIds,
             boostMultiplier: entry.boost_multiplier,
+            roundWeight: getRoundWeight(match.round_key),
           }).totalPoints
         : null;
 

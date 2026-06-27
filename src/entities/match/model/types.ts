@@ -81,3 +81,23 @@ export const ROUND_LABELS: Record<string, string> = {
   third_place: "Third Place",
   final: "Final",
 };
+
+export const ROUND_WEIGHTS: Record<string, number> = {
+  group_1: 1,
+  group_2: 1,
+  group_3: 1,
+  round_of_32: 1,
+  round_of_16: 1,
+  quarter_final: 2,
+  semi_final: 2,
+  third_place: 3,
+  final: 3,
+};
+
+export function getRoundWeight(roundKey: string): number {
+  return ROUND_WEIGHTS[roundKey] ?? 1;
+}
+
+export function isGroupRoundKey(roundKey: string): boolean {
+  return roundKey.startsWith("group_");
+}

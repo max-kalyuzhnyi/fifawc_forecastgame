@@ -8,7 +8,9 @@ import type {
 } from "@/entities/match/lib/standings";
 import type { Match } from "@/entities/match/model/types";
 import { loadMatchModel, type MatchModel } from "@/features/matches/actions";
+import type { PreviousMatchesByTeam } from "@/features/matches/lib/previousMatches";
 import { GroupStandingsCard } from "@/features/matches/ui/GroupStandingsList";
+import { MatchPreviousMatches } from "@/features/matches/ui/MatchPreviousMatches";
 import { UpsetWatchBadge } from "@/features/matches/ui/UpsetWatchBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
@@ -20,6 +22,7 @@ interface MatchStatisticsTabProps {
   groupStanding?: GroupStanding;
   liveScoreByTeam?: LiveScoreByTeam;
   isUpsetWatch?: boolean;
+  previousMatches?: PreviousMatchesByTeam;
 }
 
 type GroupFixture = NonNullable<OnsideTeamInfo["group_fixtures"]>[number];
@@ -353,6 +356,7 @@ export function MatchStatisticsTab({
   groupStanding,
   liveScoreByTeam,
   isUpsetWatch = false,
+  previousMatches,
 }: MatchStatisticsTabProps) {
   const t = useTranslations("matches");
   const [model, setModel] = useState<MatchModel | null | undefined>(undefined);
@@ -382,6 +386,15 @@ export function MatchStatisticsTab({
 
   return (
     <div className="flex flex-col gap-5">
+      {previousMatches ? (
+        <MatchPreviousMatches
+          homeTeamName={match.home_team_name}
+          awayTeamName={match.away_team_name}
+          home={previousMatches.home}
+          away={previousMatches.away}
+        />
+      ) : null}
+
       {groupStanding ? (
         <GroupStandingsCard
           group={groupStanding}

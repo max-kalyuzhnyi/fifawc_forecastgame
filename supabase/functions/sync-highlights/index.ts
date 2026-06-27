@@ -203,26 +203,6 @@ function titleHasKeyword(
   return keywords.some((keyword) => normalizedTitle.includes(keyword));
 }
 
-function videoMatchesFifaHighlight(
-  title: string,
-  publishedAt: string,
-  homeTeamName: string,
-  awayTeamName: string,
-  kickoffAt: string,
-): boolean {
-  if (!titleHasKeyword(title, ["highlight"])) {
-    return false;
-  }
-
-  return videoMatchesTeamsAndDate(
-    title,
-    publishedAt,
-    homeTeamName,
-    awayTeamName,
-    kickoffAt,
-  );
-}
-
 function videoMatchesSportTvSummary(
   title: string,
   publishedAt: string,
@@ -315,14 +295,6 @@ async function fetchRecentUploads(
   return items;
 }
 
-function scoreFifaHighlightTitle(title: string): number {
-  const normalized = normalizeForMatch(title);
-  if (normalized.includes("alt cast")) return 1;
-  if (normalized.startsWith("highlights")) return 10;
-  if (normalized.includes("highlight")) return 5;
-  return 0;
-}
-
 function scoreSportTvTitle(title: string): number {
   const normalized = normalizeForMatch(title);
   if (normalized.startsWith("resumo")) return 10;
@@ -374,7 +346,6 @@ function findBestVideoId(
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get("CRON_SECRET");
   const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY");
-  const fifaChannelId = Deno.env.get("FIFA_YT_CHANNEL_ID");
   const sportTvChannelId = Deno.env.get("SPORTTV_YT_CHANNEL_ID");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -382,7 +353,6 @@ Deno.serve(async (req) => {
   if (
     !cronSecret ||
     !youtubeApiKey ||
-    !fifaChannelId ||
     !supabaseUrl ||
     !serviceRoleKey
   ) {
@@ -412,7 +382,7 @@ Deno.serve(async (req) => {
         "id, home_team_name, away_team_name, kickoff_at, highlights_youtube_id, highlights_source",
       )
       .eq("status", "finished")
-      .or("highlights_youtube_id.is.null,highlights_source.eq.sporttv")
+      .is("highlights_youtube_id", null)
       .gte("kickoff_at", since.toISOString())
       .order("kickoff_at", { ascending: false })
       .limit(MAX_MATCHES_PER_RUN);
@@ -433,71 +403,22 @@ Deno.serve(async (req) => {
       ...matches.map((match) => new Date(match.kickoff_at).getTime()),
     );
 
-    const fifaUploadsPlaylistId = await fetchUploadsPlaylistId(youtubeApiKey, {
-      channelId: fifaChannelId,
-    });
-    const fifaUploads = await fetchRecentUploads(
+    const sportTvUploadsPlaylistId = await fetchUploadsPlaylistId(
       youtubeApiKey,
-      fifaUploadsPlaylistId,
+      sportTvChannelId
+        ? { channelId: sportTvChannelId }
+        : { forHandle: SPORTTV_CHANNEL_HANDLE },
+    );
+    const sportTvUploads = await fetchRecentUploads(
+      youtubeApiKey,
+      sportTvUploadsPlaylistId,
       oldestKickoffMs,
     );
 
-    const needsSportTvFallback = matches.some(
-      (match) => !match.highlights_youtube_id,
-    );
-
-    let sportTvUploads: YtPlaylistItem[] = [];
-    if (needsSportTvFallback) {
-      const sportTvUploadsPlaylistId = await fetchUploadsPlaylistId(
-        youtubeApiKey,
-        sportTvChannelId
-          ? { channelId: sportTvChannelId }
-          : { forHandle: SPORTTV_CHANNEL_HANDLE },
-      );
-      sportTvUploads = await fetchRecentUploads(
-        youtubeApiKey,
-        sportTvUploadsPlaylistId,
-        oldestKickoffMs,
-      );
-    }
-
-    let matchedFifa = 0;
     let matchedSportTv = 0;
     let updated = 0;
 
     for (const match of matches) {
-      const fifaVideoId = findBestVideoId(
-        fifaUploads,
-        match,
-        videoMatchesFifaHighlight,
-        scoreFifaHighlightTitle,
-      );
-
-      if (fifaVideoId) {
-        matchedFifa++;
-
-        const { error: updateError } = await supabase
-          .from("matches")
-          .update({
-            highlights_youtube_id: fifaVideoId,
-            highlights_source: "fifa" satisfies HighlightSource,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", match.id)
-          .or("highlights_youtube_id.is.null,highlights_source.eq.sporttv");
-
-        if (!updateError) {
-          updated++;
-        } else {
-          console.error("FIFA highlights update failed", match.id, updateError);
-        }
-        continue;
-      }
-
-      if (match.highlights_youtube_id) {
-        continue;
-      }
-
       const sportTvVideoId = findBestVideoId(
         sportTvUploads,
         match,
@@ -529,9 +450,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         pending: matches.length,
-        fifaUploadsScanned: fifaUploads.length,
         sportTvUploadsScanned: sportTvUploads.length,
-        matchedFifa,
         matchedSportTv,
         updated,
       }),

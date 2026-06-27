@@ -1,25 +1,6 @@
 import { Suspense } from "react";
-import type { Match, MatchEvent } from "@/entities/match/model/types";
-import {
-  buildPlayersByMatch,
-  fetchPlayersByTeamIds,
-  getMatchTeamIds,
-} from "@/features/matches/lib/playersByMatch";
-import {
-  buildPredictionsByMatch,
-} from "@/features/matches/lib/predictionsByMatch";
-import { buildMatchScorers } from "@/shared/lib/scorers";
-import { buildTeamColorsMap } from "@/features/matches/lib/teamColors";
-import { buildPlayerPhotosMap } from "@/features/matches/lib/playerPhotos";
-import { buildVoterMap } from "@/features/matches/lib/voterInfo";
-import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
-import { loadUserPredictionMap } from "@/features/predictions/lib/loadUserPredictionMap";
+import { loadMatchesBundle } from "@/features/matches/lib/loadMatchesBundle";
 import { MatchesView } from "@/features/matches/ui/MatchesView";
-import { getUpsets } from "@/shared/lib/onside/client";
-import { buildUpsetMatchIds } from "@/shared/lib/onside/upsets";
-import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
-import { createClient } from "@/shared/lib/supabase/server";
-import { getCurrentUserId } from "@/shared/lib/auth";
 import {
   Empty,
   EmptyDescription,
@@ -30,95 +11,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function MatchesPage() {
-  const supabase = await createClient();
-  const userId = await getCurrentUserId();
+  const bundle = await loadMatchesBundle();
 
-  const { data: matches } = await supabase
-    .from("matches")
-    .select("*")
-    .order("kickoff_at", { ascending: true });
-
-  const teamIds = getMatchTeamIds((matches ?? []) as Match[]);
-
-  const [
-    predictions,
-    allPredictions,
-    { data: profiles },
-    { data: players },
-    { data: teams },
-    matchEvents,
-  ] = await Promise.all([
-    userId
-      ? loadUserPredictionMap(supabase, userId)
-      : Promise.resolve({} as Record<string, PredictionDetail>),
-    fetchAllRows((from, to) =>
-      supabase
-        .from("predictions")
-        .select(
-          "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier, round_key",
-        )
-        .order("id", { ascending: true })
-        .range(from, to),
-    ),
-    supabase.from("profiles").select("id, display_name, photo_url"),
-    fetchPlayersByTeamIds(supabase, teamIds).then((data) => ({ data })),
-    supabase.from("teams").select("name, primary_color"),
-    fetchAllRows((from, to) =>
-      supabase
-        .from("match_events")
-        .select("*")
-        .order("id", { ascending: true })
-        .range(from, to),
-    ),
-  ]);
-
-  const eventsByMatch: Record<string, MatchEvent[]> = {};
-  for (const event of [...matchEvents].sort((a, b) => a.minute - b.minute)) {
-    const list = eventsByMatch[event.match_id] ?? [];
-    list.push(event as MatchEvent);
-    eventsByMatch[event.match_id] = list;
-  }
-
-  const predictionMap = predictions;
-
-  const voterMap = Object.fromEntries(
-    buildVoterMap(allPredictions, profiles ?? []),
-  );
-
-  const playersByMatch = buildPlayersByMatch(
-    (matches ?? []) as Match[],
-    players ?? [],
-  );
-
-  const predictionsByMatch = buildPredictionsByMatch(
-    allPredictions,
-    profiles ?? [],
-  );
-
-  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
-    buildMatchScorers(
-      matchEvents.map((event) => ({
-        matchId: event.match_id,
-        type: event.type,
-        playerName: event.player_name,
-      })),
-      players ?? [],
-    );
-  const teamColors = buildTeamColorsMap(teams ?? []);
-  const playerPhotosByTeam = buildPlayerPhotosMap(
-    (players ?? []).map((player) => ({
-      team_id: player.team_id,
-      shirt_number: player.shirt_number,
-      photo_url: player.photo_url,
-    })),
-  );
-
-  const upsetsResponse = await getUpsets();
-  const upsetMatchIds = upsetsResponse
-    ? [...buildUpsetMatchIds((matches ?? []) as Match[], upsetsResponse.upsets)]
-    : [];
-
-  if (!matches || matches.length === 0) {
+  if (bundle.matches.length === 0) {
     return (
       <Empty className="glass corner-squircle mt-4 rounded-3xl border-0">
         <EmptyHeader>
@@ -138,18 +33,20 @@ export default async function MatchesPage() {
   return (
     <Suspense>
       <MatchesView
-        serverMatches={matches as Match[]}
-        voterMap={voterMap}
-        predictionMap={predictionMap}
-        playersByMatch={playersByMatch}
-        predictionsByMatch={predictionsByMatch}
-        scorersByMatch={scorersByMatch}
-        scorerPlayerIdsByMatch={scorerPlayerIdsByMatch}
-        eventsByMatch={eventsByMatch}
-        currentUserId={userId}
-        teamColors={teamColors}
-        playerPhotosByTeam={playerPhotosByTeam}
-        upsetMatchIds={upsetMatchIds}
+        serverMatches={bundle.matches}
+        voterMap={bundle.voterMap}
+        predictionMap={bundle.predictionMap}
+        playersByMatch={bundle.playersByMatch}
+        predictionsByMatch={bundle.predictionsByMatch}
+        scorersByMatch={bundle.scorersByMatch}
+        scorerPlayerIdsByMatch={bundle.scorerPlayerIdsByMatch}
+        eventsByMatch={bundle.eventsByMatch}
+        currentUserId={bundle.currentUserId}
+        teamColors={bundle.teamColors}
+        playerPhotosByTeam={bundle.playerPhotosByTeam}
+        upsetMatchIds={bundle.upsetMatchIds}
+        showPlayoffUi={bundle.showPlayoffUi}
+        userTier={bundle.userTier}
       />
     </Suspense>
   );

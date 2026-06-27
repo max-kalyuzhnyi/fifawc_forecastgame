@@ -1,4 +1,5 @@
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
+import { getRoundWeight, isGroupRoundKey } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 
 export const STAGE_ORDER = [
@@ -50,6 +51,8 @@ export interface LeaderboardOverallEntry extends LeaderboardPlayer {
   live_points_delta: number;
   predictions_count: number;
   rank: number;
+  group_rank?: number | null;
+  tier?: number | null;
 }
 
 export interface LeaderboardStageEntry extends LeaderboardPlayer {
@@ -78,6 +81,7 @@ export interface LeaderboardNominees {
 export interface LeaderboardAnalytics {
   stages: string[];
   overall: LeaderboardOverallEntry[];
+  playoffOverall: LeaderboardOverallEntry[];
   perStage: Record<string, LeaderboardStageEntry[]>;
   positionSeries: Record<string, PositionSeriesPoint[]>;
   nominees: LeaderboardNominees;
@@ -89,7 +93,9 @@ interface PlayerStats {
   display_name: string;
   photo_url: string | null;
   totalPoints: number;
+  playoffPoints: number;
   livePoints: number;
+  playoffLivePoints: number;
   totalPicks: number;
   goldenBootCount: number;
   eagleEyeCount: number;
@@ -162,9 +168,19 @@ export function buildLeaderboardAnalytics(input: {
   profiles: ProfileForAnalytics[];
   scorersByMatch: Record<string, string[]>;
   scorerPlayerIdsByMatch?: Record<string, string[]>;
+  playoffTiers?: Record<
+    string,
+    { group_rank: number; tier: number; group_points: number }
+  >;
 }): LeaderboardAnalytics {
-  const { matches, predictions, profiles, scorersByMatch, scorerPlayerIdsByMatch } =
-    input;
+  const {
+    matches,
+    predictions,
+    profiles,
+    scorersByMatch,
+    scorerPlayerIdsByMatch,
+    playoffTiers = {},
+  } = input;
 
   const matchMap = new Map(matches.map((match) => [match.id, match]));
   const scoredMatchIds = new Set(
@@ -191,7 +207,9 @@ export function buildLeaderboardAnalytics(input: {
       display_name: profile.display_name,
       photo_url: profile.photo_url,
       totalPoints: 0,
+      playoffPoints: 0,
       livePoints: 0,
+      playoffLivePoints: 0,
       totalPicks: 0,
       goldenBootCount: 0,
       eagleEyeCount: 0,
@@ -214,6 +232,9 @@ export function buildLeaderboardAnalytics(input: {
     const isLive = liveMatchIds.has(prediction.match_id);
     if (!isScored && !isLive) continue;
 
+    const roundWeight = getRoundWeight(match.round_key);
+    const isPlayoffMatch = !isGroupRoundKey(match.round_key);
+
     const breakdown = calculatePredictionPoints({
       predictedHome: prediction.home_score,
       predictedAway: prediction.away_score,
@@ -225,6 +246,7 @@ export function buildLeaderboardAnalytics(input: {
       actualScorerPlayerIds:
         scorerPlayerIdsByMatch?.[prediction.match_id] ?? [],
       boostMultiplier: prediction.boost_multiplier,
+      roundWeight,
     });
     const points = breakdown.totalPoints;
 
@@ -240,9 +262,12 @@ export function buildLeaderboardAnalytics(input: {
       }
       const subtotal = breakdown.basePoints + breakdown.scorerBonus;
       player.boostHunterPoints +=
-        subtotal * (breakdown.boostMultiplier - 1);
+        subtotal * roundWeight * (breakdown.boostMultiplier - 1);
 
       player.totalPoints += points;
+      if (isPlayoffMatch) {
+        player.playoffPoints += points;
+      }
 
       const stageKey = match.round_key;
       player.stagePoints.set(
@@ -255,22 +280,57 @@ export function buildLeaderboardAnalytics(input: {
       );
     } else {
       player.livePoints += points;
+      if (isPlayoffMatch) {
+        player.playoffLivePoints += points;
+      }
     }
   }
 
   const players = [...playerMap.values()];
 
+  const mapOverallEntry = (
+    player: PlayerStats,
+    pointsKey: "totalPoints" | "playoffPoints",
+    liveKey: "livePoints" | "playoffLivePoints",
+  ): LeaderboardOverallEntry => {
+    const tierInfo = playoffTiers[player.user_id];
+    return {
+      user_id: player.user_id,
+      display_name: player.display_name,
+      photo_url: player.photo_url,
+      total_points: player[pointsKey],
+      live_points_delta: player[liveKey],
+      predictions_count: player.totalPicks,
+      rank: 0,
+      group_rank: tierInfo?.group_rank ?? null,
+      tier: tierInfo?.tier ?? null,
+    };
+  };
+
   const overall = assignRanks(
     players
-      .map((player) => ({
-        user_id: player.user_id,
-        display_name: player.display_name,
-        photo_url: player.photo_url,
-        total_points: player.totalPoints,
-        live_points_delta: player.livePoints,
-        predictions_count: player.totalPicks,
-        rank: 0,
-      }))
+      .map((player) => mapOverallEntry(player, "totalPoints", "livePoints"))
+      .sort((a, b) =>
+        compareRanked(
+          {
+            points: a.total_points + a.live_points_delta,
+            picks: a.predictions_count,
+            display_name: a.display_name,
+          },
+          {
+            points: b.total_points + b.live_points_delta,
+            picks: b.predictions_count,
+            display_name: b.display_name,
+          },
+        ),
+      ),
+  );
+
+  const playoffOverall = assignRanks(
+    players
+      .map((player) =>
+        mapOverallEntry(player, "playoffPoints", "playoffLivePoints"),
+      )
       .sort((a, b) =>
         compareRanked(
           {
@@ -399,6 +459,7 @@ export function buildLeaderboardAnalytics(input: {
   return {
     stages: [...stages],
     overall,
+    playoffOverall,
     perStage,
     positionSeries,
     nominees,

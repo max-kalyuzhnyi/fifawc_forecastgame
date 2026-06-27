@@ -1,9 +1,11 @@
 import { buildLeaderboardAnalytics } from "@/features/leaderboard/lib/buildAnalytics";
 import { LeaderboardTabs } from "@/features/leaderboard/ui/LeaderboardTabs";
+import { PlayoffHowToTrigger } from "@/features/playoff/ui/PlayoffHowToTrigger";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { fetchAllRows } from "@/shared/lib/supabase/fetchAllRows";
 import { createClient } from "@/shared/lib/supabase/server";
 import { buildMatchScorers } from "@/shared/lib/scorers";
+import { hasPlayoffSchedule } from "@/shared/lib/playoff/config";
 import { getTranslations } from "next-intl/server";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 
@@ -13,13 +15,13 @@ export default async function LeaderboardPage() {
   const supabase = await createClient();
   const userId = await getCurrentUserId();
   const t = await getTranslations("leaderboard");
-
   const [
     { data: matches },
     predictions,
     { data: profiles },
     matchEvents,
     players,
+    { data: playoffTierRows },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -49,7 +51,10 @@ export default async function LeaderboardPage() {
         .order("id", { ascending: true })
         .range(from, to),
     ),
+    supabase.from("playoff_tiers").select("user_id, group_rank, tier, group_points"),
   ]);
+
+  const showPlayoffUi = hasPlayoffSchedule(matches ?? []);
 
   const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
     buildMatchScorers(
@@ -61,6 +66,17 @@ export default async function LeaderboardPage() {
       players,
     );
 
+  const playoffTiers = Object.fromEntries(
+    (playoffTierRows ?? []).map((row) => [
+      row.user_id,
+      {
+        group_rank: row.group_rank,
+        tier: row.tier,
+        group_points: row.group_points,
+      },
+    ]),
+  );
+
   const analytics = buildLeaderboardAnalytics({
     matches: matches ?? [],
     predictions: predictions.map((prediction) => ({
@@ -70,6 +86,7 @@ export default async function LeaderboardPage() {
     profiles: profiles ?? [],
     scorersByMatch,
     scorerPlayerIdsByMatch,
+    playoffTiers,
   });
 
   return (
@@ -84,7 +101,9 @@ export default async function LeaderboardPage() {
               {t("description")}
             </p>
           </div>
-          {analytics.hasLiveMatches && (
+          <div className="flex shrink-0 items-center gap-2">
+            <PlayoffHowToTrigger showPlayoffUi={showPlayoffUi} />
+            {analytics.hasLiveMatches && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
               <span
                 className="size-1.5 shrink-0 rounded-full bg-red-400 animate-pulse"
@@ -92,13 +111,15 @@ export default async function LeaderboardPage() {
               />
               {t("live")}
             </span>
-          )}
+            )}
+          </div>
         </div>
 
         <LeaderboardTabs
           analytics={analytics}
           currentUserId={userId}
           canSeePlayerNames
+          showPlayoffUi={showPlayoffUi}
         />
       </div>
     </div>

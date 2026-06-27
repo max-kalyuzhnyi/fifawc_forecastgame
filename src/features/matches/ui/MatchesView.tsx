@@ -9,10 +9,12 @@ import {
 } from "@/entities/match/lib/standings";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
+import { isGroupRoundKey } from "@/entities/match/model/types";
 import type { MatchPlayerOption } from "@/features/matches/actions";
 import type { MatchVoterInfo } from "@/features/matches/lib/voterInfo";
 import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
+import { buildPreviousMatchesByMatch } from "@/features/matches/lib/previousMatches";
 import type { PredictionDetail } from "@/features/matches/lib/predictionDetail";
 import { GroupStandingsList } from "@/features/matches/ui/GroupStandingsList";
 import { LiveMinuteIndicator } from "@/features/matches/ui/LiveMinuteIndicator";
@@ -20,7 +22,6 @@ import { MatchDrawer } from "@/features/matches/ui/MatchDrawer";
 import { MatchHighlightsThumb } from "@/features/matches/ui/MatchHighlights";
 import { MatchVoters } from "@/features/matches/ui/MatchVoters";
 import { isMatchUpsetWatch } from "@/shared/lib/onside/upsets";
-import { Badge } from "@/components/ui/badge";
 import {
   Empty,
   EmptyDescription,
@@ -36,7 +37,9 @@ import {
   type MatchDayBucket,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
+import { MatchScoreDigit, MatchScoreStatus } from "@/shared/ui/MatchScoreDisplay";
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
+import { getRoundWeight } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import { cn } from "@/lib/utils";
@@ -44,6 +47,8 @@ import { setLiveRefreshPaused } from "@/shared/lib/liveRefreshPause";
 import { useLiveMatchUpdates } from "@/shared/lib/supabase/useLiveMatchUpdates";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
+import { PlayoffHowToTrigger } from "@/features/playoff/ui/PlayoffHowToTrigger";
+
 import type { Locale } from "@/shared/types/database";
 
 interface MatchesViewProps {
@@ -59,16 +64,159 @@ interface MatchesViewProps {
   teamColors: Record<string, string>;
   playerPhotosByTeam: PlayerPhotosByTeam;
   upsetMatchIds?: string[];
+  showPlayoffUi?: boolean;
+  userTier?: number;
 }
 
 const TAB_KEYS: MatchDayBucket[] = ["past", "upcoming3days", "future"];
+const PLAYOFF_TAB_KEYS = ["playoff", "past", "group"] as const;
+type PlayoffScheduleTab = (typeof PLAYOFF_TAB_KEYS)[number];
 
 const FLAG_SIZE = 28;
 const FEATURED_FLAG_SIZE = 40;
 const MATCH_CARD_MIN_H = "min-h-[7rem]";
 const FEATURED_MATCH_CARD_MIN_H = "min-h-[8rem]";
 const matchCardGridClassName =
-  "grid w-full grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] items-start gap-x-2";
+  "grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-2";
+
+function MatchCardScoreMeta({
+  prediction,
+  locked,
+  live,
+  finished,
+  points,
+  pickOnTrack,
+  t,
+}: {
+  prediction: PredictionDetail | undefined;
+  locked: boolean;
+  live: boolean;
+  finished: boolean;
+  points: number | null;
+  pickOnTrack: boolean;
+  t: ReturnType<typeof useTranslations<"matches">>;
+}) {
+  if (finished) {
+    if (prediction) {
+      return (
+        <span
+          className={cn(
+            "text-center text-[11px] font-semibold leading-none tabular-nums",
+            points && points > 0 ? "text-emerald-300" : "text-muted-foreground",
+          )}
+        >
+          {points && points > 0
+            ? t("ptsPositive", { count: points })
+            : t("pts", { count: points ?? 0 })}
+        </span>
+      );
+    }
+
+    if (!locked) {
+      return (
+        <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
+          {t("noPick")}
+        </span>
+      );
+    }
+
+    return null;
+  }
+
+  if (prediction) {
+    return (
+      <span
+        className={cn(
+          "w-full truncate text-center text-[11px] font-semibold leading-none tabular-nums",
+          live
+            ? pickOnTrack
+              ? "text-emerald-300"
+              : "text-red-300"
+            : "text-muted-foreground",
+        )}
+      >
+        {t("myPick")}{" "}
+        {formatMatchScore(prediction.home_score, prediction.away_score)}
+        {prediction.boost_multiplier > 1 && (
+          <span className="ml-0.5 font-medium opacity-80">
+            x{prediction.boost_multiplier}
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  if (!locked) {
+    return (
+      <span
+        className={cn(
+          "text-center text-[11px] font-medium leading-none",
+          live ? "text-red-300" : "text-muted-foreground",
+        )}
+      >
+        {t("noPick")}
+      </span>
+    );
+  }
+
+  return null;
+}
+
+function MatchCardTeamBlock({
+  name,
+  flagSize,
+  className,
+}: {
+  name: string;
+  flagSize: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex w-[5.5rem] shrink-0 flex-col items-center gap-1.5",
+        className,
+      )}
+    >
+      <TeamFlag name={name} size={flagSize} />
+      <span className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight text-white/85">
+        {name}
+      </span>
+    </div>
+  );
+}
+
+function isFinishedMatch(match: Match): boolean {
+  return (
+    match.status === "finished" &&
+    match.home_score !== null &&
+    match.away_score !== null
+  );
+}
+
+function getPlayoffTab(match: Match): PlayoffScheduleTab {
+  if (isGroupRoundKey(match.round_key)) {
+    return "group";
+  }
+  if (isFinishedMatch(match)) {
+    return "past";
+  }
+  return "playoff";
+}
+
+function getDefaultPlayoffTab(matches: Match[]): PlayoffScheduleTab {
+  if (
+    matches.some(
+      (match) => getPlayoffTab(match) === "playoff" && !isLiveMatch(match),
+    )
+  ) {
+    return "playoff";
+  }
+  if (matches.some((match) => getPlayoffTab(match) === "past")) {
+    return "past";
+  }
+  return "group";
+}
 
 function isLiveMatch(match: Match): boolean {
   return (
@@ -103,162 +251,6 @@ function toggleCollapsed(
     next.add(dateKey);
   }
   return next;
-}
-
-function MatchTimeBadge({
-  kickoffAt,
-  locale,
-  live,
-  finished,
-  liveMinute,
-  t,
-}: {
-  kickoffAt: string;
-  locale: Locale;
-  live: boolean;
-  finished: boolean;
-  liveMinute: string | null;
-  t: ReturnType<typeof useTranslations<"matches">>;
-}) {
-  return (
-    <Badge
-      variant="secondary"
-      className={cn(
-        "h-4 shrink-0 rounded-md border-0 bg-white/10 px-1.5 text-[10px] font-medium text-foreground",
-        !live && !finished && "tabular-nums",
-      )}
-    >
-      {live ? (
-        <LiveMinuteIndicator
-          liveMinute={liveMinute}
-          liveLabel={t("live")}
-          className="text-red-300"
-        />
-      ) : finished ? (
-        t("finished")
-      ) : (
-        formatMatchTime(kickoffAt, locale)
-      )}
-    </Badge>
-  );
-}
-
-function MatchCenterFocus({
-  prediction,
-  locked,
-  live,
-  finished,
-  homeScore,
-  awayScore,
-  points,
-  featured = false,
-  t,
-}: {
-  prediction: PredictionDetail | undefined;
-  locked: boolean;
-  live: boolean;
-  finished: boolean;
-  homeScore: number;
-  awayScore: number;
-  points: number | null;
-  featured?: boolean;
-  t: ReturnType<typeof useTranslations<"matches">>;
-}) {
-  const scoreClassName = featured
-    ? "w-full text-center text-[20px] font-bold leading-none tabular-nums"
-    : "w-full text-center text-[17px] font-bold leading-none tabular-nums";
-
-  if (finished) {
-    return (
-      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
-        <p className={scoreClassName}>
-          {formatMatchScore(homeScore, awayScore)}
-        </p>
-        {prediction ? (
-          <span
-            className={cn(
-              "text-center text-[11px] font-semibold leading-none tabular-nums",
-              points && points > 0 ? "text-emerald-300" : "text-muted-foreground",
-            )}
-          >
-            {points && points > 0
-              ? t("ptsPositive", { count: points })
-              : t("pts", { count: points ?? 0 })}
-          </span>
-        ) : !locked ? (
-          <span className="text-center text-[11px] font-medium leading-none text-muted-foreground">
-            {t("noPick")}
-          </span>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (live) {
-    const pickOnTrack =
-      prediction &&
-      calculatePredictionPoints({
-        predictedHome: prediction.home_score,
-        predictedAway: prediction.away_score,
-        actualHome: homeScore,
-        actualAway: awayScore,
-        predictedScorer: prediction.scorer_name,
-        actualScorers: [],
-        boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
-      }).basePoints > 0;
-
-    return (
-      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
-        <p className={scoreClassName}>
-          {formatMatchScore(homeScore, awayScore)}
-        </p>
-        {prediction ? (
-          <span
-            className={cn(
-              "w-full truncate text-center text-[11px] font-semibold leading-none tabular-nums",
-              pickOnTrack ? "text-emerald-300" : "text-red-300",
-            )}
-          >
-            {t("myPick")}{" "}
-            {formatMatchScore(prediction.home_score, prediction.away_score)}
-            {prediction.boost_multiplier > 1 && (
-              <span className="ml-0.5 font-medium opacity-80">
-                x{prediction.boost_multiplier}
-              </span>
-            )}
-          </span>
-        ) : !locked ? (
-          <span className="text-center text-[11px] font-medium leading-none text-red-300">
-            {t("noPick")}
-          </span>
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
-      {prediction ? (
-        <>
-          <p className={cn(scoreClassName, "text-foreground/50")}>
-            {formatMatchScore(prediction.home_score, prediction.away_score)}
-            {prediction.boost_multiplier > 1 && (
-              <span className="ml-0.5 text-[11px] font-semibold text-foreground/35">
-                x{prediction.boost_multiplier}
-              </span>
-            )}
-          </p>
-          <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
-            {t("myPick")}
-          </span>
-        </>
-      ) : !locked ? (
-        <p className="text-center text-[13px] font-medium text-red-300">
-          {t("noPick")}
-        </p>
-      ) : null}
-    </div>
-  );
 }
 
 function formatMatchSubtitle(
@@ -321,13 +313,29 @@ function MatchCard({
           actualScorers: scorers,
           actualScorerPlayerIds: scorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+          roundWeight: getRoundWeight(match.round_key),
         }).totalPoints
       : null;
 
   const flagSize = featured ? FEATURED_FLAG_SIZE : FLAG_SIZE;
-  const teamNameClassName = featured
-    ? "line-clamp-2 w-full text-center text-[13px] font-medium leading-tight"
-    : "line-clamp-2 w-full text-center text-[11px] font-medium leading-tight";
+  const showScore = live || finished;
+  const liveMinute = formatLiveMinute(
+    match.minute ?? null,
+    match.injury_time ?? null,
+  );
+  const pickOnTrack =
+    live && prediction
+      ? calculatePredictionPoints({
+          predictedHome: prediction.home_score,
+          predictedAway: prediction.away_score,
+          actualHome: match.home_score ?? 0,
+          actualAway: match.away_score ?? 0,
+          predictedScorer: prediction.scorer_name,
+          actualScorers: [],
+          boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+          roundWeight: getRoundWeight(match.round_key),
+        }).basePoints > 0
+      : false;
 
   return (
     <button
@@ -346,11 +354,9 @@ function MatchCard({
           {!finished && <MatchVoters voters={voters} compact />}
         </div>
 
-        <div className="flex min-w-0 flex-col items-center gap-1">
-          <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
-            {formatMatchSubtitle(match, t)}
-          </p>
-        </div>
+        <p className="truncate text-center text-[11px] leading-tight text-muted-foreground">
+          {formatMatchSubtitle(match, t)}
+        </p>
 
         <div className="flex min-w-0 items-center justify-end gap-1">
           {isUpsetWatch && !finished ? (
@@ -362,48 +368,73 @@ function MatchCard({
               🔥
             </span>
           ) : null}
-          {!finished && (
-            <MatchTimeBadge
-              kickoffAt={match.kickoff_at}
-              locale={locale}
-              live={live}
-              finished={finished}
-              liveMinute={formatLiveMinute(
-                match.minute ?? null,
-                match.injury_time ?? null,
-              )}
-              t={t}
-            />
-          )}
         </div>
       </div>
 
       <div className={matchCardGridClassName}>
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <TeamFlag name={match.home_team_name} size={flagSize} />
-          <p className={teamNameClassName}>{match.home_team_name}</p>
+        <div className="flex min-w-0 items-start gap-1.5">
+          <MatchCardTeamBlock
+            name={match.home_team_name}
+            flagSize={flagSize}
+          />
+          {showScore && (
+            <MatchScoreDigit
+              value={match.home_score ?? 0}
+              size={flagSize}
+              className="ml-auto text-white"
+            />
+          )}
         </div>
 
-        <div className="flex min-w-0 flex-col items-center gap-2.5 self-center">
-          <MatchCenterFocus
+        <div className="flex shrink-0 flex-col items-center gap-1 self-start px-1">
+          <div
+            className="flex items-center justify-center"
+            style={{ height: flagSize }}
+          >
+            {live ? (
+              <LiveMinuteIndicator
+                liveMinute={liveMinute}
+                liveLabel={t("live")}
+                className="text-[11px] font-semibold text-red-300"
+              />
+            ) : finished ? (
+              match.highlights_youtube_id ? (
+                <MatchHighlightsThumb videoId={match.highlights_youtube_id} />
+              ) : (
+                <MatchScoreStatus className="text-[13px] text-foreground">
+                  {t("finished")}
+                </MatchScoreStatus>
+              )
+            ) : (
+              <span className="text-[15px] font-semibold leading-none tabular-nums text-foreground">
+                {formatMatchTime(match.kickoff_at, locale)}
+              </span>
+            )}
+          </div>
+          <MatchCardScoreMeta
             prediction={prediction}
             locked={locked}
             live={live}
             finished={finished}
-            homeScore={match.home_score ?? 0}
-            awayScore={match.away_score ?? 0}
             points={points}
-            featured={featured}
+            pickOnTrack={pickOnTrack}
             t={t}
           />
-          {finished && match.highlights_youtube_id && (
-            <MatchHighlightsThumb videoId={match.highlights_youtube_id} />
-          )}
         </div>
 
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <TeamFlag name={match.away_team_name} size={flagSize} />
-          <p className={teamNameClassName}>{match.away_team_name}</p>
+        <div className="flex min-w-0 items-start gap-1.5">
+          {showScore && (
+            <MatchScoreDigit
+              value={match.away_score ?? 0}
+              size={flagSize}
+              className="text-white"
+            />
+          )}
+          <MatchCardTeamBlock
+            name={match.away_team_name}
+            flagSize={flagSize}
+            className="ml-auto"
+          />
         </div>
       </div>
     </button>
@@ -423,6 +454,8 @@ export function MatchesView({
   teamColors,
   playerPhotosByTeam,
   upsetMatchIds = [],
+  showPlayoffUi = false,
+  userTier = 4,
 }: MatchesViewProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("matches");
@@ -457,6 +490,10 @@ export function MatchesView({
               minute: row.minute,
               injury_time: row.injury_time,
               fd_status: row.fd_status,
+              home_team_name: row.home_team_name,
+              away_team_name: row.away_team_name,
+              home_team_id: row.home_team_id,
+              away_team_id: row.away_team_id,
             }
           : match,
       ),
@@ -474,16 +511,29 @@ export function MatchesView({
     () => buildLiveScoreByTeam(matches),
     [matches],
   );
+  const previousMatchesByMatch = useMemo(
+    () => buildPreviousMatchesByMatch(matches),
+    [matches],
+  );
 
   const emptyTabDescription: Record<MatchDayBucket, string> = {
     past: t("emptyPast"),
     upcoming3days: t("emptyUpcoming3days"),
     future: t("emptyFuture"),
   };
+  const emptyPlayoffTabDescription: Record<PlayoffScheduleTab, string> = {
+    playoff: t("emptyPlayoff"),
+    past: t("emptyPast"),
+    group: t("emptyGroup"),
+  };
 
-  const [activeTab, setActiveTab] = useState<MatchDayBucket>(() =>
+  const [activeGroupTab, setActiveGroupTab] = useState<MatchDayBucket>(() =>
     getDefaultTab(matches),
   );
+  const [activePlayoffTab, setActivePlayoffTab] = useState<PlayoffScheduleTab>(
+    () => getDefaultPlayoffTab(matches),
+  );
+  const activeTab = showPlayoffUi ? activePlayoffTab : activeGroupTab;
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -496,17 +546,24 @@ export function MatchesView({
       return;
     }
 
-    const bucket = getMatchDayBucket(match);
+    const bucket = showPlayoffUi ? getPlayoffTab(match) : getMatchDayBucket(match);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- align tab with deep-linked match
-    setActiveTab(bucket);
-  }, [matches, selectedMatchId]);
+    if (showPlayoffUi) {
+      setActivePlayoffTab(bucket as PlayoffScheduleTab);
+    } else {
+      setActiveGroupTab(bucket as MatchDayBucket);
+    }
+  }, [matches, selectedMatchId, showPlayoffUi]);
 
   const liveMatches = useMemo(
     () =>
       matches
-        .filter(isLiveMatch)
+        .filter((match) =>
+          isLiveMatch(match) &&
+          (!showPlayoffUi || !isGroupRoundKey(match.round_key)),
+        )
         .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at)),
-    [matches],
+    [matches, showPlayoffUi],
   );
 
   const liveMatchIds = useMemo(
@@ -515,19 +572,29 @@ export function MatchesView({
   );
 
   const filteredMatches = useMemo(() => {
-    const list = matches.filter(
-      (match) =>
-        getMatchDayBucket(match) === activeTab &&
-        !liveMatchIds.has(match.id),
-    );
+    const list = matches.filter((match) => {
+      if (liveMatchIds.has(match.id)) {
+        return false;
+      }
 
-    const compareKickoff = (a: Match, b: Match) =>
-      activeTab === "past"
+      if (showPlayoffUi) {
+        return getPlayoffTab(match) === activePlayoffTab;
+      }
+
+      return getMatchDayBucket(match) === activeGroupTab;
+    });
+
+    const reverse =
+      activeTab === "past" ||
+      (showPlayoffUi && activePlayoffTab === "past") ||
+      (showPlayoffUi && activePlayoffTab === "group");
+
+    return list.sort((a, b) =>
+      reverse
         ? b.kickoff_at.localeCompare(a.kickoff_at)
-        : a.kickoff_at.localeCompare(b.kickoff_at);
-
-    return list.sort(compareKickoff);
-  }, [matches, activeTab, liveMatchIds]);
+        : a.kickoff_at.localeCompare(b.kickoff_at),
+    );
+  }, [matches, activeGroupTab, activePlayoffTab, liveMatchIds, showPlayoffUi, activeTab]);
 
   const drawerMatches = useMemo(
     () => [...liveMatches, ...filteredMatches],
@@ -601,7 +668,10 @@ export function MatchesView({
   );
 
   const groupedByDate = useMemo(() => {
-    const reverse = activeTab === "past";
+    const reverse =
+      activeTab === "past" ||
+      (showPlayoffUi &&
+        (activePlayoffTab === "past" || activePlayoffTab === "group"));
     const groups = new Map<string, Match[]>();
 
     for (const match of filteredMatches) {
@@ -619,7 +689,7 @@ export function MatchesView({
     return [...groups.entries()]
       .sort(([a], [b]) => (reverse ? b.localeCompare(a) : a.localeCompare(b)))
       .map(([dateKey, dayMatches]) => [dateKey, [...dayMatches].sort(compareKickoff)] as const);
-  }, [filteredMatches, activeTab]);
+  }, [filteredMatches, activeTab, activePlayoffTab, showPlayoffUi]);
 
   const openMatch = useCallback((matchId: string) => {
     setSelectedMatchId(matchId);
@@ -629,12 +699,12 @@ export function MatchesView({
     setSelectedMatchId(null);
   }, []);
 
-  const handleMatchChange = useCallback((matchId: string) => {
-    setSelectedMatchId(matchId);
-  }, []);
-
-  const handleTabChange = (tab: MatchDayBucket) => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: string) => {
+    if (showPlayoffUi) {
+      setActivePlayoffTab(tab as PlayoffScheduleTab);
+    } else {
+      setActiveGroupTab(tab as MatchDayBucket);
+    }
 
     if (!selectedMatchId) {
       return;
@@ -645,7 +715,9 @@ export function MatchesView({
       !match ||
       (isLiveMatch(match)
         ? false
-        : getMatchDayBucket(match) !== tab)
+        : showPlayoffUi
+          ? getPlayoffTab(match) !== tab
+          : getMatchDayBucket(match) !== tab)
     ) {
       setSelectedMatchId(null);
     }
@@ -655,14 +727,20 @@ export function MatchesView({
     <div className="flex flex-col">
       <div className="sports-panel corner-squircle sports-panel-max-h flex flex-col overflow-hidden">
         <div
-          className="flex shrink-0 border-b border-white/[0.08] px-3 pt-3 pb-2.5"
+          className="flex shrink-0 items-center justify-between gap-2 border-b border-white/[0.08] px-3 pt-3 pb-2.5"
           role="tablist"
           aria-label={t("scheduleTabs")}
         >
-          {TAB_KEYS.map((tabKey) => {
+          <div className="flex flex-1">
+          {(showPlayoffUi ? PLAYOFF_TAB_KEYS : TAB_KEYS).map((tabKey) => {
             const isActive = activeTab === tabKey;
-            const tabLabel =
-              tabKey === "past"
+            const tabLabel = showPlayoffUi
+              ? tabKey === "playoff"
+                ? t("tabPlayoff")
+                : tabKey === "group"
+                  ? t("tabGroup")
+                  : t("tabPast")
+              : tabKey === "past"
                 ? t("tabPast")
                 : tabKey === "upcoming3days"
                   ? t("tabUpcoming3days")
@@ -686,6 +764,8 @@ export function MatchesView({
               </button>
             );
           })}
+          </div>
+          <PlayoffHowToTrigger showPlayoffUi={showPlayoffUi} />
         </div>
 
         <div className="overflow-y-auto overscroll-contain">
@@ -698,7 +778,9 @@ export function MatchesView({
             <EmptyHeader>
               <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
               <EmptyDescription>
-                {emptyTabDescription[activeTab]}
+                {showPlayoffUi
+                  ? emptyPlayoffTabDescription[activePlayoffTab]
+                  : emptyTabDescription[activeGroupTab]}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -801,10 +883,17 @@ export function MatchesView({
         </div>
       </div>
 
-      <GroupStandingsList
-        groups={groupStandings}
-        liveScoreByTeam={liveScoreByTeam}
-      />
+      {!showPlayoffUi ? (
+        <GroupStandingsList
+          groups={groupStandings}
+          liveScoreByTeam={liveScoreByTeam}
+        />
+      ) : activePlayoffTab === "group" ? (
+        <GroupStandingsList
+          groups={groupStandings}
+          liveScoreByTeam={liveScoreByTeam}
+        />
+      ) : null}
 
       <MatchDrawer
         matches={drawerMatches}
@@ -820,9 +909,10 @@ export function MatchesView({
         teamColors={teamColors}
         groupStandingsByName={groupStandingsByName}
         liveScoreByTeam={liveScoreByTeam}
+        previousMatchesByMatch={previousMatchesByMatch}
         playerPhotosByTeam={playerPhotosByTeam}
         upsetMatchIds={upsetMatchIds}
-        onMatchChange={handleMatchChange}
+        userTier={userTier}
         onClose={closeMatch}
         onPredictionSaved={handlePredictionSaved}
       />

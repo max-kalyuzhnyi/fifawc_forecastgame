@@ -7,15 +7,19 @@ import type {
   LiveScoreByTeam,
 } from "@/entities/match/lib/standings";
 import type { Match, MatchEvent } from "@/entities/match/model/types";
+import { getRoundWeight } from "@/entities/match/model/types";
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 import { formatLiveMinute } from "@/entities/match/lib/formatLiveData";
 import type { MatchPlayerOption } from "@/features/matches/actions";
+import type { PreviousMatchesByTeam } from "@/features/matches/lib/previousMatches";
 import {
   getBoostUsedForDay,
+  getStageBoostBudgetStatus,
   toPredictionFormInitial,
   type BoostUsed,
   type PredictionDetail,
+  type StageBoostBudget,
 } from "@/features/matches/lib/predictionDetail";
 import type { MatchPredictionEntry } from "@/features/matches/lib/predictionsByMatch";
 import type { PlayerPhotosByTeam } from "@/features/matches/lib/playerPhotos";
@@ -35,6 +39,8 @@ import {
   getBoostDayKey,
 } from "@/shared/lib/formatDate";
 import { formatMatchScore } from "@/shared/lib/formatMatchScore";
+import { isPlayoffRoundKey } from "@/shared/lib/playoff/config";
+import { MatchScoreDigit, MatchScoreStatus } from "@/shared/ui/MatchScoreDisplay";
 import { TeamFlag } from "@/shared/ui/TeamFlag";
 import {
   Tabs,
@@ -52,6 +58,8 @@ interface MatchDetailContentProps {
   prediction?: PredictionDetail;
   predictionMap?: Record<string, PredictionDetail>;
   boostUsed?: BoostUsed;
+  stageBoostBudget?: StageBoostBudget;
+  userTier?: number;
   players: MatchPlayerOption[];
   playersLoading?: boolean;
   matchPredictions?: MatchPredictionEntry[];
@@ -64,8 +72,7 @@ interface MatchDetailContentProps {
   groupStanding?: GroupStanding;
   liveScoreByTeam?: LiveScoreByTeam;
   playerPhotosByTeam?: PlayerPhotosByTeam;
-  expanded?: boolean;
-  onRequestExpand?: () => void;
+  previousMatches?: PreviousMatchesByTeam;
   isUpsetWatch?: boolean;
   onPredictionSaved?: (prediction: PredictionDetail) => void;
 }
@@ -102,8 +109,6 @@ function MatchDetailCenterFocus({
   showScore,
   live,
   finished,
-  homeScore,
-  awayScore,
   points,
   pickOnTrack,
   kickoffAt,
@@ -116,8 +121,6 @@ function MatchDetailCenterFocus({
   showScore: boolean;
   live: boolean;
   finished: boolean;
-  homeScore: number;
-  awayScore: number;
   points: number | null;
   pickOnTrack: boolean;
   kickoffAt: string;
@@ -129,10 +132,20 @@ function MatchDetailCenterFocus({
     const hit = finished ? points !== null && points > 0 : pickOnTrack;
 
     return (
-      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 self-center">
-        <p className="w-full text-center text-3xl font-bold leading-none tabular-nums text-white">
-          {formatMatchScore(homeScore, awayScore)}
-        </p>
+      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1.5 self-center">
+        <div className="flex min-w-[2.75rem] justify-center px-0.5">
+          {live ? (
+            <LiveMinuteIndicator
+              liveMinute={liveMinute}
+              liveLabel={t("live")}
+              className="text-[11px] font-semibold text-red-300"
+            />
+          ) : finished ? (
+            <MatchScoreStatus className="text-white/70">
+              {t("finished")}
+            </MatchScoreStatus>
+          ) : null}
+        </div>
         {prediction ? (
           <span
             className={cn(
@@ -153,19 +166,13 @@ function MatchDetailCenterFocus({
             {t("noPick")}
           </span>
         ) : null}
-        {live ? (
-          <LiveMinuteIndicator
-            liveMinute={liveMinute}
-            liveLabel={t("live")}
-            className="text-[11px] font-medium text-red-300"
-          />
-        ) : (
+        {!live && !finished ? (
           <p className="text-center text-[11px] text-white/70">
             {formatMatchTime(kickoffAt, locale)}
             <span className="mx-1 text-white/35">·</span>
             {formatMatchKickoffDate(kickoffAt, locale)}
           </p>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -206,6 +213,8 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   prediction,
   predictionMap,
   boostUsed,
+  stageBoostBudget,
+  userTier = 4,
   players,
   playersLoading = false,
   matchPredictions = [],
@@ -218,8 +227,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   groupStanding,
   liveScoreByTeam,
   playerPhotosByTeam = {},
-  expanded = false,
-  onRequestExpand,
+  previousMatches,
   isUpsetWatch = false,
   onPredictionSaved,
 }: MatchDetailContentProps) {
@@ -242,13 +250,26 @@ export const MatchDetailContent = memo(function MatchDetailContent({
   );
   const defaultMatchTab =
     live || finished ? "predictions" : "statistics";
+  const isPlayoffMatch = isPlayoffRoundKey(match.round_key);
   const resolvedBoostUsed =
     boostUsed ??
-    getBoostUsedForDay(
-      predictionMap ?? {},
-      getBoostDayKey(match.kickoff_at),
-      match.id,
-    );
+    (isPlayoffMatch
+      ? { x2: false }
+      : getBoostUsedForDay(
+          predictionMap ?? {},
+          getBoostDayKey(match.kickoff_at),
+          match.id,
+        ));
+  const resolvedStageBoostBudget =
+    stageBoostBudget ??
+    (isPlayoffMatch
+      ? getStageBoostBudgetStatus(
+          predictionMap ?? {},
+          match.round_key,
+          userTier as 1 | 2 | 3 | 4,
+          match.id,
+        )
+      : undefined);
   const currentBoost =
     currentBoostProp ??
     ((prediction?.boost_multiplier ?? 1) as BoostMultiplier);
@@ -264,6 +285,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           actualScorers: matchScorers,
           actualScorerPlayerIds: matchScorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+          roundWeight: getRoundWeight(match.round_key),
         }).totalPoints
       : null;
   const pickOnTrack =
@@ -278,30 +300,19 @@ export const MatchDetailContent = memo(function MatchDetailContent({
           actualScorers: matchScorers,
           actualScorerPlayerIds: matchScorerPlayerIds,
           boostMultiplier: prediction.boost_multiplier as BoostMultiplier,
+          roundWeight: getRoundWeight(match.round_key),
         }).basePoints > 0
       : false;
 
   return (
-    <div
-      className={cn(
-        "match-drawer-card corner-squircle relative flex h-full w-full min-h-0 flex-col",
-        expanded && "rounded-none border-0 shadow-none",
-      )}
-    >
+    <div className="match-drawer-card corner-squircle relative flex h-full w-full min-h-0 flex-col rounded-none border-0 shadow-none">
       <MatchTeamBackground
         homeTeamName={match.home_team_name}
         awayTeamName={match.away_team_name}
         teamColors={teamColors}
       />
 
-      <div
-        className={cn(
-          "relative flex min-h-0 flex-1 flex-col px-4",
-          expanded
-            ? "overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
-            : "overflow-hidden pb-4 pt-2",
-        )}
-      >
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <section className="flex shrink-0 flex-col gap-2 pb-5">
           <div className="flex flex-col items-center gap-1.5">
             <p className="line-clamp-1 text-center text-[11px] uppercase tracking-wide text-white/70">
@@ -310,37 +321,83 @@ export const MatchDetailContent = memo(function MatchDetailContent({
             {isUpsetWatch ? <UpsetWatchBadge label={t("upsetWatch")} /> : null}
           </div>
 
-          <div className={matchDetailGridClassName}>
-            <div className="flex min-w-0 flex-col items-center gap-1.5">
-              <TeamFlag name={match.home_team_name} size={44} />
-              <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
-                {match.home_team_name}
-              </p>
-            </div>
+          {showScore ? (
+            <div className="flex w-full items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-center justify-start gap-3">
+                <div className="flex min-w-0 flex-col items-center gap-1.5">
+                  <TeamFlag name={match.home_team_name} size={44} />
+                  <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                    {match.home_team_name}
+                  </p>
+                </div>
+                <MatchScoreDigit
+                  value={match.home_score ?? 0}
+                  size={44}
+                  className="text-white"
+                />
+              </div>
 
-            <MatchDetailCenterFocus
-              prediction={prediction}
-              locked={locked}
-              showScore={showScore}
-              live={live}
-              finished={finished}
-              homeScore={match.home_score ?? 0}
-              awayScore={match.away_score ?? 0}
-              points={predictionPoints}
-              pickOnTrack={pickOnTrack}
-              kickoffAt={match.kickoff_at}
-              liveMinute={liveMinute}
-              locale={locale}
-              t={t}
-            />
+              <div className="flex w-[7rem] shrink-0 flex-col items-center">
+                <MatchDetailCenterFocus
+                  prediction={prediction}
+                  locked={locked}
+                  showScore={showScore}
+                  live={live}
+                  finished={finished}
+                  points={predictionPoints}
+                  pickOnTrack={pickOnTrack}
+                  kickoffAt={match.kickoff_at}
+                  liveMinute={liveMinute}
+                  locale={locale}
+                  t={t}
+                />
+              </div>
 
-            <div className="flex min-w-0 flex-col items-center gap-1.5">
-              <TeamFlag name={match.away_team_name} size={44} />
-              <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
-                {match.away_team_name}
-              </p>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+                <MatchScoreDigit
+                  value={match.away_score ?? 0}
+                  size={44}
+                  className="text-white"
+                />
+                <div className="flex min-w-0 flex-col items-center gap-1.5">
+                  <TeamFlag name={match.away_team_name} size={44} />
+                  <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                    {match.away_team_name}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={matchDetailGridClassName}>
+              <div className="flex min-w-0 flex-col items-center gap-1.5">
+                <TeamFlag name={match.home_team_name} size={44} />
+                <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                  {match.home_team_name}
+                </p>
+              </div>
+
+              <MatchDetailCenterFocus
+                prediction={prediction}
+                locked={locked}
+                showScore={showScore}
+                live={live}
+                finished={finished}
+                points={predictionPoints}
+                pickOnTrack={pickOnTrack}
+                kickoffAt={match.kickoff_at}
+                liveMinute={liveMinute}
+                locale={locale}
+                t={t}
+              />
+
+              <div className="flex min-w-0 flex-col items-center gap-1.5">
+                <TeamFlag name={match.away_team_name} size={44} />
+                <p className="line-clamp-2 w-full text-center text-sm font-semibold leading-tight text-white">
+                  {match.away_team_name}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col items-center gap-1">
             <p className="line-clamp-1 text-center text-xs text-white/65">
@@ -381,6 +438,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                   }
                   locked={false}
                   boostUsed={resolvedBoostUsed}
+                  stageBoostBudget={resolvedStageBoostBudget}
                   currentBoost={currentBoost}
                   onPredictionSaved={onPredictionSaved}
                 />
@@ -390,21 +448,8 @@ export const MatchDetailContent = memo(function MatchDetailContent({
         )}
 
         <section className="flex shrink-0 flex-col border-t border-white/10 py-5">
-          <Tabs
-            defaultValue={defaultMatchTab}
-            onValueChange={() => {
-              if (!expanded) {
-                onRequestExpand?.();
-              }
-            }}
-            className="flex flex-col gap-3"
-          >
+          <Tabs defaultValue={defaultMatchTab} className="flex flex-col gap-3">
             <TabsList
-              onClick={() => {
-                if (!expanded) {
-                  onRequestExpand?.();
-                }
-              }}
               indicatorVariant="underline"
               className="flex h-auto w-full shrink-0 justify-start gap-4 bg-transparent p-0 group-data-horizontal/tabs:h-auto"
             >
@@ -445,6 +490,7 @@ export const MatchDetailContent = memo(function MatchDetailContent({
                 groupStanding={groupStanding}
                 liveScoreByTeam={liveScoreByTeam}
                 isUpsetWatch={isUpsetWatch}
+                previousMatches={previousMatches}
               />
             </TabsContent>
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter_Tight } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
@@ -15,6 +16,14 @@ export const viewport: Viewport = {
 };
 
 const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-sans" });
+
+const sfScore = localFont({
+  src: "./fonts/SFScore-Compressed.woff2",
+  weight: "400 800",
+  style: "normal",
+  variable: "--font-score-family",
+  display: "swap",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
@@ -36,7 +45,12 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={cn("h-full antialiased", "font-sans", interTight.variable)}
+      className={cn(
+        "h-full antialiased",
+        "font-sans",
+        interTight.variable,
+        sfScore.variable,
+      )}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col text-foreground">

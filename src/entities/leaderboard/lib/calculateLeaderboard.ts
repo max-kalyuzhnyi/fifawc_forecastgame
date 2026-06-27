@@ -1,4 +1,5 @@
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
+import { getRoundWeight } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
 
 export interface LeaderboardPrediction {
@@ -26,8 +27,8 @@ export interface LeaderboardEntry {
 
 export function calculateLeaderboard(
   profiles: { id: string; display_name: string; photo_url?: string | null }[],
-  predictions: (LeaderboardPrediction & { match_id: string })[],
-  matches: Record<string, LeaderboardMatch>,
+  predictions: (LeaderboardPrediction & { match_id: string; round_key?: string })[],
+  matches: Record<string, LeaderboardMatch & { round_key?: string }>,
 ): LeaderboardEntry[] {
   const totals = new Map<string, LeaderboardEntry>();
 
@@ -58,6 +59,7 @@ export function calculateLeaderboard(
       predictedScorer: pred.scorer_name,
       actualScorers: match.scorers,
       boostMultiplier: pred.boost_multiplier,
+      roundWeight: getRoundWeight(match.round_key ?? pred.round_key ?? ""),
     });
 
     entry.total_points += result.totalPoints;

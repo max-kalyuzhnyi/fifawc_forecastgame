@@ -8,7 +8,14 @@ import {
   loadScoreSuggestions,
   type ScoreSuggestion,
 } from "@/features/matches/actions";
-import type { BoostUsed, PredictionDetail } from "@/features/matches/lib/predictionDetail";
+import type {
+  BoostUsed,
+  PredictionDetail,
+  StageBoostBudget,
+} from "@/features/matches/lib/predictionDetail";
+import { isStageBoostVisible } from "@/features/matches/lib/predictionDetail";
+import { isBoostAllowedStage } from "@/entities/playoff/model/boostBudget";
+import { isPlayoffRoundKey } from "@/shared/lib/playoff/config";
 import { savePrediction } from "../actions";
 import { ScorerPickerDrawer } from "./ScorerPickerDrawer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -54,6 +61,7 @@ interface PredictionFormProps {
   };
   locked: boolean;
   boostUsed: BoostUsed;
+  stageBoostBudget?: StageBoostBudget;
   currentBoost: BoostMultiplier;
   roundKey: string;
   onPredictionSaved?: (prediction: PredictionDetail) => void;
@@ -214,6 +222,7 @@ export function PredictionForm({
   initial,
   locked,
   boostUsed,
+  stageBoostBudget,
   currentBoost,
   roundKey,
   onPredictionSaved,
@@ -311,7 +320,11 @@ export function PredictionForm({
     players.filter((player) => player.team_id === awayTeamId),
   );
 
-  const showX2 = !boostUsed.x2 || currentBoost === 2;
+  const isPlayoffMatch = isPlayoffRoundKey(roundKey);
+  const showX2 = isPlayoffMatch
+    ? isStageBoostVisible(roundKey, stageBoostBudget, currentBoost)
+    : !boostUsed.x2 || currentBoost === 2;
+  const showBoostField = isPlayoffMatch ? isBoostAllowedStage(roundKey) : true;
   const boostTabTriggerClassName = cn(
     "h-full flex-1 !rounded-[10px] text-sm font-medium text-white/60 transition-colors",
     "hover:text-white/80",
@@ -433,35 +446,42 @@ export function PredictionForm({
           </FieldDescription>
         </Field>
 
-        <Field>
-          <FieldLabel className="text-xs font-medium text-white/70">
-            {t("boost")}
-          </FieldLabel>
-          <Tabs
-            value={boost}
-            onValueChange={(value) => {
-              if (value) setBoost(value);
-            }}
-          >
-            <TabsList
-              className="h-11 w-full gap-1 rounded-xl bg-white/10 p-1 group-data-horizontal/tabs:h-11"
-              indicatorVariant="none"
-              data-vaul-no-drag
+        {showBoostField ? (
+          <Field>
+            <FieldLabel className="text-xs font-medium text-white/70">
+              {t("boost")}
+            </FieldLabel>
+            <Tabs
+              value={boost}
+              onValueChange={(value) => {
+                if (value) setBoost(value);
+              }}
             >
-              <TabsTrigger value="1" className={boostTabTriggerClassName}>
-                {t("boostNone")}
-              </TabsTrigger>
-              {showX2 ? (
-                <TabsTrigger value="2" className={boostTabTriggerClassName}>
-                  {t("boostX2")}
+              <TabsList
+                className="h-11 w-full gap-1 rounded-xl bg-white/10 p-1 group-data-horizontal/tabs:h-11"
+                indicatorVariant="none"
+                data-vaul-no-drag
+              >
+                <TabsTrigger value="1" className={boostTabTriggerClassName}>
+                  {t("boostNone")}
                 </TabsTrigger>
-              ) : null}
-            </TabsList>
-          </Tabs>
-          <FieldDescription className="text-white/60">
-            {t("boostPerDay")}
-          </FieldDescription>
-        </Field>
+                {showX2 ? (
+                  <TabsTrigger value="2" className={boostTabTriggerClassName}>
+                    {t("boostX2")}
+                  </TabsTrigger>
+                ) : null}
+              </TabsList>
+            </Tabs>
+            <FieldDescription className="text-white/60">
+              {isPlayoffMatch && stageBoostBudget
+                ? t("boostPerStage", {
+                    remaining: stageBoostBudget.remaining,
+                    total: stageBoostBudget.budget,
+                  })
+                : t("boostPerDay")}
+            </FieldDescription>
+          </Field>
+        ) : null}
 
         {state?.error && (
           <Alert variant="destructive">

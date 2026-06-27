@@ -9,7 +9,8 @@
     "leaderboard": "Рейтинг",
     "settings": "Настройки",
     "cards": "Карточки",
-    "admin": "Админ"
+    "admin": "Админ",
+    "brackets": "Сетка"
   },
   "common": {
     "save": "Сохранить",
@@ -58,12 +59,16 @@
   "matches": {
     "scheduleTabs": "Расписание матчей",
     "tabPast": "Прошедшие",
+    "tabPlayoff": "Плей-офф",
+    "tabGroup": "Группа",
     "tabUpcoming3days": "3 дня",
     "tabFuture": "Позже",
     "today": "Сегодня",
     "tomorrow": "Завтра",
     "emptyTitle": "Нет матчей",
     "emptyPast": "Нет прошедших матчей.",
+    "emptyPlayoff": "Нет предстоящих матчей плей-офф.",
+    "emptyGroup": "Нет матчей группового этапа.",
     "emptyUpcoming3days": "Нет матчей в ближайшие 3 дня.",
     "emptyFuture": "Нет запланированных матчей.",
     "missed": "Пропуск",
@@ -114,6 +119,7 @@
       "PTS": "О"
     },
     "statistics": "Статистика",
+    "previousMatches": "Прошлые матчи",
     "modelPrediction": "Прогноз модели ИИ",
     "winProbability": "Вероятность исхода",
     "favourite": "Фаворит",
@@ -173,6 +179,7 @@
     "boostNone": "Нет",
     "boostX2": "🔥 x2",
     "boostPerDay": "Один буст в день",
+    "boostPerStage": "x2 осталось в этом раунде: {remaining}/{total}",
     "close": "Закрыть",
     "position": {
       "GK": "Вратарь",
@@ -192,6 +199,8 @@
     "rank2": "2-е место",
     "rank3": "3-е место",
     "tabOverall": "Рейтинг",
+    "tabPlayoff": "Плей-офф",
+    "groupRankBadge": "Место в группе #{rank}",
     "tabStages": "По турам",
     "tabChart": "Динамика",
     "tabSpecials": "Особое",
@@ -452,6 +461,59 @@
       "statsTitle": "Вовлечённость",
       "usersActivated": "{count, plural, one {# пользователь активировал} few {# пользователя активировали} many {# пользователей активировали} other {# пользователей активировали}}",
       "usersRevealedDailyPack": "{count, plural, one {# пользователь открыл ежедневный набор} few {# пользователя открыли ежедневный набор} many {# пользователей открыли ежедневный набор} other {# пользователей открыли ежедневный набор}}"
+    }
+  },
+  "brackets": {
+    "title": "Сетка",
+    "tournamentTitle": "FIFA World Cup 2026",
+    "close": "Закрыть сетку",
+    "loading": "Загрузка сетки…",
+    "loadError": "Не удалось загрузить данные сетки. Попробуйте позже.",
+    "pts": "О",
+    "tbd": "Уточняется",
+    "final": "Финал",
+    "thirdPlace": "Матч за 3-е место",
+    "prevStage": "Предыдущая стадия",
+    "nextStage": "Следующая стадия",
+    "stages": {
+      "groups": "Групповой этап",
+      "round_of_32": "1/16 финала",
+      "round_of_16": "1/8 финала",
+      "quarter_final": "Четвертьфинал",
+      "semi_final": "Полуфинал",
+      "final": "Финал"
+    }
+  },
+  "playoff": {
+    "howTo": {
+      "trigger": "Как это работает",
+      "title": "Правила плей-офф",
+      "description": "Очки плей-офф считаются с нуля. Место в группе определяет тир и бюджет бустов.",
+      "close": "Понятно",
+      "weightsTitle": "Веса раундов",
+      "boostsTitle": "Бюджет x2-бустов по стадиям",
+      "boostsIntro": "Место в групповом этапе задаёт тир и дополнительные бусты на поздних стадиях.",
+      "boostsNote": "На матч за 3-е место и финал бусты недоступны.",
+      "tiersIntro": "Тиры: топ-3 = T1, места 4–8 = T2, места 9–14 = T3, остальные = T4.",
+      "tierColumn": "Тир",
+      "roundOf32": "1/16",
+      "roundOf16": "1/8",
+      "quarterFinal": "1/4",
+      "semiFinal": "1/2",
+      "tiers": {
+        "t1": "T1 · Топ-3",
+        "t2": "T2 · 4–8",
+        "t3": "T3 · 9–14",
+        "t4": "T4 · 15+"
+      },
+      "rounds": {
+        "round_of_32": "1/16 финала",
+        "round_of_16": "1/8 финала",
+        "quarter_final": "Четвертьфинал",
+        "semi_final": "Полуфинал",
+        "third_place": "Матч за 3-е место",
+        "final": "Финал"
+      }
     }
   },
   "errors": {

@@ -49,7 +49,7 @@ async function loadActiveCatalog(
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase.from("teams").select("id, name"),
-    supabase.from("players").select("id, photo_url"),
+    supabase.from("players").select("id, photo_url, shirt_number"),
   ]);
 
   if (error) {
@@ -59,6 +59,9 @@ async function loadActiveCatalog(
   const teamNameById = new Map((teams ?? []).map((team) => [team.id, team.name]));
   const playerPhotoById = new Map(
     (players ?? []).map((player) => [player.id, player.photo_url]),
+  );
+  const playerShirtById = new Map(
+    (players ?? []).map((player) => [player.id, player.shirt_number]),
   );
 
   return (data ?? []).map((row) => ({
@@ -74,6 +77,9 @@ async function loadActiveCatalog(
       ? row.image_url
       : (row.image_url ??
         (row.player_id ? playerPhotoById.get(row.player_id) ?? null : null)),
+    shirtNumber: row.player_id
+      ? (playerShirtById.get(row.player_id) ?? null)
+      : null,
     isFullCardArt: isFullCardArtImageUrl(row.image_url),
     rarity: row.rarity,
     sortOrder: row.sort_order,

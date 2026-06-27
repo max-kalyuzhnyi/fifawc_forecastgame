@@ -1,0 +1,10 @@
+<svg width="512" height="768" viewBox="0 0 512 768" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bannerGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d2a35"/>
+      <stop offset="100%" stop-color="#06141a"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="600" width="448" height="128" rx="16" fill="url(#bannerGrad)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1.5"/>
+  <rect x="32" y="600" width="448" height="4" rx="2" fill="#f5d76e" fill-opacity="0.85"/>
+</svg>

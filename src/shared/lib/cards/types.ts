@@ -8,6 +8,7 @@ export interface CatalogCard {
   isLegend: boolean;
   displayName: string;
   imageUrl: string | null;
+  shirtNumber?: number | null;
   isFullCardArt?: boolean;
   rarity: CardRarity;
   sortOrder: number;

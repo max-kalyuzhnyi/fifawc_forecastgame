@@ -9,7 +9,8 @@
     "leaderboard": "Ranking",
     "settings": "Ustawienia",
     "cards": "Karty",
-    "admin": "Admin"
+    "admin": "Admin",
+    "brackets": "Drabinka"
   },
   "common": {
     "save": "Zapisz",
@@ -58,12 +59,16 @@
   "matches": {
     "scheduleTabs": "Terminarz meczów",
     "tabPast": "Minione",
+    "tabPlayoff": "Playoff",
+    "tabGroup": "Grupa",
     "tabUpcoming3days": "3 dni",
     "tabFuture": "Później",
     "today": "Dziś",
     "tomorrow": "Jutro",
     "emptyTitle": "Brak meczów",
     "emptyPast": "Brak rozegranych meczów.",
+    "emptyPlayoff": "Brak nadchodzących meczów pucharowych.",
+    "emptyGroup": "Brak meczów fazy grupowej.",
     "emptyUpcoming3days": "Brak meczów w najbliższe 3 dni.",
     "emptyFuture": "Brak zaplanowanych meczów.",
     "missed": "Pominięty",
@@ -114,6 +119,7 @@
       "PTS": "Pkt"
     },
     "statistics": "Statystyki",
+    "previousMatches": "Poprzednie mecze",
     "modelPrediction": "Prognoza modelu AI",
     "winProbability": "Prawdopodobieństwo wyniku",
     "favourite": "Faworyt",
@@ -173,6 +179,7 @@
     "boostNone": "Brak",
     "boostX2": "🔥 x2",
     "boostPerDay": "Jeden boost dziennie",
+    "boostPerStage": "x2 pozostało w tej rundzie: {remaining}/{total}",
     "close": "Zamknij",
     "position": {
       "GK": "Bramkarz",
@@ -192,6 +199,8 @@
     "rank2": "2. miejsce",
     "rank3": "3. miejsce",
     "tabOverall": "Ranking",
+    "tabPlayoff": "Playoff",
+    "groupRankBadge": "Miejsce w grupie #{rank}",
     "tabStages": "Po rundach",
     "tabChart": "Trend",
     "tabSpecials": "Specjalne",
@@ -449,6 +458,59 @@
       "resetButton": "Resetuj karty adminów",
       "resetConfirm": "Usunąć wszystkie paczki i karty adminów?",
       "resetSuccess": "Usunięto paczek: {packs}, wierszy kart: {cards}."
+    }
+  },
+  "brackets": {
+    "title": "Drabinka",
+    "tournamentTitle": "FIFA World Cup 2026",
+    "close": "Zamknij drabinkę",
+    "loading": "Ładowanie drabinki…",
+    "loadError": "Nie udało się załadować drabinki. Spróbuj ponownie później.",
+    "pts": "PKT",
+    "tbd": "Do ustalenia",
+    "final": "Finał",
+    "thirdPlace": "Mecz o 3. miejsce",
+    "prevStage": "Poprzednia runda",
+    "nextStage": "Następna runda",
+    "stages": {
+      "groups": "Faza grupowa",
+      "round_of_32": "1/16 finału",
+      "round_of_16": "1/8 finału",
+      "quarter_final": "Ćwierćfinał",
+      "semi_final": "Półfinał",
+      "final": "Finał"
+    }
+  },
+  "playoff": {
+    "howTo": {
+      "trigger": "Jak to działa",
+      "title": "Zasady fazy pucharowej",
+      "description": "Punkty playoff liczone są od zera. Miejsce w grupie ustala tier i budżet boostów.",
+      "close": "Rozumiem",
+      "weightsTitle": "Wagi rund",
+      "boostsTitle": "Budżet x2 boostów na rundę",
+      "boostsIntro": "Miejsce po fazie grupowej ustala tier i dodatkowe boosty w późniejszych rundach.",
+      "boostsNote": "Mecze o 3. miejsce i finał nie mają boostów.",
+      "tiersIntro": "Tiery: top 3 = T1, miejsca 4–8 = T2, miejsca 9–14 = T3, reszta = T4.",
+      "tierColumn": "Tier",
+      "roundOf32": "1/16",
+      "roundOf16": "1/8",
+      "quarterFinal": "1/4",
+      "semiFinal": "1/2",
+      "tiers": {
+        "t1": "T1 · Top 3",
+        "t2": "T2 · 4–8",
+        "t3": "T3 · 9–14",
+        "t4": "T4 · 15+"
+      },
+      "rounds": {
+        "round_of_32": "1/16 finału",
+        "round_of_16": "1/8 finału",
+        "quarter_final": "Ćwierćfinał",
+        "semi_final": "Półfinał",
+        "third_place": "Mecz o 3. miejsce",
+        "final": "Finał"
+      }
     }
   },
   "errors": {

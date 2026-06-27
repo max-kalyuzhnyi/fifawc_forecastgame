@@ -24,6 +24,7 @@ function mapCatalogRow(
   },
   teamNameById: Map<string, string>,
   playerPhotoById: Map<string, string | null>,
+  playerShirtById: Map<string, number | null>,
 ): CatalogCard {
   return {
     id: row.id,
@@ -38,6 +39,9 @@ function mapCatalogRow(
       ? row.image_url
       : (row.image_url ??
         (row.player_id ? playerPhotoById.get(row.player_id) ?? null : null)),
+    shirtNumber: row.player_id
+      ? (playerShirtById.get(row.player_id) ?? null)
+      : null,
     isFullCardArt: isFullCardArtImageUrl(row.image_url),
     rarity: row.rarity,
     sortOrder: row.sort_order,
@@ -77,7 +81,7 @@ export default async function CardsPage() {
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase.from("teams").select("id, name"),
-    supabase.from("players").select("id, photo_url"),
+    supabase.from("players").select("id, photo_url, shirt_number"),
     supabase
       .from("user_cards")
       .select("card_id, count, first_obtained_at")
@@ -114,9 +118,12 @@ export default async function CardsPage() {
   const playerPhotoById = new Map(
     (players ?? []).map((player) => [player.id, player.photo_url]),
   );
+  const playerShirtById = new Map(
+    (players ?? []).map((player) => [player.id, player.shirt_number]),
+  );
 
   const catalog = (catalogRows ?? []).map((row) =>
-    mapCatalogRow(row, teamNameById, playerPhotoById),
+    mapCatalogRow(row, teamNameById, playerPhotoById, playerShirtById),
   );
   const catalogById = new Map(catalog.map((card) => [card.id, card]));
 

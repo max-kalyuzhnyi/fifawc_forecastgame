@@ -2,9 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import {
+  getStageBoostBudget,
+  isBoostAllowedStage,
+  type PlayoffTier,
+} from "@/entities/playoff/model/boostBudget";
 import { createClient } from "@/shared/lib/supabase/server";
 import { getCurrentUserId } from "@/shared/lib/auth";
 import { getBoostDayKey } from "@/shared/lib/formatDate";
+import { isPlayoffRoundKey } from "@/shared/lib/playoff/config";
 
 const predictionSchema = z.object({
   match_id: z.string().uuid(),
@@ -64,20 +70,52 @@ export async function savePrediction(
   // Derive the booster day on the server from the kickoff instant in UTC so it is
   // timezone-invariant; never trust the client-supplied value (a user changing
   // timezone could otherwise produce two distinct day keys for the same match-day).
-  const boost_day =
-    boost_multiplier === 2 ? getBoostDayKey(match.kickoff_at) : null;
+  let boost_day: string | null = null;
 
-  if (boost_multiplier === 2 && boost_day) {
-    const { data: existingBoost } = await supabase
-      .from("predictions")
-      .select("id, match_id")
-      .eq("user_id", userId)
-      .eq("boost_day", boost_day)
-      .eq("boost_multiplier", 2)
-      .maybeSingle();
+  if (boost_multiplier === 2) {
+    if (isPlayoffRoundKey(match.round_key)) {
+      if (!isBoostAllowedStage(match.round_key)) {
+        return { error: "Boost is not available for this stage" };
+      }
 
-    if (existingBoost && existingBoost.match_id !== match_id) {
-      return { error: "Boost already used today on another match" };
+      const { data: tierRow } = await supabase
+        .from("playoff_tiers")
+        .select("tier")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const tier = (tierRow?.tier ?? 4) as PlayoffTier;
+      const budget = getStageBoostBudget(tier, match.round_key);
+
+      const { count, error: countError } = await supabase
+        .from("predictions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("round_key", match.round_key)
+        .eq("boost_multiplier", 2)
+        .neq("match_id", match_id);
+
+      if (countError) {
+        return { error: countError.message };
+      }
+
+      if ((count ?? 0) >= budget) {
+        return { error: "No x2 boosts remaining for this stage" };
+      }
+    } else {
+      boost_day = getBoostDayKey(match.kickoff_at);
+
+      const { data: existingBoost } = await supabase
+        .from("predictions")
+        .select("id, match_id")
+        .eq("user_id", userId)
+        .eq("boost_day", boost_day)
+        .eq("boost_multiplier", 2)
+        .maybeSingle();
+
+      if (existingBoost && existingBoost.match_id !== match_id) {
+        return { error: "Boost already used today on another match" };
+      }
     }
   }
 

@@ -97,7 +97,6 @@ export function TelegramLogin() {
     return (
       <p className="max-w-xs text-center text-xs text-muted-foreground">
         {isDev ? t("devLoginHint") : t("signingIn")}
-        <span className="mt-2 block">{t("signingIn")}</span>
       </p>
     );
   }

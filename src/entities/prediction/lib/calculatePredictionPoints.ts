@@ -11,11 +11,13 @@ export interface ScoreInput {
   actualScorers: string[];
   actualScorerPlayerIds?: string[];
   boostMultiplier: BoostMultiplier;
+  roundWeight?: number;
 }
 
 export interface ScoreBreakdown {
   basePoints: number;
   scorerBonus: number;
+  roundWeight: number;
   boostMultiplier: BoostMultiplier;
   totalPoints: number;
 }
@@ -59,11 +61,13 @@ export function calculatePredictionPoints(input: ScoreInput): ScoreBreakdown {
   }
 
   const subtotal = basePoints + scorerBonus;
-  const totalPoints = subtotal * input.boostMultiplier;
+  const roundWeight = input.roundWeight ?? 1;
+  const totalPoints = subtotal * roundWeight * input.boostMultiplier;
 
   return {
     basePoints,
     scorerBonus,
+    roundWeight,
     boostMultiplier: input.boostMultiplier,
     totalPoints,
   };
