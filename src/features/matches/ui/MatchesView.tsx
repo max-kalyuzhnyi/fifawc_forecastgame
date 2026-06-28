@@ -73,9 +73,7 @@ const PLAYOFF_TAB_KEYS = ["playoff", "past", "group"] as const;
 type PlayoffScheduleTab = (typeof PLAYOFF_TAB_KEYS)[number];
 
 const FLAG_SIZE = 28;
-const FEATURED_FLAG_SIZE = 40;
 const MATCH_CARD_MIN_H = "min-h-[7rem]";
-const FEATURED_MATCH_CARD_MIN_H = "min-h-[8rem]";
 const matchCardGridClassName =
   "grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-2";
 
@@ -277,7 +275,6 @@ function MatchCard({
   scorers,
   scorerPlayerIds,
   isSelected,
-  featured = false,
   isUpsetWatch = false,
   locale,
   t,
@@ -289,7 +286,6 @@ function MatchCard({
   scorers: string[];
   scorerPlayerIds: string[];
   isSelected: boolean;
-  featured?: boolean;
   isUpsetWatch?: boolean;
   locale: Locale;
   t: ReturnType<typeof useTranslations<"matches">>;
@@ -317,7 +313,7 @@ function MatchCard({
         }).totalPoints
       : null;
 
-  const flagSize = featured ? FEATURED_FLAG_SIZE : FLAG_SIZE;
+  const flagSize = FLAG_SIZE;
   const showScore = live || finished;
   const liveMinute = formatLiveMinute(
     match.minute ?? null,
@@ -344,7 +340,7 @@ function MatchCard({
       aria-pressed={isSelected}
       className={cn(
         "flex w-full flex-col justify-center px-3 py-2 text-left transition-colors hover:bg-white/[0.03]",
-        featured ? FEATURED_MATCH_CARD_MIN_H : MATCH_CARD_MIN_H,
+        MATCH_CARD_MIN_H,
         "border-t border-white/[0.08]",
         isSelected && "bg-white/[0.05]",
       )}
@@ -558,12 +554,9 @@ export function MatchesView({
   const liveMatches = useMemo(
     () =>
       matches
-        .filter((match) =>
-          isLiveMatch(match) &&
-          (!showPlayoffUi || !isGroupRoundKey(match.round_key)),
-        )
+        .filter((match) => isLiveMatch(match))
         .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at)),
-    [matches, showPlayoffUi],
+    [matches],
   );
 
   const liveMatchIds = useMemo(
@@ -810,7 +803,6 @@ export function MatchesView({
                     scorers={scorersByMatch[match.id] ?? []}
                     scorerPlayerIds={scorerPlayerIdsByMatch[match.id] ?? []}
                     isSelected={selectedMatchId === match.id}
-                    featured
                     isUpsetWatch={isMatchUpsetWatch(match, upsetMatchIds)}
                     locale={locale}
                     t={t}
