@@ -296,4 +296,112 @@ describe("buildLeaderboardAnalytics", () => {
       false,
     );
   });
+
+  it("derives tier from group-stage rank when playoff tiers are not snapshotted", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "m1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 2,
+          away_score: 1,
+        },
+        {
+          id: "m2",
+          round_key: "round_of_32",
+          status: "finished",
+          home_score: 1,
+          away_score: 0,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "m1",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-b",
+          match_id: "m1",
+          home_score: 1,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-a",
+          match_id: "m2",
+          home_score: 1,
+          away_score: 0,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: {},
+    });
+
+    expect(analytics.playoffOverall[0]).toMatchObject({
+      user_id: "user-a",
+      tier: 1,
+      group_rank: 1,
+    });
+    expect(analytics.playoffOverall[1]).toMatchObject({
+      user_id: "user-b",
+      tier: 1,
+      group_rank: 2,
+    });
+  });
+
+  it("prefers snapshotted playoff tiers over live group-stage rank", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "m1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 2,
+          away_score: 1,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "m1",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-b",
+          match_id: "m1",
+          home_score: 1,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: {},
+      playoffTiers: {
+        "user-b": { group_rank: 1, tier: 1, group_points: 99 },
+      },
+    });
+
+    const userB = analytics.playoffOverall.find((entry) => entry.user_id === "user-b");
+    expect(userB).toMatchObject({
+      tier: 1,
+      group_rank: 1,
+    });
+  });
 });

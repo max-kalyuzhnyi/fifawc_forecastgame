@@ -16,7 +16,7 @@ function getTierColorClass(tier: number): string {
 export function PlayoffTierNote({ tier }: PlayoffTierNoteProps) {
   const t = useTranslations("leaderboard");
 
-  if (!tier) {
+  if (tier == null) {
     return null;
   }
 
