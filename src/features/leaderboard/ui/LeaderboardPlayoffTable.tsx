@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { LeaderboardOverallEntry } from "@/features/leaderboard/lib/buildAnalytics";
 import { LeaderboardOverallTable } from "@/features/leaderboard/ui/LeaderboardOverallTable";
-import { PlayoffGroupTierNote } from "@/features/leaderboard/ui/PlayoffGroupTierNote";
+import { PlayoffTierNote } from "@/features/leaderboard/ui/PlayoffTierNote";
 
 interface LeaderboardPlayoffTableProps {
   entries: LeaderboardOverallEntry[];
@@ -31,10 +31,7 @@ export function LeaderboardPlayoffTable({
       currentUserId={currentUserId}
       canSeePlayerNames={canSeePlayerNames}
       renderNameAccessory={(entry) => (
-        <PlayoffGroupTierNote
-          groupRank={entry.group_rank}
-          tier={entry.tier}
-        />
+        <PlayoffTierNote tier={entry.tier} />
       )}
     />
   );

@@ -201,7 +201,6 @@
     "tabOverall": "Рейтинг",
     "tabPlayoff": "Плей-офф",
     "groupRankBadge": "Место в группе #{rank}",
-    "groupTierNote": "Групповой этап #{rank} · Тир {tier}",
     "tierNote": "Тир {tier}",
     "tabStages": "По турам",
     "tabChart": "Динамика",

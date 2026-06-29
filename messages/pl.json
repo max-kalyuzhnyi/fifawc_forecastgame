@@ -201,7 +201,6 @@
     "tabOverall": "Ranking",
     "tabPlayoff": "Playoff",
     "groupRankBadge": "Miejsce w grupie #{rank}",
-    "groupTierNote": "Faza grupowa #{rank} · Tier {tier}",
     "tierNote": "Tier {tier}",
     "tabStages": "Po rundach",
     "tabChart": "Trend",

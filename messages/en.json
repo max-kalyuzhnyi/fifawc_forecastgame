@@ -201,7 +201,6 @@
     "tabOverall": "Overall",
     "tabPlayoff": "Playoff",
     "groupRankBadge": "Group rank #{rank}",
-    "groupTierNote": "Group stage #{rank} · Tier {tier}",
     "tierNote": "Tier {tier}",
     "tabStages": "By stage",
     "tabChart": "Trend",
