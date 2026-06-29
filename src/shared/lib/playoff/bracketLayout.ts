@@ -1,6 +1,7 @@
 import {
   BRACKET_MATCH_NUMBERS,
   BRACKET_PARENT_MATCH_NUMBERS,
+  BRACKET_R32_VISUAL_ORDER,
   type BracketStageKey,
 } from "@/shared/lib/playoff/bracket";
 
@@ -30,9 +31,17 @@ export function getPreviousKnockoutStage(
   return KNOCKOUT_STAGE_ORDER[index - 1];
 }
 
+function getR32Slot(matchNumber: number): number {
+  const slot = BRACKET_R32_VISUAL_ORDER.indexOf(matchNumber);
+  if (slot === -1) {
+    throw new Error(`Unknown R32 match number: ${matchNumber}`);
+  }
+  return slot;
+}
+
 export function getMatchCenterY(matchNumber: number): number {
   if (matchNumber >= 73 && matchNumber <= 88) {
-    const slot = matchNumber - 73;
+    const slot = getR32Slot(matchNumber);
     return slot * SLOT_UNIT + BRACKET_CARD_HEIGHT / 2;
   }
 
