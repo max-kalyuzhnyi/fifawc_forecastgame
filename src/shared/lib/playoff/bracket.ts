@@ -39,14 +39,20 @@ export const BRACKET_STAGE_SHORT_LABELS: Record<BracketStageKey, string> = {
   final: "F",
 };
 
+/**
+ * R32 slots in bracket-tree visual order (feeder pairs adjacent).
+ * Derived from BRACKET_PARENT_MATCH_NUMBERS — not FIFA fixture number order.
+ */
+export const BRACKET_R32_VISUAL_ORDER: number[] = [
+  73, 75, 74, 77, 76, 78, 79, 80, 81, 82, 83, 84, 85, 87, 86, 88,
+];
+
 /** Ordered match numbers per knockout column (OpenFootball WC 2026). */
 export const BRACKET_MATCH_NUMBERS: Record<
   Exclude<BracketStageKey, "groups">,
   number[]
 > = {
-  round_of_32: [
-    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
-  ],
+  round_of_32: BRACKET_R32_VISUAL_ORDER,
   round_of_16: [89, 90, 91, 92, 93, 94, 95, 96],
   quarter_final: [97, 98, 99, 100],
   semi_final: [101, 102],

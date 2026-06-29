@@ -1,9 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { GridViewIcon } from "@hugeicons/core-free-icons";
 import { useBracketOverlay } from "@/features/brackets/model/BracketOverlayContext";
+import { BracketViewIcon } from "@/shared/ui/BracketViewIcon";
 import { cn } from "@/lib/utils";
 
 export function BracketNavTrigger({ className }: { className?: string }) {
@@ -20,7 +19,7 @@ export function BracketNavTrigger({ className }: { className?: string }) {
       )}
       aria-label={t("brackets")}
     >
-      <HugeiconsIcon icon={GridViewIcon} className="size-5" />
+      <BracketViewIcon className="size-5" />
     </button>
   );
 }
