@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLeaderboardAnalytics } from "./buildAnalytics";
+import { buildGroupStageTiersFromAnalytics, buildLeaderboardAnalytics } from "./buildAnalytics";
 
 describe("buildLeaderboardAnalytics", () => {
   const profiles = [
@@ -295,5 +295,66 @@ describe("buildLeaderboardAnalytics", () => {
     expect(analytics.nominees.goldenBoot.some((entry) => entry.user_id === "user-b")).toBe(
       false,
     );
+  });
+
+  it("derives frozen group-stage ranks from overall minus playoff points", () => {
+    const analytics = buildLeaderboardAnalytics({
+      matches: [
+        {
+          id: "g1",
+          round_key: "group_1",
+          status: "finished",
+          home_score: 1,
+          away_score: 0,
+        },
+        {
+          id: "p1",
+          round_key: "round_of_32",
+          status: "finished",
+          home_score: 2,
+          away_score: 1,
+        },
+      ],
+      predictions: [
+        {
+          user_id: "user-a",
+          match_id: "g1",
+          home_score: 1,
+          away_score: 0,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-b",
+          match_id: "g1",
+          home_score: 0,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+        {
+          user_id: "user-a",
+          match_id: "p1",
+          home_score: 2,
+          away_score: 1,
+          scorer_name: null,
+          scorer_player_id: null,
+          boost_multiplier: 1,
+        },
+      ],
+      profiles,
+      scorersByMatch: {},
+    });
+
+    const tiers = buildGroupStageTiersFromAnalytics(analytics);
+
+    expect(tiers["user-a"]).toEqual({
+      group_rank: 1,
+      tier: 1,
+      group_points: 3,
+    });
+    expect(tiers["user-b"]).toBeUndefined();
   });
 });

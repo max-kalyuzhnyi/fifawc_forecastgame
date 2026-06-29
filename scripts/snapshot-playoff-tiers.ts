@@ -4,9 +4,12 @@ config({ path: ".env.local" });
 config();
 
 import { createClient } from "@supabase/supabase-js";
-import { buildLeaderboardAnalytics } from "../src/features/leaderboard/lib/buildAnalytics";
-import { getTierFromRank } from "../src/entities/playoff/model/boostBudget";
-import { isGroupRoundKey } from "../src/entities/match/model/types";
+import {
+  buildGroupStageTiersFromAnalytics,
+  buildLeaderboardAnalytics,
+} from "../src/features/leaderboard/lib/buildAnalytics";
+import { fetchAllRows } from "../src/shared/lib/supabase/fetchAllRows";
+import { buildMatchScorers } from "../src/shared/lib/scorers";
 import type { BoostMultiplier } from "../src/entities/prediction/model/types";
 
 async function main() {
@@ -21,59 +24,86 @@ async function main() {
 
   const supabase = createClient(url, serviceKey);
 
-  const [{ data: matches }, predictions, { data: profiles }, matchEvents, players] =
-    await Promise.all([
-      supabase
-        .from("matches")
-        .select("id, round_key, status, home_score, away_score"),
+  const [
+    { data: matches },
+    predictions,
+    { data: profiles },
+    matchEvents,
+    players,
+  ] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, round_key, status, home_score, away_score"),
+    fetchAllRows((from, to) =>
       supabase
         .from("predictions")
         .select(
           "match_id, user_id, home_score, away_score, scorer_name, scorer_player_id, boost_multiplier",
-        ),
-      supabase.from("profiles").select("id, display_name, photo_url"),
+        )
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    supabase.from("profiles").select("id, display_name, photo_url"),
+    fetchAllRows((from, to) =>
       supabase
         .from("match_events")
         .select("match_id, type, player_name")
-        .in("type", ["goal", "penalty"]),
-      supabase.from("players").select("id, name"),
-    ]);
+        .in("type", ["goal", "penalty"])
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("players")
+        .select("id, name")
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
 
-  const groupMatches = (matches ?? []).filter((match) =>
-    isGroupRoundKey(match.round_key),
-  );
-  const groupMatchIds = new Set(groupMatches.map((match) => match.id));
-  const groupPredictions = (predictions ?? []).filter((prediction) =>
-    groupMatchIds.has(prediction.match_id),
-  );
-
-  const scorersByMatch: Record<string, string[]> = {};
-  for (const event of matchEvents ?? []) {
-    const list = scorersByMatch[event.match_id] ?? [];
-    list.push(event.player_name);
-    scorersByMatch[event.match_id] = list;
-  }
+  const { namesByMatch: scorersByMatch, playerIdsByMatch: scorerPlayerIdsByMatch } =
+    buildMatchScorers(
+      matchEvents.map((event) => ({
+        matchId: event.match_id,
+        type: event.type,
+        playerName: event.player_name,
+      })),
+      players,
+    );
 
   const analytics = buildLeaderboardAnalytics({
-    matches: groupMatches,
-    predictions: groupPredictions.map((prediction) => ({
+    matches: matches ?? [],
+    predictions: predictions.map((prediction) => ({
       ...prediction,
       boost_multiplier: prediction.boost_multiplier as BoostMultiplier,
     })),
     profiles: profiles ?? [],
     scorersByMatch,
+    scorerPlayerIdsByMatch,
   });
 
-  const rows = analytics.overall.map((entry) => ({
-    user_id: entry.user_id,
-    group_rank: entry.rank,
-    tier: getTierFromRank(entry.rank),
-    group_points: entry.total_points,
+  const tiers = buildGroupStageTiersFromAnalytics(analytics);
+  const rows = Object.entries(tiers).map(([user_id, tierInfo]) => ({
+    user_id,
+    ...tierInfo,
   }));
 
   if (rows.length === 0) {
     throw new Error("No group-stage leaderboard rows to snapshot");
   }
+
+  const nameById = Object.fromEntries(
+    (profiles ?? []).map((profile) => [profile.id, profile.display_name]),
+  );
+  const topRows = [...rows]
+    .sort((a, b) => a.group_rank - b.group_rank)
+    .slice(0, 12)
+    .map((row) => ({
+      rank: row.group_rank,
+      tier: row.tier,
+      points: row.group_points,
+      name: nameById[row.user_id],
+    }));
 
   const { error } = await supabase.from("playoff_tiers").upsert(rows, {
     onConflict: "user_id",
@@ -84,6 +114,11 @@ async function main() {
   }
 
   console.log(`Snapshotted ${rows.length} playoff tiers`);
+  for (const row of topRows) {
+    console.log(
+      `#${row.rank} T${row.tier} ${row.points}pts ${row.name ?? row.rank}`,
+    );
+  }
 }
 
 main().catch((error) => {

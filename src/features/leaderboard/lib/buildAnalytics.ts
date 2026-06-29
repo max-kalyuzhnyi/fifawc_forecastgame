@@ -1,6 +1,13 @@
 import { calculatePredictionPoints } from "@/entities/prediction/lib/calculatePredictionPoints";
+import { getTierFromRank } from "@/entities/playoff/model/boostBudget";
 import { getRoundWeight, isGroupRoundKey } from "@/entities/match/model/types";
 import type { BoostMultiplier } from "@/entities/prediction/model/types";
+
+export interface GroupStageTierInfo {
+  group_rank: number;
+  tier: number;
+  group_points: number;
+}
 
 export const STAGE_ORDER = [
   "group_1",
@@ -465,4 +472,56 @@ export function buildLeaderboardAnalytics(input: {
     nominees,
     hasLiveMatches,
   };
+}
+
+/** Frozen group-stage standings: overall points minus playoff points. */
+export function buildGroupStageTiersFromAnalytics(
+  analytics: LeaderboardAnalytics,
+): Record<string, GroupStageTierInfo> {
+  const playoffPointsByUser = new Map(
+    analytics.playoffOverall.map((entry) => [
+      entry.user_id,
+      entry.total_points + entry.live_points_delta,
+    ]),
+  );
+
+  const ranked = assignRanks(
+    analytics.overall
+      .map((entry) => ({
+        user_id: entry.user_id,
+        display_name: entry.display_name,
+        group_points:
+          entry.total_points +
+          entry.live_points_delta -
+          (playoffPointsByUser.get(entry.user_id) ?? 0),
+        predictions_count: entry.predictions_count,
+        rank: 0,
+      }))
+      .filter((entry) => entry.group_points > 0)
+      .sort((a, b) =>
+        compareRanked(
+          {
+            points: a.group_points,
+            picks: a.predictions_count,
+            display_name: a.display_name,
+          },
+          {
+            points: b.group_points,
+            picks: b.predictions_count,
+            display_name: b.display_name,
+          },
+        ),
+      ),
+  );
+
+  return Object.fromEntries(
+    ranked.map((entry) => [
+      entry.user_id,
+      {
+        group_rank: entry.rank,
+        tier: getTierFromRank(entry.rank),
+        group_points: entry.group_points,
+      },
+    ]),
+  );
 }
